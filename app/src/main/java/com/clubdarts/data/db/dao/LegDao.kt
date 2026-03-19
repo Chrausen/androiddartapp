@@ -23,4 +23,7 @@ interface LegDao {
 
     @Query("SELECT * FROM legs WHERE id = :id")
     suspend fun getLegById(id: Long): Leg?
+
+    @Query("SELECT COUNT(*) FROM legs WHERE winnerId = :playerId")
+    suspend fun getLegWinsForPlayer(playerId: Long): Int
 }

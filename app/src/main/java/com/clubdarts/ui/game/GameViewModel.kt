@@ -135,21 +135,18 @@ class GameViewModel @Inject constructor(
         val newDarts = state.currentDarts + dart
         _uiState.update { it.copy(currentDarts = newDarts, pendingMultiplier = 1) }
 
-        // Resolve visit if 3 darts entered or bust can be detected early
         val currentState = _uiState.value
-        if (currentState.currentDarts.size >= 3) {
-            resolveVisit()
-        } else {
-            // Check for bust partway through
-            val currentPlayer = currentState.players.getOrNull(currentState.currentPlayerIndex) ?: return
-            val remaining = currentState.scores[currentPlayer.id] ?: return
-            val soFar = currentState.currentDarts.sumOf { it.value }
-            if (soFar > remaining || (remaining - soFar) == 1 &&
-                (currentState.config?.checkoutRule == CheckoutRule.DOUBLE ||
-                 currentState.config?.checkoutRule == CheckoutRule.TRIPLE)) {
-                // Will bust, but still allow remaining darts — only resolve when all 3 thrown or bust is definitive
-            }
-            updateCheckoutHint()
+        val currentPlayer = currentState.players.getOrNull(currentState.currentPlayerIndex) ?: return
+        val remaining = currentState.scores[currentPlayer.id] ?: return
+        val soFar = currentState.currentDarts.sumOf { it.value }
+        val rule = currentState.config?.checkoutRule ?: CheckoutRule.DOUBLE
+
+        when {
+            soFar > remaining -> resolveVisit()  // definitive bust
+            remaining - soFar == 1 && (rule == CheckoutRule.DOUBLE || rule == CheckoutRule.TRIPLE) -> resolveVisit()  // can't finish on 1
+            remaining - soFar == 0 -> resolveVisit()  // checkout
+            currentState.currentDarts.size >= 3 -> resolveVisit()  // all 3 darts thrown
+            else -> updateCheckoutHint()
         }
     }
 
@@ -200,7 +197,7 @@ class GameViewModel @Inject constructor(
             effectiveTotal = 0
         } else if (afterVisit == 0) {
             // Check checkout validity
-            val lastDart = darts.last { it.score != 0 || darts.indexOf(it) == darts.lastIndex }
+            val lastDart = darts.last()
             val validCheckout = CheckoutCalculator.isValidCheckout(
                 lastDartScore = lastDart.score,
                 lastDartMult = lastDart.multiplier,

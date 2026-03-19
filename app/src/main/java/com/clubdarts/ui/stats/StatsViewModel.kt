@@ -12,7 +12,6 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import javax.inject.Inject
-import kotlinx.coroutines.flow.first
 
 data class PlayerStats(
     val player: Player,
@@ -114,9 +113,7 @@ class StatsViewModel @Inject constructor(
                 val bucketBusts = throwDao.getBucketBusts(player.id)
                 val topScores = throwDao.getVisitScoreFrequencyForPlayer(player.id)
 
-                // Count legs won
-                val legs = gameRepository.getLegsForGame(0) // Not ideal - need to count across all games
-                val legsWon = 0 // Simplified
+                val legsWon = gameRepository.getLegWinsForPlayer(player.id)
 
                 val games = gameRepository.getAllGames().first()
 

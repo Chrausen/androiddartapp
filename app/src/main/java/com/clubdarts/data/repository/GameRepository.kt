@@ -50,6 +50,7 @@ class GameRepository @Inject constructor(
     fun getLegsForGameFlow(gameId: Long): Flow<List<Leg>> = legDao.getLegsForGameFlow(gameId)
     suspend fun getActiveLeg(gameId: Long): Leg? = legDao.getActiveLeg(gameId)
     suspend fun getLegById(id: Long): Leg? = legDao.getLegById(id)
+    suspend fun getLegWinsForPlayer(playerId: Long): Int = legDao.getLegWinsForPlayer(playerId)
 
     suspend fun insertThrow(throw_: Throw): Long = throwDao.insertThrow(throw_)
     suspend fun deleteThrow(throw_: Throw) = throwDao.deleteThrow(throw_)
