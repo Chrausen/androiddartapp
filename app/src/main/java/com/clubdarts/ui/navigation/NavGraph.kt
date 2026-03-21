@@ -4,10 +4,12 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.*
 import androidx.navigation.compose.*
 import com.clubdarts.ui.game.GameResultScreen
 import com.clubdarts.ui.game.GameSetupScreen
+import com.clubdarts.ui.game.GameViewModel
 import com.clubdarts.ui.game.LiveGameScreen
 import com.clubdarts.ui.history.HistoryScreen
 import com.clubdarts.ui.history.MatchDetailScreen
@@ -41,47 +43,58 @@ fun ClubDartsNavHost() {
             startDestination = "game/setup",
             modifier = Modifier.padding(innerPadding)
         ) {
-            composable("game/setup") {
-                GameSetupScreen(
-                    onStartGame = {
-                        navController.navigate("game/live") {
-                            popUpTo("game/setup") { inclusive = false }
-                            launchSingleTop = true
-                        }
-                    }
-                )
-            }
-            composable("game/live") {
-                LiveGameScreen(
-                    onGameFinished = {
-                        navController.navigate("game/result") {
-                            popUpTo("game/setup") { inclusive = false }
-                            launchSingleTop = true
-                        }
-                    },
-                    onBack = {
-                        navController.navigate("game/setup") {
-                            popUpTo("game/setup") { inclusive = true }
-                            launchSingleTop = true
-                        }
-                    }
-                )
-            }
-            composable("game/result") {
-                GameResultScreen(
-                    onNewGame = {
-                        navController.navigate("game/setup") {
-                            popUpTo("game/setup") { inclusive = true }
-                            launchSingleTop = true
-                        }
-                    },
-                    onDone = {
-                        navController.navigate("game/setup") {
-                            popUpTo("game/setup") { inclusive = true }
-                            launchSingleTop = true
-                        }
-                    }
-                )
+            navigation(startDestination = "game/setup", route = "game") {
+                composable("game/setup") { entry ->
+                    val parentEntry = remember(entry) { navController.getBackStackEntry("game") }
+                    val gameViewModel: GameViewModel = hiltViewModel(parentEntry)
+                    GameSetupScreen(
+                        onStartGame = {
+                            navController.navigate("game/live") {
+                                popUpTo("game/setup") { inclusive = false }
+                                launchSingleTop = true
+                            }
+                        },
+                        gameViewModel = gameViewModel
+                    )
+                }
+                composable("game/live") { entry ->
+                    val parentEntry = remember(entry) { navController.getBackStackEntry("game") }
+                    val gameViewModel: GameViewModel = hiltViewModel(parentEntry)
+                    LiveGameScreen(
+                        onGameFinished = {
+                            navController.navigate("game/result") {
+                                popUpTo("game/setup") { inclusive = false }
+                                launchSingleTop = true
+                            }
+                        },
+                        onBack = {
+                            navController.navigate("game/setup") {
+                                popUpTo("game/setup") { inclusive = true }
+                                launchSingleTop = true
+                            }
+                        },
+                        viewModel = gameViewModel
+                    )
+                }
+                composable("game/result") { entry ->
+                    val parentEntry = remember(entry) { navController.getBackStackEntry("game") }
+                    val gameViewModel: GameViewModel = hiltViewModel(parentEntry)
+                    GameResultScreen(
+                        onNewGame = {
+                            navController.navigate("game/setup") {
+                                popUpTo("game/setup") { inclusive = true }
+                                launchSingleTop = true
+                            }
+                        },
+                        onDone = {
+                            navController.navigate("game/setup") {
+                                popUpTo("game/setup") { inclusive = true }
+                                launchSingleTop = true
+                            }
+                        },
+                        viewModel = gameViewModel
+                    )
+                }
             }
             composable("stats") {
                 StatsScreen(

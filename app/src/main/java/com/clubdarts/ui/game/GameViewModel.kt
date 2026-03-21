@@ -310,8 +310,16 @@ class GameViewModel @Inject constructor(
                     }
                     val prevPlayer = state.players.getOrNull(prevPlayerIndex) ?: return@launch
 
-                    // Restore score
+                    // Restore score to pre-visit value
                     val prevScore = (state.scores[prevPlayer.id] ?: 0) + lastThrow.visitTotal
+
+                    // Reconstruct darts from the throw record, then drop the last one
+                    val allDarts = buildList {
+                        if (lastThrow.dartsUsed >= 1) add(DartInput(lastThrow.dart1Score, lastThrow.dart1Mult))
+                        if (lastThrow.dartsUsed >= 2) add(DartInput(lastThrow.dart2Score, lastThrow.dart2Mult))
+                        if (lastThrow.dartsUsed >= 3) add(DartInput(lastThrow.dart3Score, lastThrow.dart3Mult))
+                    }
+                    val restoredDarts = allDarts.dropLast(1)
 
                     gameRepository.deleteThrow(lastThrow)
 
@@ -321,7 +329,7 @@ class GameViewModel @Inject constructor(
                     _uiState.update { it.copy(
                         scores = it.scores.toMutableMap().also { m -> m[prevPlayer.id] = prevScore },
                         currentPlayerIndex = prevPlayerIndex,
-                        currentDarts = emptyList(),
+                        currentDarts = restoredDarts,
                         pendingMultiplier = 1,
                         visitHistory = newHistory
                     )}

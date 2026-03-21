@@ -84,7 +84,7 @@ fun DartNumpad(
             Box(
                 modifier = Modifier
                     .weight(2f)
-                    .height(48.dp)
+                    .height(60.dp)
                     .background(Surface3, RoundedCornerShape(8.dp))
                     .clickable(onClick = onUndo),
                 contentAlignment = Alignment.Center
@@ -150,7 +150,7 @@ private fun NumpadButton(
 ) {
     Box(
         modifier = modifier
-            .height(48.dp)
+            .height(60.dp)
             .background(
                 color = if (enabled) Surface2 else Surface,
                 shape = RoundedCornerShape(8.dp)
@@ -160,7 +160,7 @@ private fun NumpadButton(
     ) {
         Text(
             text = label,
-            fontSize = 16.sp,
+            fontSize = 18.sp,
             fontWeight = FontWeight.Medium,
             fontFamily = DmMono,
             color = if (enabled) TextPrimary else TextTertiary
