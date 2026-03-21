@@ -48,6 +48,9 @@ fun GameSetupScreen(
     }
     var selectedPlayers by remember { mutableStateOf<List<Player>>(emptyList()) }
     var showPlayerPicker by remember { mutableStateOf(false) }
+    var startScoreExpanded by remember { mutableStateOf(false) }
+    var checkoutRuleExpanded by remember { mutableStateOf(false) }
+    var legsToWinExpanded by remember { mutableStateOf(false) }
 
     // Load recent players into picker
     val recentPlayers = remember(uiState.setupDefaults.recentPlayerIds, playersState.players) {
@@ -78,34 +81,43 @@ fun GameSetupScreen(
 
             // Starting score
             item {
-                SectionLabel("Starting score")
-                SegmentedRow(
+                CollapsibleSetting(
+                    label = "Starting score",
+                    currentValueLabel = startScore.toString(),
+                    expanded = startScoreExpanded,
+                    onToggle = { startScoreExpanded = !startScoreExpanded },
                     options = listOf(201, 301, 401, 501, 701),
                     selected = startScore,
                     onSelect = { startScore = it },
-                    label = { it.toString() }
+                    optionLabel = { it.toString() }
                 )
             }
 
             // Checkout rule
             item {
-                SectionLabel("Checkout rule")
-                SegmentedRow(
+                CollapsibleSetting(
+                    label = "Checkout rule",
+                    currentValueLabel = checkoutRule.name.lowercase().replaceFirstChar { c -> c.uppercaseChar() },
+                    expanded = checkoutRuleExpanded,
+                    onToggle = { checkoutRuleExpanded = !checkoutRuleExpanded },
                     options = CheckoutRule.values().toList(),
                     selected = checkoutRule,
                     onSelect = { checkoutRule = it },
-                    label = { it.name.lowercase().replaceFirstChar { c -> c.uppercaseChar() } }
+                    optionLabel = { it.name.lowercase().replaceFirstChar { c -> c.uppercaseChar() } }
                 )
             }
 
             // Legs
             item {
-                SectionLabel("Legs to win")
-                SegmentedRow(
+                CollapsibleSetting(
+                    label = "Legs to win",
+                    currentValueLabel = legsToWin.toString(),
+                    expanded = legsToWinExpanded,
+                    onToggle = { legsToWinExpanded = !legsToWinExpanded },
                     options = listOf(1, 3, 5, 7, 9),
                     selected = legsToWin,
                     onSelect = { legsToWin = it },
-                    label = { it.toString() }
+                    optionLabel = { it.toString() }
                 )
             }
 
@@ -213,6 +225,62 @@ fun GameSetupScreen(
             },
             onDismiss = { showPlayerPicker = false }
         )
+    }
+}
+
+@Composable
+private fun <T> CollapsibleSetting(
+    label: String,
+    currentValueLabel: String,
+    expanded: Boolean,
+    onToggle: () -> Unit,
+    options: List<T>,
+    selected: T,
+    onSelect: (T) -> Unit,
+    optionLabel: (T) -> String
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onToggle() }
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelMedium,
+                color = TextSecondary
+            )
+            Text(
+                text = currentValueLabel,
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = FontWeight.Bold,
+                color = TextPrimary
+            )
+        }
+        if (expanded) {
+            Spacer(modifier = Modifier.height(8.dp))
+            SegmentedRow(
+                options = options,
+                selected = selected,
+                onSelect = onSelect,
+                label = optionLabel
+            )
+        }
+        Box(
+            modifier = Modifier.fillMaxWidth(),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = if (expanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
+                contentDescription = if (expanded) "Collapse" else "Expand",
+                tint = TextTertiary,
+                modifier = Modifier.size(20.dp)
+            )
+        }
     }
 }
 
