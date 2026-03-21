@@ -1,7 +1,9 @@
 package com.clubdarts.ui.game
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
@@ -22,11 +24,15 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.zIndex
+import kotlin.math.roundToInt
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.clubdarts.data.model.CheckoutRule
@@ -62,9 +68,24 @@ fun GameSetupScreen(
     var showPlayerPicker by remember { mutableStateOf(false) }
     var settingsExpanded by remember { mutableStateOf(false) }
     var draggingIndex by remember { mutableIntStateOf(-1) }
-    var dragAccumulator by remember { mutableFloatStateOf(0f) }
+    var dragOffsetY by remember { mutableFloatStateOf(0f) }
     var rowHeightPx by remember { mutableIntStateOf(0) }
     val rowSpacingPx = with(LocalDensity.current) { 16.dp.toPx() }
+
+    // Restore selected players when returning to this screen after a tab switch
+    LaunchedEffect(uiState.setupSelectedPlayerIds, playersState.players) {
+        if (selectedPlayers.isEmpty() && uiState.setupSelectedPlayerIds.isNotEmpty() && playersState.players.isNotEmpty()) {
+            val map = playersState.players.associateBy { it.id }
+            val restored = uiState.setupSelectedPlayerIds.mapNotNull { map[it] }
+            if (restored.isNotEmpty()) selectedPlayers = restored
+        }
+    }
+
+    // Helper: update local state and persist to ViewModel in one call
+    val setPlayers: (List<Player>) -> Unit = { players ->
+        selectedPlayers = players
+        gameViewModel.updateSetupSelectedPlayers(players.map { it.id })
+    }
     val chevronRotation by animateFloatAsState(
         targetValue = if (settingsExpanded) 180f else 0f,
         animationSpec = tween(300),
@@ -214,36 +235,54 @@ fun GameSetupScreen(
 
             // Selected players list
             item {
+                val rowTotal = (rowHeightPx + rowSpacingPx).takeIf { it > 0f } ?: 80f
+                val dropTargetIndex = if (draggingIndex >= 0) {
+                    (draggingIndex + (dragOffsetY / rowTotal).roundToInt())
+                        .coerceIn(0, selectedPlayers.size - 1)
+                } else -1
+
                 Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
                     selectedPlayers.forEachIndexed { index, player ->
+                        val isDragging = index == draggingIndex
+                        val targetOffset = when {
+                            draggingIndex < 0 -> 0f
+                            isDragging -> 0f
+                            draggingIndex < dropTargetIndex && index in (draggingIndex + 1..dropTargetIndex) -> -rowTotal
+                            draggingIndex > dropTargetIndex && index in (dropTargetIndex..draggingIndex - 1) -> rowTotal
+                            else -> 0f
+                        }
+                        val animatedOffset by animateFloatAsState(
+                            targetValue = targetOffset,
+                            animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
+                            label = "item_offset_$index"
+                        )
+                        val visualOffset = if (isDragging) dragOffsetY else animatedOffset
+
                         SelectedPlayerRow(
+                            modifier = Modifier
+                                .zIndex(if (isDragging) 1f else 0f)
+                                .offset { IntOffset(0, visualOffset.roundToInt()) },
+                            isDragging = isDragging,
                             player = player,
                             index = index,
                             isFirst = index == 0,
                             randomOrder = randomOrder,
-                            onRemove = { selectedPlayers = selectedPlayers.filter { it.id != player.id } },
+                            onRemove = { setPlayers(selectedPlayers.filter { it.id != player.id }) },
                             onSizeChanged = { h -> if (rowHeightPx == 0) rowHeightPx = h },
-                            onDragStart = { draggingIndex = index; dragAccumulator = 0f },
-                            onDrag = { dy ->
-                                dragAccumulator += dy
-                                val threshold = rowHeightPx + rowSpacingPx
-                                var target = draggingIndex
-                                var remaining = dragAccumulator
-                                while (target < selectedPlayers.size - 1 && remaining >= threshold / 2) {
-                                    target++; remaining -= threshold
-                                }
-                                while (target > 0 && remaining <= -threshold / 2) {
-                                    target--; remaining += threshold
-                                }
+                            onDragStart = { draggingIndex = index; dragOffsetY = 0f },
+                            onDrag = { dy -> dragOffsetY += dy },
+                            onDragEnd = {
+                                val rowTotalEnd = (rowHeightPx + rowSpacingPx).takeIf { it > 0f } ?: 80f
+                                val target = (draggingIndex + (dragOffsetY / rowTotalEnd).roundToInt())
+                                    .coerceIn(0, selectedPlayers.size - 1)
                                 if (target != draggingIndex) {
                                     val newList = selectedPlayers.toMutableList()
                                     newList.add(target, newList.removeAt(draggingIndex))
-                                    selectedPlayers = newList
-                                    draggingIndex = target
-                                    dragAccumulator = remaining
+                                    setPlayers(newList)
                                 }
-                            },
-                            onDragEnd = { draggingIndex = -1; dragAccumulator = 0f }
+                                draggingIndex = -1
+                                dragOffsetY = 0f
+                            }
                         )
                     }
                 }
@@ -310,7 +349,7 @@ fun GameSetupScreen(
             selectedPlayerIds = selectedPlayers.map { it.id }.toSet(),
             onPlayerSelected = { player ->
                 if (player.id !in selectedPlayers.map { it.id }) {
-                    selectedPlayers = selectedPlayers + player
+                    setPlayers(selectedPlayers + player)
                 }
             },
             onDismiss = { showPlayerPicker = false }
@@ -372,6 +411,8 @@ private fun SelectedPlayerRow(
     isFirst: Boolean,
     randomOrder: Boolean,
     onRemove: () -> Unit,
+    modifier: Modifier = Modifier,
+    isDragging: Boolean = false,
     onSizeChanged: (Int) -> Unit = {},
     onDragStart: () -> Unit = {},
     onDrag: (Float) -> Unit = {},
@@ -382,15 +423,16 @@ private fun SelectedPlayerRow(
     val currentOnDragEnd by rememberUpdatedState(onDragEnd)
 
     Row(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .onSizeChanged { onSizeChanged(it.height) }
+            .then(if (isDragging) Modifier.shadow(6.dp, RoundedCornerShape(10.dp)) else Modifier)
             .background(
-                color = if (isFirst) AccentDim else Surface2,
+                color = if (isDragging) Surface3 else if (isFirst) AccentDim else Surface2,
                 shape = RoundedCornerShape(10.dp)
             )
             .then(
-                if (isFirst) Modifier.border(1.dp, Accent, RoundedCornerShape(10.dp)) else Modifier
+                if (isFirst && !isDragging) Modifier.border(1.dp, Accent, RoundedCornerShape(10.dp)) else Modifier
             )
             .padding(horizontal = 12.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically

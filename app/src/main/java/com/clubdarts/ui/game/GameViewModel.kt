@@ -69,7 +69,8 @@ data class GameUiState(
     val snackbarMessage: String? = null,
     val gameSaved: Boolean = false,
     val isTtsMuted: Boolean = false,
-    val showHistory: Boolean = false
+    val showHistory: Boolean = false,
+    val setupSelectedPlayerIds: List<Long> = emptyList()
 )
 
 @HiltViewModel
@@ -104,6 +105,10 @@ class GameViewModel @Inject constructor(
     fun toggleTtsMute() { _uiState.update { it.copy(isTtsMuted = !it.isTtsMuted) } }
 
     fun toggleHistory() { _uiState.update { it.copy(showHistory = !it.showHistory) } }
+
+    fun updateSetupSelectedPlayers(ids: List<Long>) {
+        _uiState.update { it.copy(setupSelectedPlayerIds = ids) }
+    }
 
     fun loadSetupDefaults() {
         viewModelScope.launch {
