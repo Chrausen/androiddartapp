@@ -30,7 +30,11 @@ fun ClubDartsNavHost() {
                 currentRoute = currentRoute,
                 onNavigate = { route ->
                     navController.navigate(route) {
-                        popUpTo(navController.graph.startDestinationId) {
+                        // Use the route string rather than startDestinationId (an integer).
+                        // startDestinationId can't be resolved by the NavController when
+                        // restoring a nested graph's back stack, causing a fatal
+                        // "destination cannot be found" crash on every tab switch to "game".
+                        popUpTo("game") {
                             saveState = true
                         }
                         launchSingleTop = true
