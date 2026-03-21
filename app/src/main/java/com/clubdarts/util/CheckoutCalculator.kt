@@ -155,7 +155,9 @@ object CheckoutCalculator {
         val raw = when (rule) {
             CheckoutRule.DOUBLE -> doubleOutTable[score]
                 ?: if (score <= 40 && score % 2 == 0) "D${score / 2}"
-                else if (score <= 60) "${score - 40} · D20"
+                else if (score in 41..60) "${score - 40} · D20"
+                else if (score % 2 == 1 && score in 3..21) "${score - 2} · D1"
+                else if (score % 2 == 1 && score in 23..39) "${score - 20} · D10"
                 else null
             CheckoutRule.STRAIGHT -> when {
                 score == 25 -> "Bull (single)"
