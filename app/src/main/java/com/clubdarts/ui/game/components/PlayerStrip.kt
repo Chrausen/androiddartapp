@@ -122,21 +122,24 @@ private fun ActivePlayerPanel(
                 }
             }
 
-            // Show live remaining score (score minus what's been thrown this visit).
-            // On a bust, revert to the pre-visit score in red — resolveVisit() will
-            // clear the darts almost immediately, so the red flash is brief.
-            Text(
-                text = if (isBusting) score.toString() else liveRemaining.toString(),
-                fontSize = 42.sp,
-                fontWeight = FontWeight.Bold,
-                fontFamily = DmMono,
-                color = if (isBusting) Red else Accent,
-                lineHeight = 46.sp
-            )
-
-            Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                repeat(3) { i ->
-                    DartSlot(dart = currentDarts.getOrNull(i))
+            // Score on the left; dart slots stacked vertically on the right,
+            // both centred in the Row so they sit at the same visual midpoint.
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Text(
+                    text = if (isBusting) score.toString() else liveRemaining.toString(),
+                    fontSize = 42.sp,
+                    fontWeight = FontWeight.Bold,
+                    fontFamily = DmMono,
+                    color = if (isBusting) Red else Accent,
+                    lineHeight = 46.sp
+                )
+                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    repeat(3) { i ->
+                        DartSlot(dart = currentDarts.getOrNull(i))
+                    }
                 }
             }
         }
@@ -154,7 +157,7 @@ private fun ActivePlayerPanel(
 private fun DartSlot(dart: DartInput?) {
     Box(
         modifier = Modifier
-            .size(32.dp, 24.dp)
+            .size(44.dp, 30.dp)
             .background(Surface3, RoundedCornerShape(4.dp))
             .border(1.dp, Border2, RoundedCornerShape(4.dp)),
         contentAlignment = Alignment.Center
@@ -165,10 +168,10 @@ private fun DartSlot(dart: DartInput?) {
                 style = MaterialTheme.typography.labelSmall,
                 fontFamily = DmMono,
                 color = if (dart.score == 0) TextTertiary else TextPrimary,
-                fontSize = 9.sp
+                fontSize = 11.sp
             )
         } else {
-            Text(text = "—", style = MaterialTheme.typography.labelSmall, color = TextTertiary, fontSize = 9.sp)
+            Text(text = "—", style = MaterialTheme.typography.labelSmall, color = TextTertiary, fontSize = 11.sp)
         }
     }
 }
