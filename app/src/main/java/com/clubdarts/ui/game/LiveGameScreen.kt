@@ -207,7 +207,7 @@ private fun GameStatusBar(
             )
             Text("·", style = MaterialTheme.typography.labelSmall, color = TextTertiary)
             Text(
-                text = "Leg $currentLegNumber of ${config.legsToWin}",
+                text = "Leg $currentLegNumber",
                 style = MaterialTheme.typography.labelMedium,
                 color = TextSecondary
             )
