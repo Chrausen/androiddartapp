@@ -12,6 +12,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.clubdarts.ui.theme.*
@@ -48,14 +49,6 @@ fun DartNumpad(
             }
         }
 
-        // Bull row
-        NumpadButton(
-            label = "Bull\n25",
-            onClick = { onDart(25) },
-            modifier = Modifier.fillMaxWidth(),
-            enabled = pendingMultiplier != 3
-        )
-
         // Multiplier row (Single / Double / Triple — no Miss here)
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -71,11 +64,17 @@ fun DartNumpad(
             }
         }
 
-        // Bottom row: Miss + Undo
+        // Bottom row: Bull + Miss + Undo
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(4.dp)
         ) {
+            NumpadButton(
+                label = "Bull\n25",
+                onClick = { onDart(25) },
+                modifier = Modifier.weight(3f),
+                enabled = pendingMultiplier != 3
+            )
             NumpadButton(
                 label = "Miss",
                 onClick = onMiss,
@@ -165,6 +164,7 @@ private fun NumpadButton(
             fontSize = 18.sp,
             fontWeight = FontWeight.Medium,
             fontFamily = DmMono,
+            textAlign = TextAlign.Center,
             color = when {
                 !enabled         -> TextTertiary
                 labelColor != Color.Unspecified -> labelColor
