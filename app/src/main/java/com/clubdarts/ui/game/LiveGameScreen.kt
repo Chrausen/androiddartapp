@@ -57,6 +57,7 @@ fun LiveGameScreen(
             uiState.config?.let { config ->
                 GameStatusBar(
                     config = config,
+                    currentLegNumber = uiState.currentLegNumber,
                     isTtsMuted = uiState.isTtsMuted,
                     onToggleMute = { viewModel.toggleTtsMute() },
                     showHistory = uiState.showHistory,
@@ -166,6 +167,7 @@ fun LiveGameScreen(
 @Composable
 private fun GameStatusBar(
     config: GameConfig,
+    currentLegNumber: Int,
     isTtsMuted: Boolean,
     onToggleMute: () -> Unit,
     showHistory: Boolean,
@@ -200,6 +202,12 @@ private fun GameStatusBar(
             Text("·", style = MaterialTheme.typography.labelSmall, color = TextTertiary)
             Text(
                 text = "${config.legsToWin} leg${if (config.legsToWin > 1) "s" else ""}",
+                style = MaterialTheme.typography.labelMedium,
+                color = TextSecondary
+            )
+            Text("·", style = MaterialTheme.typography.labelSmall, color = TextTertiary)
+            Text(
+                text = "Leg $currentLegNumber of ${config.legsToWin}",
                 style = MaterialTheme.typography.labelMedium,
                 color = TextSecondary
             )
