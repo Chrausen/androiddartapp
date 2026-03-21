@@ -1,6 +1,7 @@
 package com.clubdarts.ui.game.components
 
 import androidx.compose.animation.*
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
@@ -9,6 +10,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.key
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -27,43 +29,45 @@ fun PlayerStrip(
     currentDarts: List<DartInput>,
     modifier: Modifier = Modifier
 ) {
-    // Single ordered list: active player first, then next-to-throw, wrapping around
     val orderedPlayers = if (players.isEmpty()) emptyList() else {
         players.indices.map { offset -> players[(currentPlayerIndex + offset) % players.size] }
     }
 
-    AnimatedContent(
-        targetState = orderedPlayers,
-        modifier = modifier,
-        transitionSpec = {
-            (slideInVertically { it } + fadeIn()) togetherWith
-                    (slideOutVertically { -it } + fadeOut())
-        },
-        label = "player_strip"
-    ) { ordered ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = 8.dp, vertical = 4.dp),
-            verticalArrangement = Arrangement.spacedBy(4.dp)
-        ) {
-            ordered.forEachIndexed { index, player ->
-                if (index == 0) {
-                    ActivePlayerPanel(
-                        player = player,
-                        score = scores[player.id] ?: 0,
-                        legWins = legWins[player.id] ?: 0,
-                        currentDarts = currentDarts,
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                } else {
-                    WaitingPlayerPanel(
-                        player = player,
-                        score = scores[player.id] ?: 0,
-                        legWins = legWins[player.id] ?: 0,
-                        modifier = Modifier.fillMaxWidth()
-                    )
+    Column(
+        modifier = modifier
+            .verticalScroll(rememberScrollState())
+            .padding(horizontal = 8.dp, vertical = 4.dp),
+        verticalArrangement = Arrangement.spacedBy(4.dp)
+    ) {
+        // Each position slot is fixed in the layout; only its content animates.
+        // The top slot fades the old player upward and the new player in from below.
+        orderedPlayers.forEachIndexed { index, player ->
+            val isActive = index == 0
+            key(index) {
+                AnimatedContent(
+                    targetState = player,
+                    label = "player_slot_$index",
+                    transitionSpec = {
+                        (slideInVertically(tween(250)) { it / 3 } + fadeIn(tween(250))) togetherWith
+                                (slideOutVertically(tween(250)) { -it / 3 } + fadeOut(tween(200)))
+                    }
+                ) { p ->
+                    if (isActive) {
+                        ActivePlayerPanel(
+                            player = p,
+                            score = scores[p.id] ?: 0,
+                            legWins = legWins[p.id] ?: 0,
+                            currentDarts = currentDarts,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    } else {
+                        WaitingPlayerPanel(
+                            player = p,
+                            score = scores[p.id] ?: 0,
+                            legWins = legWins[p.id] ?: 0,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
                 }
             }
         }
@@ -115,16 +119,13 @@ private fun ActivePlayerPanel(
                 lineHeight = 46.sp
             )
 
-            // Dart slots
             Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                 repeat(3) { i ->
-                    val dart = currentDarts.getOrNull(i)
-                    DartSlot(dart = dart)
+                    DartSlot(dart = currentDarts.getOrNull(i))
                 }
             }
         }
 
-        // Leg wins
         Text(
             text = "Legs: $legWins",
             style = MaterialTheme.typography.labelSmall,
