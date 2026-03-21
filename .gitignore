@@ -1,0 +1,20 @@
+# Gradle
+.gradle/
+build/
+**/build/
+
+# Local configuration
+local.properties
+
+# Android Studio
+*.iml
+.idea/
+*.keystore
+!debug.keystore
+
+# Kotlin
+*.class
+
+# APKs/AABs
+*.apk
+*.aab
