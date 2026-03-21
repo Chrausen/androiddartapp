@@ -96,6 +96,10 @@ private fun ActivePlayerPanel(
             .border(1.dp, Accent, RoundedCornerShape(10.dp))
             .padding(10.dp)
     ) {
+        val dartsTotal = currentDarts.sumOf { it.value }
+        val liveRemaining = score - dartsTotal
+        val isBusting = liveRemaining < 0
+
         Column {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
@@ -118,12 +122,15 @@ private fun ActivePlayerPanel(
                 }
             }
 
+            // Show live remaining score (score minus what's been thrown this visit).
+            // On a bust, revert to the pre-visit score in red — resolveVisit() will
+            // clear the darts almost immediately, so the red flash is brief.
             Text(
-                text = score.toString(),
+                text = if (isBusting) score.toString() else liveRemaining.toString(),
                 fontSize = 42.sp,
                 fontWeight = FontWeight.Bold,
                 fontFamily = DmMono,
-                color = Accent,
+                color = if (isBusting) Red else Accent,
                 lineHeight = 46.sp
             )
 

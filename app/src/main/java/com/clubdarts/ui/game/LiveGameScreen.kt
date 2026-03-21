@@ -64,7 +64,8 @@ fun LiveGameScreen(
                 modifier = Modifier.fillMaxWidth().weight(1f)
             )
 
-            // Checkout hint bar — always occupies space so numpad never moves
+            // Checkout hint bar — always visible so the numpad never moves.
+            // Shows the suggested finish path when in checkout range, "—" otherwise.
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -74,17 +75,17 @@ fun LiveGameScreen(
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Text(
-                    text = "Checkout hint",
+                    text = "Checkout",
                     style = MaterialTheme.typography.labelSmall,
-                    color = if (uiState.checkoutHint != null) TextTertiary else androidx.compose.ui.graphics.Color.Transparent,
+                    color = TextTertiary,
                     modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp)
                 )
                 Text(
-                    text = uiState.checkoutHint ?: "",
+                    text = uiState.checkoutHint ?: "—",
                     style = MaterialTheme.typography.labelMedium,
                     fontFamily = DmMono,
                     fontWeight = FontWeight.Medium,
-                    color = Green,
+                    color = if (uiState.checkoutHint != null) Green else TextTertiary,
                     modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp)
                 )
             }
