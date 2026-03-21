@@ -1,5 +1,6 @@
 package com.clubdarts.ui.game.components
 
+import androidx.compose.animation.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
@@ -33,7 +34,12 @@ fun PlayerStrip(
         horizontalArrangement = Arrangement.spacedBy(4.dp)
     ) {
         val currentPlayer = players.getOrNull(currentPlayerIndex)
-        val waitingPlayers = players.filterIndexed { i, _ -> i != currentPlayerIndex }
+        // Order waiting players: next-to-throw first, then wrapping around
+        val waitingPlayers = if (players.size <= 1) emptyList() else {
+            (1 until players.size).map { offset ->
+                players[(currentPlayerIndex + offset) % players.size]
+            }
+        }
 
         // Active player panel (~55% width)
         if (currentPlayer != null) {
@@ -46,19 +52,29 @@ fun PlayerStrip(
             )
         }
 
-        // Waiting players (~45% width)
+        // Waiting players (~45% width) — animate on player rotation
         if (waitingPlayers.isNotEmpty()) {
-            Column(
+            AnimatedContent(
+                targetState = waitingPlayers,
                 modifier = Modifier.weight(0.9f).fillMaxHeight(),
-                verticalArrangement = Arrangement.spacedBy(4.dp)
-            ) {
-                waitingPlayers.forEach { player ->
-                    WaitingPlayerPanel(
-                        player = player,
-                        score = scores[player.id] ?: 0,
-                        legWins = legWins[player.id] ?: 0,
-                        modifier = Modifier.weight(1f).fillMaxWidth()
-                    )
+                transitionSpec = {
+                    (slideInVertically { it } + fadeIn()) togetherWith
+                            (slideOutVertically { -it } + fadeOut())
+                },
+                label = "waiting_players"
+            ) { players ->
+                Column(
+                    modifier = Modifier.fillMaxSize(),
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    players.forEach { player ->
+                        WaitingPlayerPanel(
+                            player = player,
+                            score = scores[player.id] ?: 0,
+                            legWins = legWins[player.id] ?: 0,
+                            modifier = Modifier.weight(1f).fillMaxWidth()
+                        )
+                    }
                 }
             }
         }
