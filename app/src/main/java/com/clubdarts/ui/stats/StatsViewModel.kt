@@ -83,7 +83,7 @@ class StatsViewModel @Inject constructor(
                 )}
 
                 gameRepository.getAllGames().collect { games ->
-                    _uiState.update { it.copy(clubTotalGames = games.size) }
+                    _uiState.update { it.copy(clubTotalGames = games.count { it.finishedAt != null }) }
                 }
             } catch (e: Exception) {
                 _uiState.update { it.copy(errorMessage = e.message) }
@@ -115,7 +115,7 @@ class StatsViewModel @Inject constructor(
 
                 val legsWon = gameRepository.getLegWinsForPlayer(player.id)
 
-                val games = gameRepository.getAllGames().first()
+                val games = gameRepository.getAllGames().first().filter { it.finishedAt != null }
 
                 val stats = PlayerStats(
                     player = player,
