@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <style name="Theme.ClubDarts" parent="Theme.AppCompat.Light.NoActionBar">
+    <style name="Theme.ClubDarts" parent="android:Theme.Material.Light.NoActionBar">
         <item name="android:windowBackground">#0E0F11</item>
         <item name="android:statusBarColor">#0E0F11</item>
         <item name="android:navigationBarColor">#16181C</item>
