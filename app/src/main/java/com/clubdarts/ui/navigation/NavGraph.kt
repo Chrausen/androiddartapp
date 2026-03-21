@@ -1,13 +1,17 @@
 package com.clubdarts.ui.navigation
 
+import androidx.activity.ComponentActivity
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.*
 import androidx.navigation.compose.*
 import com.clubdarts.ui.game.GameResultScreen
 import com.clubdarts.ui.game.GameSetupScreen
+import com.clubdarts.ui.game.GameViewModel
 import com.clubdarts.ui.game.LiveGameScreen
 import com.clubdarts.ui.history.HistoryScreen
 import com.clubdarts.ui.history.MatchDetailScreen
@@ -18,7 +22,7 @@ import com.clubdarts.ui.stats.StatsScreen
 fun ClubDartsNavHost() {
     val navController = rememberNavController()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
-    val currentRoute = navBackStackEntry?.destination?.route ?: "game/setup"
+    val currentRoute = navBackStackEntry?.destination?.route ?: "game"
 
     Scaffold(
         bottomBar = {
@@ -26,7 +30,10 @@ fun ClubDartsNavHost() {
                 currentRoute = currentRoute,
                 onNavigate = { route ->
                     navController.navigate(route) {
-                        popUpTo(navController.graph.startDestinationId) {
+                        // "game" is now a flat leaf destination (not a nested graph),
+                        // so popUpTo("game") always finds it on the back stack and
+                        // saveState/restoreState work correctly across tab switches.
+                        popUpTo("game") {
                             saveState = true
                         }
                         launchSingleTop = true
@@ -38,51 +45,61 @@ fun ClubDartsNavHost() {
     ) { innerPadding ->
         NavHost(
             navController = navController,
-            startDestination = "game/setup",
+            startDestination = "game",
             modifier = Modifier.padding(innerPadding)
         ) {
-            composable("game/setup") {
+            // Game tab — flat routes, no nested navigation graph wrapper.
+            // The "game" route IS the setup screen (the tab's home destination).
+            composable("game") {
+                val gameViewModel: GameViewModel =
+                    hiltViewModel(LocalContext.current as ComponentActivity)
                 GameSetupScreen(
                     onStartGame = {
                         navController.navigate("game/live") {
-                            popUpTo("game/setup") { inclusive = false }
                             launchSingleTop = true
                         }
-                    }
+                    },
+                    gameViewModel = gameViewModel
                 )
             }
             composable("game/live") {
+                val gameViewModel: GameViewModel =
+                    hiltViewModel(LocalContext.current as ComponentActivity)
                 LiveGameScreen(
                     onGameFinished = {
                         navController.navigate("game/result") {
-                            popUpTo("game/setup") { inclusive = false }
                             launchSingleTop = true
                         }
                     },
                     onBack = {
-                        navController.navigate("game/setup") {
-                            popUpTo("game/setup") { inclusive = true }
+                        navController.navigate("game") {
+                            popUpTo("game") { inclusive = true }
                             launchSingleTop = true
                         }
-                    }
+                    },
+                    viewModel = gameViewModel
                 )
             }
             composable("game/result") {
+                val gameViewModel: GameViewModel =
+                    hiltViewModel(LocalContext.current as ComponentActivity)
                 GameResultScreen(
                     onNewGame = {
-                        navController.navigate("game/setup") {
-                            popUpTo("game/setup") { inclusive = true }
+                        navController.navigate("game") {
+                            popUpTo("game") { inclusive = true }
                             launchSingleTop = true
                         }
                     },
                     onDone = {
-                        navController.navigate("game/setup") {
-                            popUpTo("game/setup") { inclusive = true }
+                        navController.navigate("game") {
+                            popUpTo("game") { inclusive = true }
                             launchSingleTop = true
                         }
-                    }
+                    },
+                    viewModel = gameViewModel
                 )
             }
+
             composable("stats") {
                 StatsScreen(
                     onNavigateToMatchDetail = { gameId ->

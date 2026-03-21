@@ -12,6 +12,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.clubdarts.ui.theme.*
@@ -29,28 +30,6 @@ fun DartNumpad(
         modifier = modifier.padding(horizontal = 8.dp),
         verticalArrangement = Arrangement.spacedBy(4.dp)
     ) {
-        // Multiplier row
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(4.dp)
-        ) {
-            listOf("Single" to 1, "Double" to 2, "Triple" to 3).forEach { (label, mult) ->
-                MultiplierButton(
-                    label = label,
-                    isActive = pendingMultiplier == mult,
-                    onClick = { onMultiplierChange(mult) },
-                    modifier = Modifier.weight(1f)
-                )
-            }
-            MultiplierButton(
-                label = "Miss",
-                isActive = false,
-                onClick = onMiss,
-                modifier = Modifier.weight(1f),
-                isMiss = true
-            )
-        }
-
         // Number grid 1–20
         val numbers = (1..20).toList()
         val rows = numbers.chunked(5)
@@ -70,7 +49,22 @@ fun DartNumpad(
             }
         }
 
-        // Bottom row: 25 (Bull) + Undo
+        // Multiplier row (Single / Double / Triple — no Miss here)
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            listOf("Single" to 1, "Double" to 2, "Triple" to 3).forEach { (label, mult) ->
+                MultiplierButton(
+                    label = label,
+                    isActive = pendingMultiplier == mult,
+                    onClick = { onMultiplierChange(mult) },
+                    modifier = Modifier.weight(1f)
+                )
+            }
+        }
+
+        // Bottom row: Bull + Miss + Undo
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(4.dp)
@@ -81,10 +75,16 @@ fun DartNumpad(
                 modifier = Modifier.weight(3f),
                 enabled = pendingMultiplier != 3
             )
+            NumpadButton(
+                label = "Miss",
+                onClick = onMiss,
+                modifier = Modifier.weight(3f),
+                labelColor = Red
+            )
             Box(
                 modifier = Modifier
                     .weight(2f)
-                    .height(48.dp)
+                    .height(60.dp)
                     .background(Surface3, RoundedCornerShape(8.dp))
                     .clickable(onClick = onUndo),
                 contentAlignment = Alignment.Center
@@ -146,11 +146,12 @@ private fun NumpadButton(
     label: String,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
-    enabled: Boolean = true
+    enabled: Boolean = true,
+    labelColor: Color = Color.Unspecified
 ) {
     Box(
         modifier = modifier
-            .height(48.dp)
+            .height(60.dp)
             .background(
                 color = if (enabled) Surface2 else Surface,
                 shape = RoundedCornerShape(8.dp)
@@ -160,10 +161,15 @@ private fun NumpadButton(
     ) {
         Text(
             text = label,
-            fontSize = 16.sp,
+            fontSize = 18.sp,
             fontWeight = FontWeight.Medium,
             fontFamily = DmMono,
-            color = if (enabled) TextPrimary else TextTertiary
+            textAlign = TextAlign.Center,
+            color = when {
+                !enabled         -> TextTertiary
+                labelColor != Color.Unspecified -> labelColor
+                else             -> TextPrimary
+            }
         )
     }
 }

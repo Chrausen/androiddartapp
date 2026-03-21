@@ -144,29 +144,33 @@ object CheckoutCalculator {
         170 to "T20 · T20 · Bull"
     )
 
-    fun suggest(score: Int, rule: CheckoutRule): String? {
+    /**
+     * Returns a checkout suggestion for [score] under [rule], or null if none exists.
+     * [maxDarts] limits the suggestion to paths that fit within the remaining darts
+     * of the current visit (1–3). Suggestions with more steps than [maxDarts] are
+     * suppressed so the hint always reflects what is still achievable this turn.
+     */
+    fun suggest(score: Int, rule: CheckoutRule, maxDarts: Int = 3): String? {
         if (score < 1 || score > 170) return null
-        return when (rule) {
+        val raw = when (rule) {
             CheckoutRule.DOUBLE -> doubleOutTable[score]
                 ?: if (score <= 40 && score % 2 == 0) "D${score / 2}"
                 else if (score <= 60) "${score - 40} · D20"
                 else null
-            CheckoutRule.STRAIGHT -> {
-                // For straight out, any score ≤ 20 or bull finishes on single/bull
-                when {
-                    score == 25 -> "Bull (single)"
-                    score == 50 -> "Bull"
-                    score <= 20 -> "$score"
-                    else -> doubleOutTable[score] // fallback to double table suggestion
-                }
+            CheckoutRule.STRAIGHT -> when {
+                score == 25 -> "Bull (single)"
+                score == 50 -> "Bull"
+                score <= 20 -> "$score"
+                else -> doubleOutTable[score]
             }
-            CheckoutRule.TRIPLE -> {
-                when {
-                    score % 3 == 0 && score <= 60 -> "T${score / 3}"
-                    else -> doubleOutTable[score]
-                }
+            CheckoutRule.TRIPLE -> when {
+                score % 3 == 0 && score <= 60 -> "T${score / 3}"
+                else -> doubleOutTable[score]
             }
         }
+        // Drop the suggestion if it requires more darts than are left this visit.
+        if (raw != null && raw.split(" · ").size > maxDarts) return null
+        return raw
     }
 
     fun isCheckoutPossible(score: Int, rule: CheckoutRule): Boolean {

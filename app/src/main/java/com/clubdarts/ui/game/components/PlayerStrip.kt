@@ -1,14 +1,23 @@
 package com.clubdarts.ui.game.components
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.togetherWith
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.key
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -25,40 +34,49 @@ fun PlayerStrip(
     currentDarts: List<DartInput>,
     modifier: Modifier = Modifier
 ) {
-    Row(
+    val orderedPlayers = if (players.isEmpty()) emptyList() else {
+        players.indices.map { offset -> players[(currentPlayerIndex + offset) % players.size] }
+    }
+
+    Column(
         modifier = modifier
-            .fillMaxWidth()
-            .height(160.dp)
+            .verticalScroll(rememberScrollState())
             .padding(horizontal = 8.dp, vertical = 4.dp),
-        horizontalArrangement = Arrangement.spacedBy(4.dp)
+        verticalArrangement = Arrangement.spacedBy(4.dp)
     ) {
-        val currentPlayer = players.getOrNull(currentPlayerIndex)
-        val waitingPlayers = players.filterIndexed { i, _ -> i != currentPlayerIndex }
-
-        // Active player panel (~55% width)
-        if (currentPlayer != null) {
-            ActivePlayerPanel(
-                player = currentPlayer,
-                score = scores[currentPlayer.id] ?: 0,
-                legWins = legWins[currentPlayer.id] ?: 0,
-                currentDarts = currentDarts,
-                modifier = Modifier.weight(1.1f).fillMaxHeight()
-            )
-        }
-
-        // Waiting players (~45% width)
-        if (waitingPlayers.isNotEmpty()) {
-            Column(
-                modifier = Modifier.weight(0.9f).fillMaxHeight(),
-                verticalArrangement = Arrangement.spacedBy(4.dp)
-            ) {
-                waitingPlayers.forEach { player ->
-                    WaitingPlayerPanel(
-                        player = player,
-                        score = scores[player.id] ?: 0,
-                        legWins = legWins[player.id] ?: 0,
-                        modifier = Modifier.weight(1f).fillMaxWidth()
-                    )
+        // Each position slot is fixed in the layout; only its content animates.
+        // The top slot fades the old player upward and the new player in from below.
+        orderedPlayers.forEachIndexed { index, player ->
+            val isActive = index == 0
+            key(index) {
+                AnimatedContent(
+                    targetState = player,
+                    label = "player_slot_$index",
+                    modifier = Modifier.fillMaxWidth().clipToBounds(),
+                    transitionSpec = {
+                        // Exit plays first (120ms). Enter starts only after exit finishes
+                        // (delayMillis = 120). Clip keeps the incoming card hidden below
+                        // the slot boundary until it slides up into view.
+                        slideInVertically(tween(120, delayMillis = 120)) { it } togetherWith
+                                slideOutVertically(tween(120)) { -it }
+                    }
+                ) { p ->
+                    if (isActive) {
+                        ActivePlayerPanel(
+                            player = p,
+                            score = scores[p.id] ?: 0,
+                            legWins = legWins[p.id] ?: 0,
+                            currentDarts = currentDarts,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    } else {
+                        WaitingPlayerPanel(
+                            player = p,
+                            score = scores[p.id] ?: 0,
+                            legWins = legWins[p.id] ?: 0,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
                 }
             }
         }
@@ -79,6 +97,10 @@ private fun ActivePlayerPanel(
             .border(1.dp, Accent, RoundedCornerShape(10.dp))
             .padding(10.dp)
     ) {
+        val dartsTotal = currentDarts.sumOf { it.value }
+        val liveRemaining = score - dartsTotal
+        val isBusting = liveRemaining < 0
+
         Column {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
@@ -101,25 +123,41 @@ private fun ActivePlayerPanel(
                 }
             }
 
-            Text(
-                text = score.toString(),
-                fontSize = 42.sp,
-                fontWeight = FontWeight.Bold,
-                fontFamily = DmMono,
-                color = Accent,
-                lineHeight = 46.sp
-            )
-
-            // Dart slots
-            Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                repeat(3) { i ->
-                    val dart = currentDarts.getOrNull(i)
-                    DartSlot(dart = dart)
+            // Score on the left; dart slots stacked vertically on the right,
+            // both centred in the Row so they sit at the same visual midpoint.
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                // Box with an invisible 3-digit reference keeps the layout width
+                // stable as the score shrinks from e.g. "501" → "99" → "1".
+                // DmMono is monospace so "888" matches exactly 3 digit widths.
+                Box {
+                    Text(
+                        text = "888",
+                        fontSize = 42.sp,
+                        fontWeight = FontWeight.Bold,
+                        fontFamily = DmMono,
+                        lineHeight = 46.sp,
+                        modifier = Modifier.alpha(0f)
+                    )
+                    Text(
+                        text = if (isBusting) score.toString() else liveRemaining.toString(),
+                        fontSize = 42.sp,
+                        fontWeight = FontWeight.Bold,
+                        fontFamily = DmMono,
+                        color = if (isBusting) Red else Accent,
+                        lineHeight = 46.sp
+                    )
+                }
+                Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                    repeat(3) { i ->
+                        DartSlot(dart = currentDarts.getOrNull(i))
+                    }
                 }
             }
         }
 
-        // Leg wins
         Text(
             text = "Legs: $legWins",
             style = MaterialTheme.typography.labelSmall,
@@ -133,7 +171,7 @@ private fun ActivePlayerPanel(
 private fun DartSlot(dart: DartInput?) {
     Box(
         modifier = Modifier
-            .size(32.dp, 24.dp)
+            .size(44.dp, 30.dp)
             .background(Surface3, RoundedCornerShape(4.dp))
             .border(1.dp, Border2, RoundedCornerShape(4.dp)),
         contentAlignment = Alignment.Center
@@ -144,10 +182,10 @@ private fun DartSlot(dart: DartInput?) {
                 style = MaterialTheme.typography.labelSmall,
                 fontFamily = DmMono,
                 color = if (dart.score == 0) TextTertiary else TextPrimary,
-                fontSize = 9.sp
+                fontSize = 11.sp
             )
         } else {
-            Text(text = "—", style = MaterialTheme.typography.labelSmall, color = TextTertiary, fontSize = 9.sp)
+            Text(text = "—", style = MaterialTheme.typography.labelSmall, color = TextTertiary, fontSize = 11.sp)
         }
     }
 }

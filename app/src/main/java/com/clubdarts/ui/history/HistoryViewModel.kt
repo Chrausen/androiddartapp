@@ -59,7 +59,7 @@ class HistoryViewModel @Inject constructor(
             _uiState.update { it.copy(isLoading = true) }
             try {
                 gameRepository.getAllGames().collect { games ->
-                    val summaries = games.mapNotNull { game ->
+                    val summaries = games.filter { it.finishedAt != null }.mapNotNull { game ->
                         try {
                             val gamePlayers = gameRepository.getGamePlayers(game.id)
                             val players = playerRepository.getPlayersByIds(gamePlayers.map { it.playerId })
