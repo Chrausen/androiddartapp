@@ -48,18 +48,15 @@ fun LiveGameScreen(
                 .background(Background)
                 .padding(padding)
         ) {
-            // Player strip pinned at top
+            // Player strip — fills all space above the bottom section, scrollable when needed
             PlayerStrip(
                 players = uiState.players,
                 currentPlayerIndex = uiState.currentPlayerIndex,
                 scores = uiState.scores,
                 legWins = uiState.legWins,
                 currentDarts = uiState.currentDarts,
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth().weight(1f)
             )
-
-            // Flexible gap — pushes bottom section down
-            Spacer(modifier = Modifier.weight(1f))
 
             // Checkout hint bar — always occupies space so numpad never moves
             Row(

@@ -4,12 +4,13 @@ import androidx.compose.animation.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -26,55 +27,43 @@ fun PlayerStrip(
     currentDarts: List<DartInput>,
     modifier: Modifier = Modifier
 ) {
-    Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .height(160.dp)
-            .padding(horizontal = 8.dp, vertical = 4.dp),
-        horizontalArrangement = Arrangement.spacedBy(4.dp)
-    ) {
-        val currentPlayer = players.getOrNull(currentPlayerIndex)
-        // Order waiting players: next-to-throw first, then wrapping around
-        val waitingPlayers = if (players.size <= 1) emptyList() else {
-            (1 until players.size).map { offset ->
-                players[(currentPlayerIndex + offset) % players.size]
-            }
-        }
+    // Single ordered list: active player first, then next-to-throw, wrapping around
+    val orderedPlayers = if (players.isEmpty()) emptyList() else {
+        players.indices.map { offset -> players[(currentPlayerIndex + offset) % players.size] }
+    }
 
-        // Active player panel (~55% width)
-        if (currentPlayer != null) {
-            ActivePlayerPanel(
-                player = currentPlayer,
-                score = scores[currentPlayer.id] ?: 0,
-                legWins = legWins[currentPlayer.id] ?: 0,
-                currentDarts = currentDarts,
-                modifier = Modifier.weight(1.1f).fillMaxHeight()
-            )
-        }
-
-        // Waiting players (~45% width) — animate on player rotation
-        if (waitingPlayers.isNotEmpty()) {
-            AnimatedContent(
-                targetState = waitingPlayers,
-                modifier = Modifier.weight(0.9f).fillMaxHeight(),
-                transitionSpec = {
-                    (slideInVertically { it } + fadeIn()) togetherWith
-                            (slideOutVertically { -it } + fadeOut())
-                },
-                label = "waiting_players"
-            ) { players ->
-                Column(
-                    modifier = Modifier.fillMaxSize(),
-                    verticalArrangement = Arrangement.spacedBy(4.dp)
-                ) {
-                    players.forEach { player ->
-                        WaitingPlayerPanel(
-                            player = player,
-                            score = scores[player.id] ?: 0,
-                            legWins = legWins[player.id] ?: 0,
-                            modifier = Modifier.weight(1f).fillMaxWidth()
-                        )
-                    }
+    AnimatedContent(
+        targetState = orderedPlayers,
+        modifier = modifier,
+        transitionSpec = {
+            (slideInVertically { it } + fadeIn()) togetherWith
+                    (slideOutVertically { -it } + fadeOut())
+        },
+        label = "player_strip"
+    ) { ordered ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 8.dp, vertical = 4.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            ordered.forEachIndexed { index, player ->
+                if (index == 0) {
+                    ActivePlayerPanel(
+                        player = player,
+                        score = scores[player.id] ?: 0,
+                        legWins = legWins[player.id] ?: 0,
+                        currentDarts = currentDarts,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                } else {
+                    WaitingPlayerPanel(
+                        player = player,
+                        score = scores[player.id] ?: 0,
+                        legWins = legWins[player.id] ?: 0,
+                        modifier = Modifier.fillMaxWidth()
+                    )
                 }
             }
         }
