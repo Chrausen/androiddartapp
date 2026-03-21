@@ -49,22 +49,7 @@ fun DartNumpad(
             }
         }
 
-        // Multiplier row (Single / Double / Triple — no Miss here)
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(4.dp)
-        ) {
-            listOf("Single" to 1, "Double" to 2, "Triple" to 3).forEach { (label, mult) ->
-                MultiplierButton(
-                    label = label,
-                    isActive = pendingMultiplier == mult,
-                    onClick = { onMultiplierChange(mult) },
-                    modifier = Modifier.weight(1f)
-                )
-            }
-        }
-
-        // Bottom row: Bull + Miss + Undo
+        // Bull + Miss + Undo row
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(4.dp)
@@ -72,18 +57,18 @@ fun DartNumpad(
             NumpadButton(
                 label = "Bull\n25",
                 onClick = { onDart(25) },
-                modifier = Modifier.weight(3f),
+                modifier = Modifier.weight(1f),
                 enabled = pendingMultiplier != 3
             )
             NumpadButton(
                 label = "Miss",
                 onClick = onMiss,
-                modifier = Modifier.weight(3f),
+                modifier = Modifier.weight(1f),
                 labelColor = Red
             )
             Box(
                 modifier = Modifier
-                    .weight(2f)
+                    .weight(1f)
                     .height(60.dp)
                     .background(Surface3, RoundedCornerShape(8.dp))
                     .clickable(onClick = onUndo),
@@ -105,6 +90,21 @@ fun DartNumpad(
                         color = Amber
                     )
                 }
+            }
+        }
+
+        // Multiplier row (Single / Double / Triple)
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            listOf("Single" to 1, "Double" to 2, "Triple" to 3).forEach { (label, mult) ->
+                MultiplierButton(
+                    label = label,
+                    isActive = pendingMultiplier == mult,
+                    onClick = { onMultiplierChange(mult) },
+                    modifier = Modifier.weight(1f)
+                )
             }
         }
     }

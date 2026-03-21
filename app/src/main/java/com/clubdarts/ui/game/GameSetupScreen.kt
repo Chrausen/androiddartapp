@@ -56,147 +56,149 @@ fun GameSetupScreen(
         ids.mapNotNull { map[it] }
     }
 
-    LazyColumn(
+    Column(
         modifier = Modifier
             .fillMaxSize()
             .background(Background)
-            .padding(horizontal = 16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp),
-        contentPadding = PaddingValues(vertical = 16.dp)
     ) {
-        item {
-            Text(
-                text = "New game",
-                style = MaterialTheme.typography.headlineMedium,
-                color = TextPrimary
-            )
-        }
-
-        // Starting score
-        item {
-            SectionLabel("Starting score")
-            SegmentedRow(
-                options = listOf(201, 301, 401, 501, 701),
-                selected = startScore,
-                onSelect = { startScore = it },
-                label = { it.toString() }
-            )
-        }
-
-        // Checkout rule
-        item {
-            SectionLabel("Checkout rule")
-            SegmentedRow(
-                options = CheckoutRule.values().toList(),
-                selected = checkoutRule,
-                onSelect = { checkoutRule = it },
-                label = { it.name.lowercase().replaceFirstChar { c -> c.uppercaseChar() } }
-            )
-        }
-
-        // Legs
-        item {
-            SectionLabel("Legs to win")
-            SegmentedRow(
-                options = listOf(1, 3, 5, 7, 9),
-                selected = legsToWin,
-                onSelect = { legsToWin = it },
-                label = { it.toString() }
-            )
-        }
-
-        // Players section header
-        item {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text("Players ", style = MaterialTheme.typography.bodyLarge, color = TextSecondary)
-                    Text(
-                        "${selectedPlayers.size} selected",
-                        style = MaterialTheme.typography.bodyLarge,
-                        fontWeight = FontWeight.Bold,
-                        color = TextPrimary
-                    )
-                }
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text("Random order", style = MaterialTheme.typography.labelMedium, color = TextSecondary)
-                    Checkbox(
-                        checked = randomOrder,
-                        onCheckedChange = { randomOrder = it },
-                        colors = CheckboxDefaults.colors(checkedColor = Accent)
-                    )
-                }
-            }
-        }
-
-        // Selected players list
-        itemsIndexed(selectedPlayers) { index, player ->
-            SelectedPlayerRow(
-                player = player,
-                index = index,
-                isFirst = index == 0,
-                randomOrder = randomOrder,
-                onRemove = { selectedPlayers = selectedPlayers.filter { it.id != player.id } }
-            )
-        }
-
-        // Add player button
-        item {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(48.dp)
-                    .border(1.dp, Border2, RoundedCornerShape(10.dp))
-                    .clickable { showPlayerPicker = true },
-                contentAlignment = Alignment.Center
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Default.Add, contentDescription = null, tint = TextSecondary)
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text("Add player", style = MaterialTheme.typography.bodyMedium, color = TextSecondary)
-                }
-            }
-        }
-
-        // Start button
-        item {
-            Button(
-                onClick = {
-                    val orderedPlayers = if (randomOrder) selectedPlayers.shuffled() else selectedPlayers
-                    val config = GameConfig(
-                        startScore = startScore,
-                        checkoutRule = checkoutRule,
-                        legsToWin = legsToWin,
-                        isSolo = orderedPlayers.size == 1,
-                        playerIds = orderedPlayers.map { it.id }
-                    )
-                    gameViewModel.startGame(config)
-                    onStartGame()
-                },
-                enabled = selectedPlayers.isNotEmpty(),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(52.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = Accent,
-                    disabledContainerColor = Surface3,
-                    contentColor = Background,
-                    disabledContentColor = TextTertiary
-                ),
-                shape = RoundedCornerShape(10.dp)
-            ) {
+        LazyColumn(
+            modifier = Modifier
+                .weight(1f)
+                .padding(horizontal = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+            contentPadding = PaddingValues(vertical = 16.dp)
+        ) {
+            item {
                 Text(
-                    text = "Start game",
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.Bold
+                    text = "New game",
+                    style = MaterialTheme.typography.headlineMedium,
+                    color = TextPrimary
                 )
             }
+
+            // Starting score
+            item {
+                SectionLabel("Starting score")
+                SegmentedRow(
+                    options = listOf(201, 301, 401, 501, 701),
+                    selected = startScore,
+                    onSelect = { startScore = it },
+                    label = { it.toString() }
+                )
+            }
+
+            // Checkout rule
+            item {
+                SectionLabel("Checkout rule")
+                SegmentedRow(
+                    options = CheckoutRule.values().toList(),
+                    selected = checkoutRule,
+                    onSelect = { checkoutRule = it },
+                    label = { it.name.lowercase().replaceFirstChar { c -> c.uppercaseChar() } }
+                )
+            }
+
+            // Legs
+            item {
+                SectionLabel("Legs to win")
+                SegmentedRow(
+                    options = listOf(1, 3, 5, 7, 9),
+                    selected = legsToWin,
+                    onSelect = { legsToWin = it },
+                    label = { it.toString() }
+                )
+            }
+
+            // Players section header
+            item {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text("Players ", style = MaterialTheme.typography.bodyLarge, color = TextSecondary)
+                        Text(
+                            "${selectedPlayers.size} selected",
+                            style = MaterialTheme.typography.bodyLarge,
+                            fontWeight = FontWeight.Bold,
+                            color = TextPrimary
+                        )
+                    }
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text("Random order", style = MaterialTheme.typography.labelMedium, color = TextSecondary)
+                        Checkbox(
+                            checked = randomOrder,
+                            onCheckedChange = { randomOrder = it },
+                            colors = CheckboxDefaults.colors(checkedColor = Accent)
+                        )
+                    }
+                }
+            }
+
+            // Selected players list
+            itemsIndexed(selectedPlayers) { index, player ->
+                SelectedPlayerRow(
+                    player = player,
+                    index = index,
+                    isFirst = index == 0,
+                    randomOrder = randomOrder,
+                    onRemove = { selectedPlayers = selectedPlayers.filter { it.id != player.id } }
+                )
+            }
+
+            // Add player button
+            item {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(48.dp)
+                        .border(1.dp, Border2, RoundedCornerShape(10.dp))
+                        .clickable { showPlayerPicker = true },
+                    contentAlignment = Alignment.Center
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Default.Add, contentDescription = null, tint = TextSecondary)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Add player", style = MaterialTheme.typography.bodyMedium, color = TextSecondary)
+                    }
+                }
+            }
         }
 
-        item { Spacer(modifier = Modifier.height(16.dp)) }
+        // Start button — sticky at bottom, always visible
+        Button(
+            onClick = {
+                val orderedPlayers = if (randomOrder) selectedPlayers.shuffled() else selectedPlayers
+                val config = GameConfig(
+                    startScore = startScore,
+                    checkoutRule = checkoutRule,
+                    legsToWin = legsToWin,
+                    isSolo = orderedPlayers.size == 1,
+                    playerIds = orderedPlayers.map { it.id }
+                )
+                gameViewModel.startGame(config)
+                onStartGame()
+            },
+            enabled = selectedPlayers.isNotEmpty(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 12.dp)
+                .height(52.dp),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = Accent,
+                disabledContainerColor = Surface3,
+                contentColor = Background,
+                disabledContentColor = TextTertiary
+            ),
+            shape = RoundedCornerShape(10.dp)
+        ) {
+            Text(
+                text = "Start game",
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.Bold
+            )
+        }
     }
 
     if (showPlayerPicker) {

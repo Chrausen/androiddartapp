@@ -67,7 +67,9 @@ data class GameUiState(
     val setupDefaults: SetupDefaults = SetupDefaults(),
     val errorMessage: String? = null,
     val snackbarMessage: String? = null,
-    val gameSaved: Boolean = false
+    val gameSaved: Boolean = false,
+    val isTtsMuted: Boolean = false,
+    val showHistory: Boolean = false
 )
 
 @HiltViewModel
@@ -98,6 +100,10 @@ class GameViewModel @Inject constructor(
         super.onCleared()
         ttsManager.shutdown()
     }
+
+    fun toggleTtsMute() { _uiState.update { it.copy(isTtsMuted = !it.isTtsMuted) } }
+
+    fun toggleHistory() { _uiState.update { it.copy(showHistory = !it.showHistory) } }
 
     fun loadSetupDefaults() {
         viewModelScope.launch {
@@ -279,12 +285,14 @@ class GameViewModel @Inject constructor(
         val customPhrases = if (!isBust && !isCheckout) {
             ttsScoreSettings.find { it.score == announceTotal }?.phrases ?: emptyList()
         } else emptyList()
-        ttsManager.announce(
-            visitTotal = announceTotal,
-            isBust = isBust,
-            isCheckout = isCheckout,
-            customPhrases = customPhrases
-        )
+        if (!_uiState.value.isTtsMuted) {
+            ttsManager.announce(
+                visitTotal = announceTotal,
+                isBust = isBust,
+                isCheckout = isCheckout,
+                customPhrases = customPhrases
+            )
+        }
 
         // Advance player
         val nextPlayerIndex = (state.currentPlayerIndex + 1) % state.players.size
