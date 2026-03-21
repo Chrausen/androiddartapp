@@ -136,7 +136,7 @@ private fun ActivePlayerPanel(
                     color = if (isBusting) Red else Accent,
                     lineHeight = 46.sp
                 )
-                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                     repeat(3) { i ->
                         DartSlot(dart = currentDarts.getOrNull(i))
                     }
