@@ -16,6 +16,8 @@ import com.clubdarts.ui.game.LiveGameScreen
 import com.clubdarts.ui.history.HistoryScreen
 import com.clubdarts.ui.history.MatchDetailScreen
 import com.clubdarts.ui.players.PlayersScreen
+import com.clubdarts.ui.settings.SettingsScreen
+import com.clubdarts.ui.settings.TtsSettingsScreen
 import com.clubdarts.ui.stats.StatsScreen
 
 @Composable
@@ -126,6 +128,18 @@ fun ClubDartsNavHost() {
             }
             composable("players") {
                 PlayersScreen()
+            }
+            composable("settings") {
+                SettingsScreen(
+                    onNavigateToTtsScores = {
+                        navController.navigate("settings/tts")
+                    }
+                )
+            }
+            composable("settings/tts") {
+                TtsSettingsScreen(
+                    onBack = { navController.popBackStack() }
+                )
             }
         }
     }
