@@ -1,12 +1,19 @@
 package com.clubdarts.ui.game
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -14,6 +21,10 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -50,6 +61,15 @@ fun GameSetupScreen(
     var selectedPlayers by remember { mutableStateOf<List<Player>>(emptyList()) }
     var showPlayerPicker by remember { mutableStateOf(false) }
     var settingsExpanded by remember { mutableStateOf(false) }
+    var draggingIndex by remember { mutableIntStateOf(-1) }
+    var dragAccumulator by remember { mutableFloatStateOf(0f) }
+    var rowHeightPx by remember { mutableIntStateOf(0) }
+    val rowSpacingPx = with(LocalDensity.current) { 16.dp.toPx() }
+    val chevronRotation by animateFloatAsState(
+        targetValue = if (settingsExpanded) 180f else 0f,
+        animationSpec = tween(300),
+        label = "chevron"
+    )
 
     // Load recent players into picker
     val recentPlayers = remember(uiState.setupDefaults.recentPlayerIds, playersState.players) {
@@ -88,31 +108,11 @@ fun GameSetupScreen(
                             interactionSource = remember { MutableInteractionSource() }
                         ) { settingsExpanded = !settingsExpanded }
                 ) {
-                    if (settingsExpanded) {
-                        SectionLabel("Starting score")
-                        SegmentedRow(
-                            options = listOf(201, 301, 401, 501, 701),
-                            selected = startScore,
-                            onSelect = { startScore = it },
-                            label = { it.toString() }
-                        )
-                        Spacer(modifier = Modifier.height(16.dp))
-                        SectionLabel("Checkout rule")
-                        SegmentedRow(
-                            options = CheckoutRule.values().toList(),
-                            selected = checkoutRule,
-                            onSelect = { checkoutRule = it },
-                            label = { it.name.lowercase().replaceFirstChar { c -> c.uppercaseChar() } }
-                        )
-                        Spacer(modifier = Modifier.height(16.dp))
-                        SectionLabel("Legs to win")
-                        SegmentedRow(
-                            options = listOf(1, 3, 5, 7, 9),
-                            selected = legsToWin,
-                            onSelect = { legsToWin = it },
-                            label = { it.toString() }
-                        )
-                    } else {
+                    AnimatedVisibility(
+                        visible = !settingsExpanded,
+                        enter = expandVertically() + fadeIn(),
+                        exit = shrinkVertically() + fadeOut()
+                    ) {
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween
@@ -136,6 +136,37 @@ fun GameSetupScreen(
                             }
                         }
                     }
+                    AnimatedVisibility(
+                        visible = settingsExpanded,
+                        enter = expandVertically() + fadeIn(),
+                        exit = shrinkVertically() + fadeOut()
+                    ) {
+                        Column {
+                            SectionLabel("Starting score")
+                            SegmentedRow(
+                                options = listOf(201, 301, 401, 501, 701),
+                                selected = startScore,
+                                onSelect = { startScore = it },
+                                label = { it.toString() }
+                            )
+                            Spacer(modifier = Modifier.height(16.dp))
+                            SectionLabel("Checkout rule")
+                            SegmentedRow(
+                                options = CheckoutRule.values().toList(),
+                                selected = checkoutRule,
+                                onSelect = { checkoutRule = it },
+                                label = { it.name.lowercase().replaceFirstChar { c -> c.uppercaseChar() } }
+                            )
+                            Spacer(modifier = Modifier.height(16.dp))
+                            SectionLabel("Legs to win")
+                            SegmentedRow(
+                                options = listOf(1, 3, 5, 7, 9),
+                                selected = legsToWin,
+                                onSelect = { legsToWin = it },
+                                label = { it.toString() }
+                            )
+                        }
+                    }
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -143,10 +174,12 @@ fun GameSetupScreen(
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
-                            imageVector = if (settingsExpanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
+                            imageVector = Icons.Default.KeyboardArrowDown,
                             contentDescription = if (settingsExpanded) "Collapse settings" else "Expand settings",
                             tint = TextTertiary,
-                            modifier = Modifier.size(28.dp)
+                            modifier = Modifier
+                                .size(28.dp)
+                                .rotate(chevronRotation)
                         )
                     }
                 }
@@ -180,14 +213,40 @@ fun GameSetupScreen(
             }
 
             // Selected players list
-            itemsIndexed(selectedPlayers) { index, player ->
-                SelectedPlayerRow(
-                    player = player,
-                    index = index,
-                    isFirst = index == 0,
-                    randomOrder = randomOrder,
-                    onRemove = { selectedPlayers = selectedPlayers.filter { it.id != player.id } }
-                )
+            item {
+                Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                    selectedPlayers.forEachIndexed { index, player ->
+                        SelectedPlayerRow(
+                            player = player,
+                            index = index,
+                            isFirst = index == 0,
+                            randomOrder = randomOrder,
+                            onRemove = { selectedPlayers = selectedPlayers.filter { it.id != player.id } },
+                            onSizeChanged = { h -> if (rowHeightPx == 0) rowHeightPx = h },
+                            onDragStart = { draggingIndex = index; dragAccumulator = 0f },
+                            onDrag = { dy ->
+                                dragAccumulator += dy
+                                val threshold = rowHeightPx + rowSpacingPx
+                                var target = draggingIndex
+                                var remaining = dragAccumulator
+                                while (target < selectedPlayers.size - 1 && remaining >= threshold / 2) {
+                                    target++; remaining -= threshold
+                                }
+                                while (target > 0 && remaining <= -threshold / 2) {
+                                    target--; remaining += threshold
+                                }
+                                if (target != draggingIndex) {
+                                    val newList = selectedPlayers.toMutableList()
+                                    newList.add(target, newList.removeAt(draggingIndex))
+                                    selectedPlayers = newList
+                                    draggingIndex = target
+                                    dragAccumulator = remaining
+                                }
+                            },
+                            onDragEnd = { draggingIndex = -1; dragAccumulator = 0f }
+                        )
+                    }
+                }
             }
 
             // Add player button
@@ -312,11 +371,20 @@ private fun SelectedPlayerRow(
     index: Int,
     isFirst: Boolean,
     randomOrder: Boolean,
-    onRemove: () -> Unit
+    onRemove: () -> Unit,
+    onSizeChanged: (Int) -> Unit = {},
+    onDragStart: () -> Unit = {},
+    onDrag: (Float) -> Unit = {},
+    onDragEnd: () -> Unit = {}
 ) {
+    val currentOnDragStart by rememberUpdatedState(onDragStart)
+    val currentOnDrag by rememberUpdatedState(onDrag)
+    val currentOnDragEnd by rememberUpdatedState(onDragEnd)
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .onSizeChanged { onSizeChanged(it.height) }
             .background(
                 color = if (isFirst) AccentDim else Surface2,
                 shape = RoundedCornerShape(10.dp)
@@ -332,7 +400,19 @@ private fun SelectedPlayerRow(
                 imageVector = Icons.Default.DragHandle,
                 contentDescription = "Drag",
                 tint = TextTertiary,
-                modifier = Modifier.size(20.dp)
+                modifier = Modifier
+                    .size(20.dp)
+                    .pointerInput(Unit) {
+                        detectDragGestures(
+                            onDragStart = { currentOnDragStart() },
+                            onDrag = { change, amount ->
+                                change.consume()
+                                currentOnDrag(amount.y)
+                            },
+                            onDragEnd = { currentOnDragEnd() },
+                            onDragCancel = { currentOnDragEnd() }
+                        )
+                    }
             )
             Spacer(modifier = Modifier.width(8.dp))
         }
