@@ -21,17 +21,19 @@ sealed class BottomNavItem(
     val label: String,
     val icon: ImageVector
 ) {
-    object Game    : BottomNavItem("game",        "Game",    Icons.Default.RadioButtonUnchecked)
-    object Stats   : BottomNavItem("stats",       "Stats",   Icons.Default.BarChart)
-    object History : BottomNavItem("history",     "History", Icons.Default.History)
-    object Players : BottomNavItem("players",     "Players", Icons.Default.Group)
+    object Game     : BottomNavItem("game",     "Game",     Icons.Default.RadioButtonUnchecked)
+    object Stats    : BottomNavItem("stats",    "Stats",    Icons.Default.BarChart)
+    object History  : BottomNavItem("history",  "History",  Icons.Default.History)
+    object Players  : BottomNavItem("players",  "Players",  Icons.Default.Group)
+    object Settings : BottomNavItem("settings", "Settings", Icons.Default.Settings)
 }
 
 val bottomNavItems = listOf(
     BottomNavItem.Game,
     BottomNavItem.Stats,
     BottomNavItem.History,
-    BottomNavItem.Players
+    BottomNavItem.Players,
+    BottomNavItem.Settings
 )
 
 @Composable

@@ -12,6 +12,7 @@ object SettingsKeys {
     const val LAST_LEGS_TO_WIN   = "last_legs_to_win"
     const val LAST_RANDOM_ORDER  = "last_random_order"
     const val RECENT_PLAYER_IDS  = "recent_player_ids"  // comma-separated, max 5
+    const val TTS_SCORE_PHRASES  = "tts_score_phrases"  // JSON array
 }
 
 object SettingsDefaults {
@@ -21,3 +22,9 @@ object SettingsDefaults {
     const val RANDOM_ORDER  = "false"
     const val RECENT_IDS    = ""
 }
+
+/** Words spoken before/after the score number for a custom TTS phrase. */
+data class TtsPhrase(val before: String, val after: String)
+
+/** All custom phrases configured for a given score value. */
+data class TtsScoreSetting(val score: Int, val phrases: List<TtsPhrase>)

@@ -82,10 +82,16 @@ class GameViewModel @Inject constructor(
     val uiState: StateFlow<GameUiState> = _uiState.asStateFlow()
 
     private val ttsManager = TtsManager(application)
+    private var ttsScoreSettings: List<TtsScoreSetting> = emptyList()
 
     init {
         ttsManager.init()
         loadSetupDefaults()
+        viewModelScope.launch {
+            settingsRepository.observeTtsScoreSettings().collect { settings ->
+                ttsScoreSettings = settings
+            }
+        }
     }
 
     override fun onCleared() {
@@ -269,10 +275,15 @@ class GameViewModel @Inject constructor(
         val isCheckout = !isBust && newScore == 0
 
         // TTS
+        val announceTotal = if (isBust) 0 else effectiveTotal
+        val customPhrases = if (!isBust && !isCheckout) {
+            ttsScoreSettings.find { it.score == announceTotal }?.phrases ?: emptyList()
+        } else emptyList()
         ttsManager.announce(
-            visitTotal = if (isBust) 0 else effectiveTotal,
+            visitTotal = announceTotal,
             isBust = isBust,
-            isCheckout = isCheckout
+            isCheckout = isCheckout,
+            customPhrases = customPhrases
         )
 
         // Advance player

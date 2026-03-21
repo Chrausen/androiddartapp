@@ -5,8 +5,12 @@ import com.clubdarts.data.model.AppSettings
 import com.clubdarts.data.model.CheckoutRule
 import com.clubdarts.data.model.SettingsDefaults
 import com.clubdarts.data.model.SettingsKeys
+import com.clubdarts.data.model.TtsPhrase
+import com.clubdarts.data.model.TtsScoreSetting
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import org.json.JSONArray
+import org.json.JSONObject
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -56,4 +60,58 @@ class SettingsRepository @Inject constructor(
         val trimmed = current.take(5)
         set(SettingsKeys.RECENT_PLAYER_IDS, trimmed.joinToString(","))
     }
+
+    suspend fun getTtsScoreSettings(): List<TtsScoreSetting> {
+        val raw = get(SettingsKeys.TTS_SCORE_PHRASES, "[]")
+        return try {
+            val arr = JSONArray(raw)
+            (0 until arr.length()).map { i ->
+                val obj = arr.getJSONObject(i)
+                val phrasesArr = obj.getJSONArray("phrases")
+                val phrases = (0 until phrasesArr.length()).map { j ->
+                    val p = phrasesArr.getJSONObject(j)
+                    TtsPhrase(before = p.optString("before"), after = p.optString("after"))
+                }
+                TtsScoreSetting(score = obj.getInt("score"), phrases = phrases)
+            }
+        } catch (e: Exception) {
+            emptyList()
+        }
+    }
+
+    suspend fun saveTtsScoreSettings(settings: List<TtsScoreSetting>) {
+        val arr = JSONArray()
+        settings.forEach { setting ->
+            val obj = JSONObject()
+            obj.put("score", setting.score)
+            val phrasesArr = JSONArray()
+            setting.phrases.forEach { phrase ->
+                val p = JSONObject()
+                p.put("before", phrase.before)
+                p.put("after", phrase.after)
+                phrasesArr.put(p)
+            }
+            obj.put("phrases", phrasesArr)
+            arr.put(obj)
+        }
+        set(SettingsKeys.TTS_SCORE_PHRASES, arr.toString())
+    }
+
+    fun observeTtsScoreSettings(): Flow<List<TtsScoreSetting>> =
+        observe(SettingsKeys.TTS_SCORE_PHRASES, "[]").map { raw ->
+            try {
+                val arr = JSONArray(raw)
+                (0 until arr.length()).map { i ->
+                    val obj = arr.getJSONObject(i)
+                    val phrasesArr = obj.getJSONArray("phrases")
+                    val phrases = (0 until phrasesArr.length()).map { j ->
+                        val p = phrasesArr.getJSONObject(j)
+                        TtsPhrase(before = p.optString("before"), after = p.optString("after"))
+                    }
+                    TtsScoreSetting(score = obj.getInt("score"), phrases = phrases)
+                }
+            } catch (e: Exception) {
+                emptyList()
+            }
+        }
 }
