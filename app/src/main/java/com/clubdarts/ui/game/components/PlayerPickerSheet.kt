@@ -68,7 +68,9 @@ fun PlayerPickerSheet(
             )
             Spacer(modifier = Modifier.height(12.dp))
 
-            val filteredAll = if (searchQuery.isBlank()) allPlayers
+            val recentIds = recentPlayers.map { it.id }.toSet()
+            val filteredAll = if (searchQuery.isBlank())
+                allPlayers.filter { it.id !in recentIds }
             else allPlayers.filter { it.name.contains(searchQuery, ignoreCase = true) }
 
             LazyColumn(modifier = Modifier.weight(1f)) {
