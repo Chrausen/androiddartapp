@@ -1,6 +1,7 @@
 package com.clubdarts.ui.game
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
@@ -71,6 +72,9 @@ fun GameSetupScreen(
     var dragOffsetY by remember { mutableFloatStateOf(0f) }
     var rowHeightPx by remember { mutableIntStateOf(0) }
     val rowSpacingPx = with(LocalDensity.current) { 16.dp.toPx() }
+    val coroutineScope = rememberCoroutineScope()
+    val returnAnim = remember { Animatable(0f) }
+    var returningPlayerId by remember { mutableStateOf<Long?>(null) }
 
     // Restore selected players when returning to this screen after a tab switch
     LaunchedEffect(uiState.setupSelectedPlayerIds, playersState.players) {
@@ -243,47 +247,70 @@ fun GameSetupScreen(
 
                 Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
                     selectedPlayers.forEachIndexed { index, player ->
-                        val isDragging = index == draggingIndex
-                        val targetOffset = when {
-                            draggingIndex < 0 -> 0f
-                            isDragging -> 0f
-                            draggingIndex < dropTargetIndex && index in (draggingIndex + 1..dropTargetIndex) -> -rowTotal
-                            draggingIndex > dropTargetIndex && index in (dropTargetIndex..draggingIndex - 1) -> rowTotal
-                            else -> 0f
-                        }
-                        val animatedOffset by animateFloatAsState(
-                            targetValue = targetOffset,
-                            animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
-                            label = "item_offset_$index"
-                        )
-                        val visualOffset = if (isDragging) dragOffsetY else animatedOffset
-
-                        SelectedPlayerRow(
-                            modifier = Modifier
-                                .zIndex(if (isDragging) 1f else 0f)
-                                .offset { IntOffset(0, visualOffset.roundToInt()) },
-                            isDragging = isDragging,
-                            player = player,
-                            index = index,
-                            isFirst = index == 0,
-                            randomOrder = randomOrder,
-                            onRemove = { setPlayers(selectedPlayers.filter { it.id != player.id }) },
-                            onSizeChanged = { h -> if (rowHeightPx == 0) rowHeightPx = h },
-                            onDragStart = { draggingIndex = index; dragOffsetY = 0f },
-                            onDrag = { dy -> dragOffsetY += dy },
-                            onDragEnd = {
-                                val rowTotalEnd = (rowHeightPx + rowSpacingPx).takeIf { it > 0f } ?: 80f
-                                val target = (draggingIndex + (dragOffsetY / rowTotalEnd).roundToInt())
-                                    .coerceIn(0, selectedPlayers.size - 1)
-                                if (target != draggingIndex) {
-                                    val newList = selectedPlayers.toMutableList()
-                                    newList.add(target, newList.removeAt(draggingIndex))
-                                    setPlayers(newList)
-                                }
-                                draggingIndex = -1
-                                dragOffsetY = 0f
+                        key(player.id) {
+                            val isDragging = index == draggingIndex
+                            val isReturning = player.id == returningPlayerId
+                            val targetOffset = when {
+                                draggingIndex < 0 -> 0f
+                                isDragging -> 0f
+                                draggingIndex < dropTargetIndex && index in (draggingIndex + 1..dropTargetIndex) -> -rowTotal
+                                draggingIndex > dropTargetIndex && index in (dropTargetIndex..draggingIndex - 1) -> rowTotal
+                                else -> 0f
                             }
-                        )
+                            val animatedOffset by animateFloatAsState(
+                                targetValue = targetOffset,
+                                animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
+                                label = "item_offset"
+                            )
+                            val visualOffset = when {
+                                isDragging -> dragOffsetY
+                                isReturning -> returnAnim.value
+                                else -> animatedOffset
+                            }
+
+                            SelectedPlayerRow(
+                                modifier = Modifier
+                                    .zIndex(if (isDragging) 1f else 0f)
+                                    .offset { IntOffset(0, visualOffset.roundToInt()) },
+                                isDragging = isDragging,
+                                player = player,
+                                index = index,
+                                isFirst = index == 0,
+                                randomOrder = randomOrder,
+                                onRemove = { setPlayers(selectedPlayers.filter { it.id != player.id }) },
+                                onSizeChanged = { h -> if (rowHeightPx == 0) rowHeightPx = h },
+                                onDragStart = { draggingIndex = index; dragOffsetY = 0f },
+                                onDrag = { dy -> dragOffsetY += dy },
+                                onDragEnd = {
+                                    val rowTotalEnd = (rowHeightPx + rowSpacingPx).takeIf { it > 0f } ?: 80f
+                                    val shift = (dragOffsetY / rowTotalEnd).roundToInt()
+                                    val target = (draggingIndex + shift)
+                                        .coerceIn(0, selectedPlayers.size - 1)
+                                    // Remainder: how far the card is from its new slot's position
+                                    val remainder = dragOffsetY - shift * rowTotalEnd
+                                    val droppedId = selectedPlayers.getOrNull(draggingIndex)?.id
+                                    if (target != draggingIndex) {
+                                        val newList = selectedPlayers.toMutableList()
+                                        newList.add(target, newList.removeAt(draggingIndex))
+                                        setPlayers(newList)
+                                    }
+                                    draggingIndex = -1
+                                    dragOffsetY = 0f
+                                    // Animate the card from its visual drop position to its slot
+                                    if (droppedId != null) {
+                                        returningPlayerId = droppedId
+                                        coroutineScope.launch {
+                                            returnAnim.snapTo(remainder)
+                                            returnAnim.animateTo(
+                                                0f,
+                                                spring(stiffness = Spring.StiffnessMedium)
+                                            )
+                                            returningPlayerId = null
+                                        }
+                                    }
+                                }
+                            )
+                        }
                     }
                 }
             }
