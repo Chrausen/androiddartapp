@@ -435,6 +435,8 @@ class GameViewModel @Inject constructor(
         }
     }
 
+    fun abortGame() = resetToSetup()
+
     fun resetToSetup() {
         _uiState.update { it.copy(
             screen = GameScreen.SETUP,

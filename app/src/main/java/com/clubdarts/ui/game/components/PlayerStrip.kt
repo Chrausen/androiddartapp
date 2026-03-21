@@ -1,7 +1,10 @@
 package com.clubdarts.ui.game.components
 
-import androidx.compose.animation.*
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
@@ -48,8 +51,8 @@ fun PlayerStrip(
                     targetState = player,
                     label = "player_slot_$index",
                     transitionSpec = {
-                        (slideInVertically(tween(250)) { it / 3 } + fadeIn(tween(250))) togetherWith
-                                (slideOutVertically(tween(250)) { -it / 3 } + fadeOut(tween(200)))
+                        slideInVertically(tween(140)) { it / 3 } togetherWith
+                                slideOutVertically(tween(140)) { -it / 3 }
                     }
                 ) { p ->
                     if (isActive) {
