@@ -29,28 +29,6 @@ fun DartNumpad(
         modifier = modifier.padding(horizontal = 8.dp),
         verticalArrangement = Arrangement.spacedBy(4.dp)
     ) {
-        // Multiplier row
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(4.dp)
-        ) {
-            listOf("Single" to 1, "Double" to 2, "Triple" to 3).forEach { (label, mult) ->
-                MultiplierButton(
-                    label = label,
-                    isActive = pendingMultiplier == mult,
-                    onClick = { onMultiplierChange(mult) },
-                    modifier = Modifier.weight(1f)
-                )
-            }
-            MultiplierButton(
-                label = "Miss",
-                isActive = false,
-                onClick = onMiss,
-                modifier = Modifier.weight(1f),
-                isMiss = true
-            )
-        }
-
         // Number grid 1–20
         val numbers = (1..20).toList()
         val rows = numbers.chunked(5)
@@ -70,16 +48,39 @@ fun DartNumpad(
             }
         }
 
-        // Bottom row: 25 (Bull) + Undo
+        // Bull row
+        NumpadButton(
+            label = "Bull\n25",
+            onClick = { onDart(25) },
+            modifier = Modifier.fillMaxWidth(),
+            enabled = pendingMultiplier != 3
+        )
+
+        // Multiplier row (Single / Double / Triple — no Miss here)
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            listOf("Single" to 1, "Double" to 2, "Triple" to 3).forEach { (label, mult) ->
+                MultiplierButton(
+                    label = label,
+                    isActive = pendingMultiplier == mult,
+                    onClick = { onMultiplierChange(mult) },
+                    modifier = Modifier.weight(1f)
+                )
+            }
+        }
+
+        // Bottom row: Miss + Undo
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(4.dp)
         ) {
             NumpadButton(
-                label = "Bull\n25",
-                onClick = { onDart(25) },
+                label = "Miss",
+                onClick = onMiss,
                 modifier = Modifier.weight(3f),
-                enabled = pendingMultiplier != 3
+                labelColor = Red
             )
             Box(
                 modifier = Modifier
@@ -146,7 +147,8 @@ private fun NumpadButton(
     label: String,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
-    enabled: Boolean = true
+    enabled: Boolean = true,
+    labelColor: Color = Color.Unspecified
 ) {
     Box(
         modifier = modifier
@@ -163,7 +165,11 @@ private fun NumpadButton(
             fontSize = 18.sp,
             fontWeight = FontWeight.Medium,
             fontFamily = DmMono,
-            color = if (enabled) TextPrimary else TextTertiary
+            color = when {
+                !enabled         -> TextTertiary
+                labelColor != Color.Unspecified -> labelColor
+                else             -> TextPrimary
+            }
         )
     }
 }

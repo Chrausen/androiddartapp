@@ -32,6 +32,7 @@ fun VisitHistory(
             Text("D2", style = MaterialTheme.typography.labelSmall, color = TextTertiary, modifier = Modifier.weight(1f), textAlign = TextAlign.Center)
             Text("D3", style = MaterialTheme.typography.labelSmall, color = TextTertiary, modifier = Modifier.weight(1f), textAlign = TextAlign.Center)
             Text("Total", style = MaterialTheme.typography.labelSmall, color = TextTertiary, modifier = Modifier.weight(1f), textAlign = TextAlign.End)
+            Text("Left", style = MaterialTheme.typography.labelSmall, color = TextTertiary, modifier = Modifier.weight(1f), textAlign = TextAlign.End)
         }
         HorizontalDivider(color = Border)
 
@@ -93,6 +94,16 @@ private fun VisitRow(visit: VisitRecord) {
                 textAlign = TextAlign.End
             )
         }
+        // Left (score remaining after this visit)
+        Text(
+            text = visit.scoreAfterVisit.toString(),
+            fontSize = 13.sp,
+            fontFamily = DmMono,
+            fontWeight = FontWeight.SemiBold,
+            color = TextTertiary,
+            modifier = Modifier.weight(1f),
+            textAlign = TextAlign.End
+        )
     }
 }
 

@@ -87,6 +87,11 @@ class GameRepository @Inject constructor(
         gameDao.updateGame(game.copy(winnerId = winnerId, finishedAt = System.currentTimeMillis()))
     }
 
+    suspend fun deleteGame(gameId: Long) {
+        val game = gameDao.getGameById(gameId) ?: return
+        gameDao.deleteGame(game)
+    }
+
     suspend fun getFullGameDetail(gameId: Long): GameDetail? {
         val game = gameDao.getGameById(gameId) ?: return null
         val gamePlayers = gameDao.getGamePlayers(gameId)

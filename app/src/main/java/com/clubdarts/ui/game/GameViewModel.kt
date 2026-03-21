@@ -37,7 +37,8 @@ data class VisitRecord(
     val dart2: DartInput?,
     val dart3: DartInput?,
     val total: Int,
-    val isBust: Boolean
+    val isBust: Boolean,
+    val scoreAfterVisit: Int
 )
 
 data class SetupDefaults(
@@ -65,7 +66,8 @@ data class GameUiState(
     val checkoutHint: String? = null,
     val setupDefaults: SetupDefaults = SetupDefaults(),
     val errorMessage: String? = null,
-    val snackbarMessage: String? = null
+    val snackbarMessage: String? = null,
+    val gameSaved: Boolean = false
 )
 
 @HiltViewModel
@@ -217,6 +219,9 @@ class GameViewModel @Inject constructor(
             effectiveTotal = visitTotal
         }
 
+        // Compute new score (needed for both VisitRecord and score map)
+        val newScore = if (isBust) remaining else remaining - effectiveTotal
+
         // Build visit record
         val visitRecord = VisitRecord(
             playerId = currentPlayer.id,
@@ -225,7 +230,8 @@ class GameViewModel @Inject constructor(
             dart2 = darts.getOrNull(1),
             dart3 = darts.getOrNull(2),
             total = if (isBust) 0 else effectiveTotal,
-            isBust = isBust
+            isBust = isBust,
+            scoreAfterVisit = newScore
         )
 
         // Persist throw to DB
@@ -256,8 +262,7 @@ class GameViewModel @Inject constructor(
             }
         }
 
-        // Update scores
-        val newScore = if (isBust) remaining else remaining - effectiveTotal
+        // newScore already computed above
         val newScores = state.scores.toMutableMap().also { it[currentPlayer.id] = newScore }
 
         // Check if leg won
@@ -399,7 +404,7 @@ class GameViewModel @Inject constructor(
                 // Check if game is won
                 val legsWon = newLegWins[winnerId] ?: 0
                 if (legsWon >= config.legsToWin) {
-                    gameRepository.finishGame(gameId, winnerId)
+                    // Don't auto-save — the user will choose to save on the result screen.
                     _uiState.update { it.copy(
                         screen = GameScreen.RESULT,
                         legWins = newLegWins,
@@ -436,7 +441,34 @@ class GameViewModel @Inject constructor(
         }
     }
 
-    fun abortGame() = resetToSetup()
+    fun saveGame() {
+        viewModelScope.launch {
+            val state = _uiState.value
+            val gameId = state.gameId ?: return@launch
+            val winnerId = state.winnerId ?: return@launch
+            gameRepository.finishGame(gameId, winnerId)
+            _uiState.update { it.copy(gameSaved = true) }
+        }
+    }
+
+    fun discardGame() {
+        viewModelScope.launch {
+            val state = _uiState.value
+            if (!state.gameSaved) {
+                val gameId = state.gameId ?: return@launch
+                gameRepository.deleteGame(gameId)
+            }
+            resetToSetup()
+        }
+    }
+
+    fun abortGame() {
+        viewModelScope.launch {
+            val gameId = _uiState.value.gameId
+            if (gameId != null) gameRepository.deleteGame(gameId)
+            resetToSetup()
+        }
+    }
 
     fun resetToSetup() {
         _uiState.update { it.copy(
@@ -453,7 +485,8 @@ class GameViewModel @Inject constructor(
             gameId = null,
             legId = null,
             winnerId = null,
-            checkoutHint = null
+            checkoutHint = null,
+            gameSaved = false
         )}
         loadSetupDefaults()
     }

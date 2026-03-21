@@ -142,43 +142,11 @@ fun LiveGameScreen(
         )
     }
 
-    // Game won — let the player choose what to do next
-    if (uiState.screen == GameScreen.RESULT) {
-        val winner = uiState.players.firstOrNull { it.id == uiState.winnerId }
-        AlertDialog(
-            onDismissRequest = {},
-            containerColor = Surface2,
-            title = {
-                Text(
-                    text = "${winner?.name ?: "Player"} wins!",
-                    style = MaterialTheme.typography.titleMedium,
-                    color = Accent
-                )
-            },
-            text = {
-                Text(
-                    "Save the game to history or go straight back to setup.",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = TextSecondary
-                )
-            },
-            confirmButton = {
-                Button(
-                    onClick = onGameFinished,
-                    colors = ButtonDefaults.buttonColors(containerColor = Accent)
-                ) {
-                    Text("Save & view results", color = Background)
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = {
-                    viewModel.abortGame()
-                    onBack()
-                }) {
-                    Text("Back to setup", color = TextSecondary)
-                }
-            }
-        )
+    // Navigate to result screen automatically when the game is won
+    LaunchedEffect(uiState.screen) {
+        if (uiState.screen == GameScreen.RESULT) {
+            onGameFinished()
+        }
     }
 }
 

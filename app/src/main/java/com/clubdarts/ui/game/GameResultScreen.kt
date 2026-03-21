@@ -1,5 +1,6 @@
 package com.clubdarts.ui.game
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -25,6 +26,13 @@ fun GameResultScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val winner = uiState.players.firstOrNull { it.id == uiState.winnerId }
+    val gameSaved = uiState.gameSaved
+
+    // Back-press discards unsaved game and exits to setup
+    BackHandler {
+        viewModel.discardGame()
+        onDone()
+    }
 
     LazyColumn(
         modifier = Modifier
@@ -114,21 +122,42 @@ fun GameResultScreen(
         // Action buttons
         item {
             Spacer(modifier = Modifier.height(8.dp))
+
+            // Save to history (shown until saved)
+            if (!gameSaved) {
+                Button(
+                    onClick = { viewModel.saveGame() },
+                    modifier = Modifier.fillMaxWidth().height(52.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = Accent),
+                    shape = RoundedCornerShape(10.dp)
+                ) {
+                    Text("Save to history", fontWeight = FontWeight.Bold, color = Background)
+                }
+                Spacer(modifier = Modifier.height(8.dp))
+            } else {
+                Text(
+                    text = "Saved to history",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = TextTertiary
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+            }
+
             Button(
                 onClick = {
-                    viewModel.resetToSetup()
+                    viewModel.discardGame()
                     onNewGame()
                 },
                 modifier = Modifier.fillMaxWidth().height(52.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = Accent),
+                colors = ButtonDefaults.buttonColors(containerColor = Surface2),
                 shape = RoundedCornerShape(10.dp)
             ) {
-                Text("New game", fontWeight = FontWeight.Bold, color = Background)
+                Text("New game", fontWeight = FontWeight.Bold, color = TextPrimary)
             }
             Spacer(modifier = Modifier.height(8.dp))
             OutlinedButton(
                 onClick = {
-                    viewModel.resetToSetup()
+                    viewModel.discardGame()
                     onDone()
                 },
                 modifier = Modifier.fillMaxWidth().height(52.dp),
