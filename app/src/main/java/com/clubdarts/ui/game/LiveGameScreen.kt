@@ -244,17 +244,18 @@ private fun SlashedIconButton(
     contentDescription: String?,
     onClick: () -> Unit
 ) {
+    val tint = if (slashed) TextTertiary else TextSecondary
     IconButton(onClick = onClick) {
         Box(contentAlignment = Alignment.Center) {
             Icon(
                 imageVector = icon,
                 contentDescription = contentDescription,
-                tint = TextSecondary
+                tint = tint
             )
             if (slashed) {
                 Canvas(modifier = Modifier.size(24.dp)) {
                     drawLine(
-                        color = TextSecondary,
+                        color = tint,
                         start = Offset(size.width * 0.2f, size.height * 0.8f),
                         end = Offset(size.width * 0.8f, size.height * 0.2f),
                         strokeWidth = 2.dp.toPx(),
