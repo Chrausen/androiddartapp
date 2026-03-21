@@ -4,8 +4,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Undo
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -23,7 +21,6 @@ fun DartNumpad(
     onMultiplierChange: (Int) -> Unit,
     onDart: (Int) -> Unit,
     onMiss: () -> Unit,
-    onUndo: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -49,7 +46,7 @@ fun DartNumpad(
             }
         }
 
-        // Bull + Miss + Undo row
+        // Bull + Miss row
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(4.dp)
@@ -66,43 +63,18 @@ fun DartNumpad(
                 modifier = Modifier.weight(1f),
                 labelColor = Red
             )
-            Box(
-                modifier = Modifier
-                    .weight(1f)
-                    .height(60.dp)
-                    .background(Surface3, RoundedCornerShape(8.dp))
-                    .clickable(onClick = onUndo),
-                contentAlignment = Alignment.Center
-            ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(4.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Undo,
-                        contentDescription = "Undo",
-                        tint = Amber,
-                        modifier = Modifier.size(18.dp)
-                    )
-                    Text(
-                        text = "Undo",
-                        style = MaterialTheme.typography.labelMedium,
-                        color = Amber
-                    )
-                }
-            }
         }
 
-        // Multiplier row (Single / Double / Triple)
+        // Multiplier row (Double / Triple — Single is default when neither is active)
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(4.dp)
         ) {
-            listOf("Single" to 1, "Double" to 2, "Triple" to 3).forEach { (label, mult) ->
+            listOf("Double" to 2, "Triple" to 3).forEach { (label, mult) ->
                 MultiplierButton(
                     label = label,
                     isActive = pendingMultiplier == mult,
-                    onClick = { onMultiplierChange(mult) },
+                    onClick = { onMultiplierChange(if (pendingMultiplier == mult) 1 else mult) },
                     modifier = Modifier.weight(1f)
                 )
             }

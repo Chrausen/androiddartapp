@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.History
+import androidx.compose.material.icons.filled.Undo
 import androidx.compose.material.icons.filled.VolumeUp
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -78,6 +79,7 @@ fun LiveGameScreen(
 
             // Checkout hint bar — always visible so the numpad never moves.
             // Shows the suggested finish path when in checkout range, "—" otherwise.
+            // Undo button lives here to keep the numpad clean.
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -100,6 +102,17 @@ fun LiveGameScreen(
                     color = if (uiState.checkoutHint != null) Green else TextTertiary,
                     modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp)
                 )
+                IconButton(
+                    onClick = { viewModel.undoLastDart() },
+                    modifier = Modifier.padding(horizontal = 4.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Undo,
+                        contentDescription = "Undo",
+                        tint = Amber,
+                        modifier = Modifier.size(18.dp)
+                    )
+                }
             }
 
             // Numpad — fixed position, never moves
@@ -108,7 +121,6 @@ fun LiveGameScreen(
                 onMultiplierChange = { viewModel.setMultiplier(it) },
                 onDart = { viewModel.recordDart(it) },
                 onMiss = { viewModel.recordMiss() },
-                onUndo = { viewModel.undoLastDart() },
                 modifier = Modifier.fillMaxWidth()
             )
 
