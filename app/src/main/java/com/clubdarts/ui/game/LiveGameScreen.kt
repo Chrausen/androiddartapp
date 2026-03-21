@@ -46,10 +46,9 @@ fun LiveGameScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .background(Background)
-                .padding(padding),
-            verticalArrangement = Arrangement.SpaceBetween
+                .padding(padding)
         ) {
-            // Player strip
+            // Player strip pinned at top
             PlayerStrip(
                 players = uiState.players,
                 currentPlayerIndex = uiState.currentPlayerIndex,
@@ -59,34 +58,35 @@ fun LiveGameScreen(
                 modifier = Modifier.fillMaxWidth()
             )
 
-            // Checkout hint bar
-            if (uiState.checkoutHint != null) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 8.dp, vertical = 4.dp)
-                        .background(Surface2),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Text(
-                        text = "Checkout hint",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = TextTertiary,
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp)
-                    )
-                    Text(
-                        text = uiState.checkoutHint!!,
-                        style = MaterialTheme.typography.labelMedium,
-                        fontFamily = DmMono,
-                        fontWeight = FontWeight.Medium,
-                        color = Green,
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp)
-                    )
-                }
+            // Flexible gap — pushes bottom section down
+            Spacer(modifier = Modifier.weight(1f))
+
+            // Checkout hint bar — always occupies space so numpad never moves
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 8.dp, vertical = 4.dp)
+                    .background(Surface2),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(
+                    text = "Checkout hint",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = if (uiState.checkoutHint != null) TextTertiary else androidx.compose.ui.graphics.Color.Transparent,
+                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp)
+                )
+                Text(
+                    text = uiState.checkoutHint ?: "",
+                    style = MaterialTheme.typography.labelMedium,
+                    fontFamily = DmMono,
+                    fontWeight = FontWeight.Medium,
+                    color = Green,
+                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp)
+                )
             }
 
-            // Numpad
+            // Numpad — fixed position, never moves
             DartNumpad(
                 pendingMultiplier = uiState.pendingMultiplier,
                 onMultiplierChange = { viewModel.setMultiplier(it) },
@@ -96,7 +96,7 @@ fun LiveGameScreen(
                 modifier = Modifier.fillMaxWidth()
             )
 
-            // Visit history
+            // Visit history — fixed 3-row height, never shifts the numpad
             VisitHistory(
                 visits = uiState.visitHistory,
                 modifier = Modifier

@@ -35,10 +35,16 @@ fun VisitHistory(
         }
         HorizontalDivider(color = Border)
 
-        visits.take(4).forEach { visit ->
-            VisitRow(visit = visit)
-        }
+        // Always show exactly 3 rows so height never changes
+        val displayed = visits.take(3)
+        displayed.forEach { visit -> VisitRow(visit = visit) }
+        repeat(3 - displayed.size) { VisitPlaceholderRow() }
     }
+}
+
+@Composable
+private fun VisitPlaceholderRow() {
+    Spacer(modifier = Modifier.fillMaxWidth().height(28.dp))
 }
 
 @Composable
@@ -46,6 +52,7 @@ private fun VisitRow(visit: VisitRecord) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .height(28.dp)
             .background(
                 color = if (visit.isBust) Red.copy(alpha = 0.12f) else androidx.compose.ui.graphics.Color.Transparent,
                 shape = RoundedCornerShape(4.dp)
