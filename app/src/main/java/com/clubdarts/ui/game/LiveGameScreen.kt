@@ -3,6 +3,10 @@ package com.clubdarts.ui.game
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.History
+import androidx.compose.material.icons.filled.VolumeOff
+import androidx.compose.material.icons.filled.VolumeUp
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -44,12 +48,16 @@ fun LiveGameScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .background(Background)
-                .padding(padding)
+                .padding(bottom = padding.calculateBottomPadding())
         ) {
-            // Status bar — game mode info + abort button
+            // Status bar — game mode info + controls + abort button
             uiState.config?.let { config ->
                 GameStatusBar(
                     config = config,
+                    isTtsMuted = uiState.isTtsMuted,
+                    onToggleMute = { viewModel.toggleTtsMute() },
+                    showHistory = uiState.showHistory,
+                    onToggleHistory = { viewModel.toggleHistory() },
                     onAbort = { showAbortDialog = true }
                 )
             }
@@ -100,13 +108,15 @@ fun LiveGameScreen(
                 modifier = Modifier.fillMaxWidth()
             )
 
-            // Visit history — fixed 3-row height, never shifts the numpad
-            VisitHistory(
-                visits = uiState.visitHistory,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 4.dp)
-            )
+            // Visit history — only shown when history is enabled
+            if (uiState.showHistory) {
+                VisitHistory(
+                    visits = uiState.visitHistory,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 4.dp)
+                )
+            }
         }
     }
 
@@ -153,6 +163,10 @@ fun LiveGameScreen(
 @Composable
 private fun GameStatusBar(
     config: GameConfig,
+    isTtsMuted: Boolean,
+    onToggleMute: () -> Unit,
+    showHistory: Boolean,
+    onToggleHistory: () -> Unit,
     onAbort: () -> Unit
 ) {
     Row(
@@ -188,17 +202,36 @@ private fun GameStatusBar(
             )
         }
 
-        Surface(
-            onClick = onAbort,
-            color = androidx.compose.ui.graphics.Color.Transparent,
-            shape = RoundedCornerShape(6.dp)
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(
-                text = "Abort",
-                style = MaterialTheme.typography.labelMedium,
-                color = Red,
-                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-            )
+            IconButton(onClick = onToggleMute) {
+                Icon(
+                    imageVector = if (isTtsMuted) Icons.Default.VolumeOff else Icons.Default.VolumeUp,
+                    contentDescription = if (isTtsMuted) "Unmute TTS" else "Mute TTS",
+                    tint = if (isTtsMuted) TextTertiary else TextSecondary
+                )
+            }
+            IconButton(onClick = onToggleHistory) {
+                Icon(
+                    imageVector = Icons.Default.History,
+                    contentDescription = if (showHistory) "Hide history" else "Show history",
+                    tint = if (showHistory) TextSecondary else TextTertiary
+                )
+            }
+            Surface(
+                onClick = onAbort,
+                color = androidx.compose.ui.graphics.Color.Transparent,
+                shape = RoundedCornerShape(6.dp)
+            ) {
+                Text(
+                    text = "Abort",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = Red,
+                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                )
+            }
         }
     }
 }
