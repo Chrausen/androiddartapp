@@ -168,9 +168,10 @@ class GameViewModel @Inject constructor(
         val remaining = state.scores[currentPlayer.id] ?: return
         val soFar = state.currentDarts.sumOf { it.value }
         val remainingAfterCurrentDarts = remaining - soFar
+        val dartsLeft = 3 - state.currentDarts.size
         val rule = state.config?.checkoutRule ?: CheckoutRule.DOUBLE
         val hint = if (remainingAfterCurrentDarts > 0 && remainingAfterCurrentDarts <= 170) {
-            CheckoutCalculator.suggest(remainingAfterCurrentDarts, rule)
+            CheckoutCalculator.suggest(remainingAfterCurrentDarts, rule, maxDarts = dartsLeft)
         } else null
         _uiState.update { it.copy(checkoutHint = hint) }
     }

@@ -5,6 +5,7 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -128,14 +129,27 @@ private fun ActivePlayerPanel(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                Text(
-                    text = if (isBusting) score.toString() else liveRemaining.toString(),
-                    fontSize = 42.sp,
-                    fontWeight = FontWeight.Bold,
-                    fontFamily = DmMono,
-                    color = if (isBusting) Red else Accent,
-                    lineHeight = 46.sp
-                )
+                // Box with an invisible 3-digit reference keeps the layout width
+                // stable as the score shrinks from e.g. "501" → "99" → "1".
+                // DmMono is monospace so "888" matches exactly 3 digit widths.
+                Box {
+                    Text(
+                        text = "888",
+                        fontSize = 42.sp,
+                        fontWeight = FontWeight.Bold,
+                        fontFamily = DmMono,
+                        lineHeight = 46.sp,
+                        modifier = Modifier.alpha(0f)
+                    )
+                    Text(
+                        text = if (isBusting) score.toString() else liveRemaining.toString(),
+                        fontSize = 42.sp,
+                        fontWeight = FontWeight.Bold,
+                        fontFamily = DmMono,
+                        color = if (isBusting) Red else Accent,
+                        lineHeight = 46.sp
+                    )
+                }
                 Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                     repeat(3) { i ->
                         DartSlot(dart = currentDarts.getOrNull(i))
