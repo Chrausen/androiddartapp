@@ -1,16 +1,19 @@
 package com.clubdarts.ui.game
 
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.History
-import androidx.compose.material.icons.filled.VolumeOff
 import androidx.compose.material.icons.filled.VolumeUp
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -206,20 +209,18 @@ private fun GameStatusBar(
             horizontalArrangement = Arrangement.spacedBy(4.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            IconButton(onClick = onToggleMute) {
-                Icon(
-                    imageVector = if (isTtsMuted) Icons.Default.VolumeOff else Icons.Default.VolumeUp,
-                    contentDescription = if (isTtsMuted) "Unmute TTS" else "Mute TTS",
-                    tint = if (isTtsMuted) TextTertiary else TextSecondary
-                )
-            }
-            IconButton(onClick = onToggleHistory) {
-                Icon(
-                    imageVector = Icons.Default.History,
-                    contentDescription = if (showHistory) "Hide history" else "Show history",
-                    tint = if (showHistory) TextSecondary else TextTertiary
-                )
-            }
+            SlashedIconButton(
+                icon = Icons.Default.VolumeUp,
+                slashed = isTtsMuted,
+                contentDescription = if (isTtsMuted) "Unmute TTS" else "Mute TTS",
+                onClick = onToggleMute
+            )
+            SlashedIconButton(
+                icon = Icons.Default.History,
+                slashed = !showHistory,
+                contentDescription = if (showHistory) "Hide history" else "Show history",
+                onClick = onToggleHistory
+            )
             Surface(
                 onClick = onAbort,
                 color = androidx.compose.ui.graphics.Color.Transparent,
@@ -231,6 +232,35 @@ private fun GameStatusBar(
                     color = Red,
                     modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
                 )
+            }
+        }
+    }
+}
+
+@Composable
+private fun SlashedIconButton(
+    icon: ImageVector,
+    slashed: Boolean,
+    contentDescription: String?,
+    onClick: () -> Unit
+) {
+    IconButton(onClick = onClick) {
+        Box(contentAlignment = Alignment.Center) {
+            Icon(
+                imageVector = icon,
+                contentDescription = contentDescription,
+                tint = TextSecondary
+            )
+            if (slashed) {
+                Canvas(modifier = Modifier.size(24.dp)) {
+                    drawLine(
+                        color = TextSecondary,
+                        start = Offset(size.width * 0.2f, size.height * 0.8f),
+                        end = Offset(size.width * 0.8f, size.height * 0.2f),
+                        strokeWidth = 2.dp.toPx(),
+                        cap = StrokeCap.Round
+                    )
+                }
             }
         }
     }

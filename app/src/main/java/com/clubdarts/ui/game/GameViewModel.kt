@@ -69,7 +69,7 @@ data class GameUiState(
     val snackbarMessage: String? = null,
     val gameSaved: Boolean = false,
     val isTtsMuted: Boolean = false,
-    val showHistory: Boolean = true
+    val showHistory: Boolean = false
 )
 
 @HiltViewModel
