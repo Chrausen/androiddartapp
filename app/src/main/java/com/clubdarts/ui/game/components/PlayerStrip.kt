@@ -5,6 +5,7 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
@@ -50,9 +51,13 @@ fun PlayerStrip(
                 AnimatedContent(
                     targetState = player,
                     label = "player_slot_$index",
+                    modifier = Modifier.fillMaxWidth().clipToBounds(),
                     transitionSpec = {
-                        slideInVertically(tween(140)) { it / 3 } togetherWith
-                                slideOutVertically(tween(140)) { -it / 3 }
+                        // Exit plays first (120ms). Enter starts only after exit finishes
+                        // (delayMillis = 120). Clip keeps the incoming card hidden below
+                        // the slot boundary until it slides up into view.
+                        slideInVertically(tween(120, delayMillis = 120)) { it } togetherWith
+                                slideOutVertically(tween(120)) { -it }
                     }
                 ) { p ->
                     if (isActive) {

@@ -1,9 +1,11 @@
 package com.clubdarts.ui.navigation
 
+import androidx.activity.ComponentActivity
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.*
 import androidx.navigation.compose.*
@@ -44,9 +46,10 @@ fun ClubDartsNavHost() {
             modifier = Modifier.padding(innerPadding)
         ) {
             navigation(startDestination = "game/setup", route = "game") {
-                composable("game/setup") { entry ->
-                    val parentEntry = remember(entry) { navController.getBackStackEntry("game") }
-                    val gameViewModel: GameViewModel = hiltViewModel(parentEntry)
+                composable("game/setup") {
+                    // Activity-scoped ViewModel so the game survives tab switches
+                    val gameViewModel: GameViewModel =
+                        hiltViewModel(LocalContext.current as ComponentActivity)
                     GameSetupScreen(
                         onStartGame = {
                             navController.navigate("game/live") {
@@ -57,9 +60,9 @@ fun ClubDartsNavHost() {
                         gameViewModel = gameViewModel
                     )
                 }
-                composable("game/live") { entry ->
-                    val parentEntry = remember(entry) { navController.getBackStackEntry("game") }
-                    val gameViewModel: GameViewModel = hiltViewModel(parentEntry)
+                composable("game/live") {
+                    val gameViewModel: GameViewModel =
+                        hiltViewModel(LocalContext.current as ComponentActivity)
                     LiveGameScreen(
                         onGameFinished = {
                             navController.navigate("game/result") {
@@ -76,9 +79,9 @@ fun ClubDartsNavHost() {
                         viewModel = gameViewModel
                     )
                 }
-                composable("game/result") { entry ->
-                    val parentEntry = remember(entry) { navController.getBackStackEntry("game") }
-                    val gameViewModel: GameViewModel = hiltViewModel(parentEntry)
+                composable("game/result") {
+                    val gameViewModel: GameViewModel =
+                        hiltViewModel(LocalContext.current as ComponentActivity)
                     GameResultScreen(
                         onNewGame = {
                             navController.navigate("game/setup") {
