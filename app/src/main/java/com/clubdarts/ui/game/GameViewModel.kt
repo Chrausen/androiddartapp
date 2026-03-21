@@ -42,7 +42,7 @@ data class VisitRecord(
 )
 
 data class SetupDefaults(
-    val startScore: Int = 501,
+    val startScore: Int = 301,
     val checkoutRule: CheckoutRule = CheckoutRule.DOUBLE,
     val legsToWin: Int = 1,
     val randomOrder: Boolean = false,

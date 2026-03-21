@@ -16,7 +16,7 @@ object SettingsKeys {
 }
 
 object SettingsDefaults {
-    const val START_SCORE   = "501"
+    const val START_SCORE   = "301"
     const val CHECKOUT_RULE = "DOUBLE"
     const val LEGS_TO_WIN   = "1"
     const val RANDOM_ORDER  = "false"

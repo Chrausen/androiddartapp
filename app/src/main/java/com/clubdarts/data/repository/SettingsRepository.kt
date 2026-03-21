@@ -28,7 +28,7 @@ class SettingsRepository @Inject constructor(
         dao.observe(key).map { it?.value ?: default }
 
     suspend fun getLastStartScore(): Int =
-        get(SettingsKeys.LAST_START_SCORE, SettingsDefaults.START_SCORE).toIntOrNull() ?: 501
+        get(SettingsKeys.LAST_START_SCORE, SettingsDefaults.START_SCORE).toIntOrNull() ?: 301
 
     suspend fun getLastCheckoutRule(): CheckoutRule =
         try { CheckoutRule.valueOf(get(SettingsKeys.LAST_CHECKOUT_RULE, SettingsDefaults.CHECKOUT_RULE)) }

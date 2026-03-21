@@ -133,14 +133,16 @@ fun GameSetupScreen(
                         }
                     }
                     Box(
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 6.dp),
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
                             imageVector = if (settingsExpanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
                             contentDescription = if (settingsExpanded) "Collapse settings" else "Expand settings",
                             tint = TextTertiary,
-                            modifier = Modifier.size(20.dp)
+                            modifier = Modifier.size(28.dp)
                         )
                     }
                 }
