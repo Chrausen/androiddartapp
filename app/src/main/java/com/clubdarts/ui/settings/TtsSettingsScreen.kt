@@ -22,17 +22,32 @@ import com.clubdarts.data.model.TtsScoreSetting
 import com.clubdarts.ui.theme.*
 
 @Composable
-fun TtsSettingsScreen(viewModel: TtsSettingsViewModel = hiltViewModel()) {
+fun TtsSettingsScreen(
+    onBack: (() -> Unit)? = null,
+    viewModel: TtsSettingsViewModel = hiltViewModel()
+) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     Box(modifier = Modifier.fillMaxSize().background(Background)) {
         Column(modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp)) {
             Spacer(modifier = Modifier.height(16.dp))
-            Text(
-                "TTS Scores",
-                style = MaterialTheme.typography.headlineMedium,
-                color = TextPrimary
-            )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                if (onBack != null) {
+                    IconButton(onClick = onBack, modifier = Modifier.size(36.dp)) {
+                        Icon(
+                            Icons.Default.ArrowBack,
+                            contentDescription = "Back",
+                            tint = TextPrimary
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(4.dp))
+                }
+                Text(
+                    "TTS Score Phrases",
+                    style = MaterialTheme.typography.headlineMedium,
+                    color = TextPrimary
+                )
+            }
             Spacer(modifier = Modifier.height(4.dp))
             Text(
                 "Custom phrases announced after each visit",
