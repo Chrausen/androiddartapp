@@ -40,7 +40,7 @@ fun ClubDartsNavHost() {
     ) { innerPadding ->
         NavHost(
             navController = navController,
-            startDestination = "game/setup",
+            startDestination = "game",
             modifier = Modifier.padding(innerPadding)
         ) {
             navigation(startDestination = "game/setup", route = "game") {
