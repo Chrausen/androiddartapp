@@ -4,6 +4,7 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.clubdarts.data.model.*
+import com.clubdarts.data.repository.EloRepository
 import com.clubdarts.data.repository.GameConfig
 import com.clubdarts.data.repository.GameRepository
 import com.clubdarts.data.repository.PlayerRepository
@@ -84,7 +85,16 @@ data class GameUiState(
     val setupSelectedPlayerIds: List<Long> = emptyList(),
     val setupGameMode: GameMode = GameMode.SINGLE,
     val setupTeamAPlayerIds: List<Long> = emptyList(),
-    val setupTeamBPlayerIds: List<Long> = emptyList()
+    val setupTeamBPlayerIds: List<Long> = emptyList(),
+    // Ranking
+    val rankingEnabled: Boolean = false,
+    val isRanked: Boolean = false,
+    // Locked config for ranked matches (loaded from ranking settings)
+    val rankedStartScore: Int = 501,
+    val rankedCheckoutRule: CheckoutRule = CheckoutRule.DOUBLE,
+    val rankedLegsToWin: Int = 1,
+    // playerId -> signed elo change (positive = gain, negative = loss)
+    val eloResults: Map<Long, Double>? = null
 )
 
 @HiltViewModel
@@ -92,7 +102,8 @@ class GameViewModel @Inject constructor(
     application: Application,
     private val gameRepository: GameRepository,
     private val settingsRepository: SettingsRepository,
-    private val playerRepository: PlayerRepository
+    private val playerRepository: PlayerRepository,
+    private val eloRepository: EloRepository
 ) : AndroidViewModel(application) {
 
     private val _uiState = MutableStateFlow(GameUiState())
@@ -109,6 +120,30 @@ class GameViewModel @Inject constructor(
                 ttsScoreSettings = settings
             }
         }
+        viewModelScope.launch {
+            settingsRepository.observeRankingEnabled().collect { enabled ->
+                _uiState.update { it.copy(rankingEnabled = enabled) }
+                // If ranking gets disabled, reset ranked mode
+                if (!enabled) {
+                    _uiState.update { it.copy(isRanked = false) }
+                }
+            }
+        }
+        viewModelScope.launch {
+            settingsRepository.observeRankingStartScore().collect { v ->
+                _uiState.update { it.copy(rankedStartScore = v) }
+            }
+        }
+        viewModelScope.launch {
+            settingsRepository.observeRankingCheckoutRule().collect { v ->
+                _uiState.update { it.copy(rankedCheckoutRule = v) }
+            }
+        }
+        viewModelScope.launch {
+            settingsRepository.observeRankingLegsToWin().collect { v ->
+                _uiState.update { it.copy(rankedLegsToWin = v) }
+            }
+        }
     }
 
     override fun onCleared() {
@@ -122,6 +157,10 @@ class GameViewModel @Inject constructor(
         val newValue = !_uiState.value.showHistory
         _uiState.update { it.copy(showHistory = newValue) }
         viewModelScope.launch { settingsRepository.setShowHistory(newValue) }
+    }
+
+    fun setRanked(v: Boolean) {
+        _uiState.update { it.copy(isRanked = v) }
     }
 
     fun updateSetupSelectedPlayers(ids: List<Long>) {
@@ -146,9 +185,15 @@ class GameViewModel @Inject constructor(
                 val recentIds = settingsRepository.getRecentPlayerIds()
                 val showHistory = settingsRepository.getShowHistory()
                 val gameMode = try { GameMode.valueOf(settingsRepository.getLastGameMode()) } catch (e: Exception) { GameMode.SINGLE }
+                val rankedStartScore = settingsRepository.getRankingStartScore()
+                val rankedCheckoutRule = settingsRepository.getRankingCheckoutRule()
+                val rankedLegsToWin = settingsRepository.getRankingLegsToWin()
                 _uiState.update { it.copy(
                     showHistory = showHistory,
                     setupGameMode = gameMode,
+                    rankedStartScore = rankedStartScore,
+                    rankedCheckoutRule = rankedCheckoutRule,
+                    rankedLegsToWin = rankedLegsToWin,
                     setupDefaults = SetupDefaults(
                         startScore = startScore,
                         checkoutRule = checkoutRule,
@@ -449,7 +494,8 @@ class GameViewModel @Inject constructor(
                         visitHistory = emptyList(),
                         currentLegNumber = 1,
                         winnerId = null,
-                        checkoutHint = null
+                        checkoutHint = null,
+                        eloResults = null
                     )}
                 } else {
                     val scores = players.associate { it.id to config.startScore }
@@ -473,7 +519,8 @@ class GameViewModel @Inject constructor(
                         visitHistory = emptyList(),
                         currentLegNumber = 1,
                         winnerId = null,
-                        checkoutHint = null
+                        checkoutHint = null,
+                        eloResults = null
                     )}
                 }
                 updateCheckoutHint()
@@ -511,7 +558,6 @@ class GameViewModel @Inject constructor(
                         val newLeg = Leg(gameId = gameId, legNumber = newLegNumber)
                         val newLegId = gameRepository.insertLeg(newLeg)
                         val newTeamScores = mapOf(0 to config.startScore, 1 to config.startScore)
-                        // Team games always start at index 0 (Team 1, Player 1)
                         _uiState.update { it.copy(
                             legId = newLegId,
                             teamLegWins = newTeamLegWins,
@@ -530,10 +576,28 @@ class GameViewModel @Inject constructor(
 
                     val legsWon = newLegWins[winnerId] ?: 0
                     if (legsWon >= config.legsToWin) {
+                        // Record Elo for ranked games (2+ players)
+                        val eloResults = if (state.isRanked && state.players.size >= 2) {
+                            try {
+                                eloRepository.recordMatch(state.players, winnerId)
+                            } catch (e: Exception) {
+                                _uiState.update { it.copy(errorMessage = e.message) }
+                                null
+                            }
+                        } else null
+
+                        // Auto-save ranked games immediately
+                        val autoSaved = state.isRanked
+                        if (autoSaved) {
+                            gameRepository.finishGame(gameId, winnerId)
+                        }
+
                         _uiState.update { it.copy(
                             screen = GameScreen.RESULT,
                             legWins = newLegWins,
-                            winnerId = winnerId
+                            winnerId = winnerId,
+                            eloResults = eloResults,
+                            gameSaved = autoSaved
                         )}
                     } else {
                         val newLegNumber = state.currentLegNumber + 1
@@ -559,6 +623,41 @@ class GameViewModel @Inject constructor(
                 }
             } catch (e: Exception) {
                 _uiState.update { it.copy(errorMessage = e.message) }
+            }
+        }
+    }
+
+    fun repeatGame() {
+        viewModelScope.launch {
+            val state = _uiState.value
+            if (!state.gameSaved) {
+                val gameId = state.gameId
+                if (gameId != null) gameRepository.deleteGame(gameId)
+            }
+            val config = state.config
+            val sameGameMode = if (state.isTeamGame) GameMode.TEAMS else GameMode.SINGLE
+            val sameTeamA = state.players.filter { state.teamAssignments[it.id] == 0 }.map { it.id }
+            val sameTeamB = state.players.filter { state.teamAssignments[it.id] == 1 }.map { it.id }
+            _uiState.update { current ->
+                GameUiState(
+                    rankingEnabled = current.rankingEnabled,
+                    isRanked = current.isRanked,
+                    rankedStartScore = current.rankedStartScore,
+                    rankedCheckoutRule = current.rankedCheckoutRule,
+                    rankedLegsToWin = current.rankedLegsToWin,
+                    showHistory = current.showHistory,
+                    isTtsMuted = current.isTtsMuted,
+                    setupSelectedPlayerIds = state.players.map { it.id },
+                    setupGameMode = sameGameMode,
+                    setupTeamAPlayerIds = sameTeamA,
+                    setupTeamBPlayerIds = sameTeamB,
+                    setupDefaults = current.setupDefaults.copy(
+                        startScore = config?.startScore ?: current.setupDefaults.startScore,
+                        checkoutRule = config?.checkoutRule ?: current.setupDefaults.checkoutRule,
+                        legsToWin = config?.legsToWin ?: current.setupDefaults.legsToWin,
+                        gameMode = sameGameMode
+                    )
+                )
             }
         }
     }
@@ -618,7 +717,9 @@ class GameViewModel @Inject constructor(
             legId = null,
             winnerId = null,
             checkoutHint = null,
-            gameSaved = false
+            gameSaved = false,
+            isRanked = false,
+            eloResults = null
         )}
         loadSetupDefaults()
     }

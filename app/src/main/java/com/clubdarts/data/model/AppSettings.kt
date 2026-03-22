@@ -15,6 +15,13 @@ object SettingsKeys {
     const val TTS_SCORE_PHRASES  = "tts_score_phrases"  // JSON array
     const val SHOW_HISTORY       = "show_history"
     const val LAST_GAME_MODE     = "last_game_mode"   // "SINGLE" | "TEAMS"
+
+    // Ranking system
+    const val RANKING_ENABLED       = "ranking_enabled"
+    const val RANKING_K_FACTOR      = "ranking_k_factor"       // "32" | "64"
+    const val RANKING_START_SCORE   = "ranking_start_score"
+    const val RANKING_CHECKOUT_RULE = "ranking_checkout_rule"
+    const val RANKING_LEGS_TO_WIN   = "ranking_legs_to_win"
 }
 
 object SettingsDefaults {
@@ -25,6 +32,13 @@ object SettingsDefaults {
     const val RECENT_IDS    = ""
     const val SHOW_HISTORY  = "false"
     const val GAME_MODE     = "SINGLE"
+
+    // Ranking system
+    const val RANKING_ENABLED       = "false"
+    const val RANKING_K_FACTOR      = "32"
+    const val RANKING_START_SCORE   = "501"
+    const val RANKING_CHECKOUT_RULE = "DOUBLE"
+    const val RANKING_LEGS_TO_WIN   = "1"
 }
 
 /** Words spoken before/after the score number for a custom TTS phrase. */

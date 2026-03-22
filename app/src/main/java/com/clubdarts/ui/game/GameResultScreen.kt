@@ -40,7 +40,7 @@ fun GameResultScreen(
             gameSaved = gameSaved,
             onSave = { viewModel.saveGame() },
             onNewGame = {
-                viewModel.discardGame()
+                viewModel.repeatGame()
                 onNewGame()
             },
             onDone = {
@@ -54,7 +54,7 @@ fun GameResultScreen(
             gameSaved = gameSaved,
             onSave = { viewModel.saveGame() },
             onNewGame = {
-                viewModel.discardGame()
+                viewModel.repeatGame()
                 onNewGame()
             },
             onDone = {
@@ -74,6 +74,7 @@ private fun SingleResultScreen(
     onDone: () -> Unit
 ) {
     val winner = uiState.players.firstOrNull { it.id == uiState.winnerId }
+    val isRanked = uiState.isRanked && uiState.eloResults != null
 
     LazyColumn(
         modifier = Modifier
@@ -93,12 +94,29 @@ private fun SingleResultScreen(
                     style = MaterialTheme.typography.headlineLarge,
                     color = TextPrimary
                 )
-                Text(
-                    text = "Winner!",
-                    fontSize = 32.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Accent
-                )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = "Winner!",
+                        fontSize = 32.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Accent
+                    )
+                    if (isRanked) {
+                        Spacer(modifier = Modifier.width(10.dp))
+                        Surface(
+                            color = Accent.copy(alpha = 0.15f),
+                            shape = RoundedCornerShape(6.dp)
+                        ) {
+                            Text(
+                                text = "Ranked",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = Accent,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                            )
+                        }
+                    }
+                }
             }
         }
 
@@ -119,6 +137,8 @@ private fun SingleResultScreen(
         // Per-player stat cards
         items(uiState.players) { player ->
             val isWinner = player.id == uiState.winnerId
+            val eloChange = uiState.eloResults?.get(player.id)
+
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 colors = CardDefaults.cardColors(
@@ -156,11 +176,39 @@ private fun SingleResultScreen(
                             color = TextSecondary
                         )
                     }
+
+                    // Elo change chip for ranked games
+                    if (eloChange != null) {
+                        val isGain = eloChange >= 0
+                        val chipColor = if (isGain) Green else Red
+                        val sign = if (isGain) "+" else ""
+                        Surface(
+                            color = chipColor.copy(alpha = 0.15f),
+                            shape = RoundedCornerShape(8.dp)
+                        ) {
+                            Column(
+                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
+                                Text(
+                                    text = "$sign${"%.0f".format(eloChange)}",
+                                    style = MaterialTheme.typography.titleSmall,
+                                    fontWeight = FontWeight.Bold,
+                                    color = chipColor
+                                )
+                                Text(
+                                    text = "Elo",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = chipColor.copy(alpha = 0.7f)
+                                )
+                            }
+                        }
+                    }
                 }
             }
         }
 
-        item { ResultActions(gameSaved, onSave, onNewGame, onDone) }
+        item { ResultActions(gameSaved, uiState.isRanked, onSave, onNewGame, onDone) }
     }
 }
 
@@ -260,7 +308,7 @@ private fun TeamResultScreen(
             )
         }
 
-        item { ResultActions(gameSaved, onSave, onNewGame, onDone) }
+        item { ResultActions(gameSaved, false, onSave, onNewGame, onDone) }
     }
 }
 
@@ -334,6 +382,7 @@ private fun TeamPlayerCards(
 @Composable
 private fun ResultActions(
     gameSaved: Boolean,
+    isRanked: Boolean,
     onSave: () -> Unit,
     onNewGame: () -> Unit,
     onDone: () -> Unit

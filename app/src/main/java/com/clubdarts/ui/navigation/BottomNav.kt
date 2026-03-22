@@ -24,11 +24,12 @@ sealed class BottomNavItem(
     object Game     : BottomNavItem("game",     "Game",     Icons.Default.RadioButtonUnchecked)
     object Stats    : BottomNavItem("stats",    "Stats",    Icons.Default.BarChart)
     object History  : BottomNavItem("history",  "History",  Icons.Default.History)
+    object Rankings : BottomNavItem("rankings", "Rankings", Icons.Default.EmojiEvents)
     object Players  : BottomNavItem("players",  "Players",  Icons.Default.Group)
     object Settings : BottomNavItem("settings", "Settings", Icons.Default.Settings)
 }
 
-val bottomNavItems = listOf(
+val baseBottomNavItems = listOf(
     BottomNavItem.Game,
     BottomNavItem.Stats,
     BottomNavItem.History,
@@ -36,16 +37,28 @@ val bottomNavItems = listOf(
     BottomNavItem.Settings
 )
 
+val rankingBottomNavItems = listOf(
+    BottomNavItem.Game,
+    BottomNavItem.Stats,
+    BottomNavItem.History,
+    BottomNavItem.Rankings,
+    BottomNavItem.Players,
+    BottomNavItem.Settings
+)
+
 @Composable
 fun ClubDartsBottomNav(
     currentRoute: String,
+    rankingEnabled: Boolean,
     onNavigate: (String) -> Unit
 ) {
+    val items = if (rankingEnabled) rankingBottomNavItems else baseBottomNavItems
+
     NavigationBar(
         containerColor = Surface,
         tonalElevation = 0.dp
     ) {
-        bottomNavItems.forEach { item ->
+        items.forEach { item ->
             val isActive = currentRoute.startsWith(item.route.substringBefore("/"))
                 || (item is BottomNavItem.Game && (currentRoute.startsWith("game/")))
 
