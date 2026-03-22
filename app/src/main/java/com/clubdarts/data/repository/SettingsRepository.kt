@@ -126,4 +126,40 @@ class SettingsRepository @Inject constructor(
                 emptyList()
             }
         }
+
+    // ---- Ranking system settings ----
+
+    fun observeRankingEnabled(): Flow<Boolean> =
+        observe(SettingsKeys.RANKING_ENABLED, SettingsDefaults.RANKING_ENABLED).map { it.toBoolean() }
+
+    suspend fun getRankingEnabled(): Boolean =
+        get(SettingsKeys.RANKING_ENABLED, SettingsDefaults.RANKING_ENABLED).toBoolean()
+
+    suspend fun setRankingEnabled(v: Boolean) =
+        set(SettingsKeys.RANKING_ENABLED, v.toString())
+
+    suspend fun getRankingKFactor(): Int =
+        get(SettingsKeys.RANKING_K_FACTOR, SettingsDefaults.RANKING_K_FACTOR).toIntOrNull() ?: 32
+
+    suspend fun setRankingKFactor(v: Int) =
+        set(SettingsKeys.RANKING_K_FACTOR, v.toString())
+
+    suspend fun getRankingStartScore(): Int =
+        get(SettingsKeys.RANKING_START_SCORE, SettingsDefaults.RANKING_START_SCORE).toIntOrNull() ?: 501
+
+    suspend fun setRankingStartScore(v: Int) =
+        set(SettingsKeys.RANKING_START_SCORE, v.toString())
+
+    suspend fun getRankingCheckoutRule(): CheckoutRule =
+        try { CheckoutRule.valueOf(get(SettingsKeys.RANKING_CHECKOUT_RULE, SettingsDefaults.RANKING_CHECKOUT_RULE)) }
+        catch (e: Exception) { CheckoutRule.DOUBLE }
+
+    suspend fun setRankingCheckoutRule(v: CheckoutRule) =
+        set(SettingsKeys.RANKING_CHECKOUT_RULE, v.name)
+
+    suspend fun getRankingLegsToWin(): Int =
+        get(SettingsKeys.RANKING_LEGS_TO_WIN, SettingsDefaults.RANKING_LEGS_TO_WIN).toIntOrNull() ?: 1
+
+    suspend fun setRankingLegsToWin(v: Int) =
+        set(SettingsKeys.RANKING_LEGS_TO_WIN, v.toString())
 }

@@ -35,9 +35,6 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.zIndex
-import kotlin.math.roundToInt
-import kotlinx.coroutines.launch
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.clubdarts.data.model.CheckoutRule
@@ -47,6 +44,8 @@ import com.clubdarts.ui.game.components.PlayerAvatar
 import com.clubdarts.ui.game.components.PlayerPickerSheet
 import com.clubdarts.ui.players.PlayersViewModel
 import com.clubdarts.ui.theme.*
+import kotlin.math.roundToInt
+import kotlinx.coroutines.launch
 
 @Composable
 fun GameSetupScreen(
@@ -56,6 +55,11 @@ fun GameSetupScreen(
 ) {
     val uiState by gameViewModel.uiState.collectAsStateWithLifecycle()
     val playersState by playersViewModel.uiState.collectAsStateWithLifecycle()
+
+    // Ranked config is locked to ranking settings (from ViewModel/Settings)
+    val rankedStartScore = uiState.rankedStartScore
+    val rankedCheckoutRule = uiState.rankedCheckoutRule
+    val rankedLegsToWin = uiState.rankedLegsToWin
 
     var startScore by remember(uiState.setupDefaults.startScore) {
         mutableIntStateOf(uiState.setupDefaults.startScore)
@@ -71,6 +75,9 @@ fun GameSetupScreen(
     var gameMode by remember(uiState.setupDefaults.gameMode) {
         mutableStateOf(uiState.setupDefaults.gameMode)
     }
+
+    // Ranked/casual toggle — casual is default
+    var isRanked by remember { mutableStateOf(false) }
 
     // Single mode state
     var randomOrder by remember(uiState.setupDefaults.randomOrder) {
@@ -115,6 +122,11 @@ fun GameSetupScreen(
         gameMode = uiState.setupGameMode
     }
 
+    // When ranked mode is toggled off, also update ViewModel
+    LaunchedEffect(isRanked) {
+        gameViewModel.setRanked(isRanked)
+    }
+
     // Helpers to persist state across tab switches
     val setSelectedPlayers: (List<Player>) -> Unit = { players ->
         selectedPlayers = players
@@ -142,10 +154,19 @@ fun GameSetupScreen(
     }
 
     // All players selected (for enable check)
-    val hasPlayers = if (gameMode == GameMode.TEAMS)
+    // Ranked requires exactly 2 players in single mode
+    val hasPlayers = if (isRanked) {
+        selectedPlayers.size == 2
+    } else if (gameMode == GameMode.TEAMS) {
         teamAPlayers.isNotEmpty() && teamBPlayers.isNotEmpty()
-    else
+    } else {
         selectedPlayers.isNotEmpty()
+    }
+
+    // Effective config values (ranked uses locked settings, casual uses user choice)
+    val effectiveStartScore = if (isRanked) rankedStartScore else startScore
+    val effectiveCheckoutRule = if (isRanked) rankedCheckoutRule else checkoutRule
+    val effectiveLegsToWin = if (isRanked) rankedLegsToWin else legsToWin
 
     Column(
         modifier = Modifier
@@ -167,125 +188,183 @@ fun GameSetupScreen(
                 )
             }
 
-            // Game mode toggle — Single | Teams
+            // Game mode toggle — Single | Teams  (hidden when ranked, forced to single)
             item {
-                SectionLabel("Game mode")
-                SegmentedRow(
-                    options = GameMode.values().toList(),
-                    selected = gameMode,
-                    onSelect = { newMode ->
-                        if (newMode != gameMode) {
-                            // When switching modes, migrate players
-                            if (newMode == GameMode.TEAMS) {
-                                // Split current single-mode players into two teams
-                                val all = selectedPlayers
-                                val mid = (all.size + 1) / 2
-                                val a = all.take(mid)
-                                val b = all.drop(mid)
-                                setTeamPlayers(a, b)
-                            } else {
-                                // Merge teams back to single list
-                                val merged = teamAPlayers + teamBPlayers
-                                setSelectedPlayers(merged)
-                            }
-                            gameMode = newMode
-                            gameViewModel.updateSetupGameMode(newMode)
-                        }
-                    },
-                    label = { if (it == GameMode.SINGLE) "Single" else "Teams" }
-                )
-            }
-
-            // Game settings (collapsible)
-            item {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable(
-                            indication = null,
-                            interactionSource = remember { MutableInteractionSource() }
-                        ) { settingsExpanded = !settingsExpanded }
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    AnimatedVisibility(
-                        visible = !settingsExpanded,
-                        enter = expandVertically() + fadeIn(),
-                        exit = shrinkVertically() + fadeOut()
-                    ) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                Text("Starting score", style = MaterialTheme.typography.labelSmall, color = TextSecondary)
-                                Text(startScore.toString(), style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, color = TextPrimary)
-                            }
-                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                Text("Checkout", style = MaterialTheme.typography.labelSmall, color = TextSecondary)
-                                Text(
-                                    checkoutRule.name.lowercase().replaceFirstChar { c -> c.uppercaseChar() },
-                                    style = MaterialTheme.typography.labelMedium,
-                                    fontWeight = FontWeight.Bold,
-                                    color = TextPrimary
-                                )
-                            }
-                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                Text("Legs to win", style = MaterialTheme.typography.labelSmall, color = TextSecondary)
-                                Text(legsToWin.toString(), style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, color = TextPrimary)
-                            }
-                        }
-                    }
-                    AnimatedVisibility(
-                        visible = settingsExpanded,
-                        enter = expandVertically() + fadeIn(),
-                        exit = shrinkVertically() + fadeOut()
-                    ) {
-                        Column {
-                            SectionLabel("Starting score")
+                    // Game mode (Single / Teams) — hidden in ranked mode
+                    if (!isRanked) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            SectionLabel("Game mode")
                             SegmentedRow(
-                                options = listOf(201, 301, 401, 501, 701),
-                                selected = startScore,
-                                onSelect = { startScore = it },
-                                label = { it.toString() }
-                            )
-                            Spacer(modifier = Modifier.height(16.dp))
-                            SectionLabel("Checkout rule")
-                            SegmentedRow(
-                                options = CheckoutRule.values().toList(),
-                                selected = checkoutRule,
-                                onSelect = { checkoutRule = it },
-                                label = { it.name.lowercase().replaceFirstChar { c -> c.uppercaseChar() } }
-                            )
-                            Spacer(modifier = Modifier.height(16.dp))
-                            SectionLabel("Legs to win")
-                            SegmentedRow(
-                                options = listOf(1, 3, 5, 7, 9),
-                                selected = legsToWin,
-                                onSelect = { legsToWin = it },
-                                label = { it.toString() }
+                                options = GameMode.values().toList(),
+                                selected = gameMode,
+                                onSelect = { newMode ->
+                                    if (newMode != gameMode) {
+                                        if (newMode == GameMode.TEAMS) {
+                                            val all = selectedPlayers
+                                            val mid = (all.size + 1) / 2
+                                            setTeamPlayers(all.take(mid), all.drop(mid))
+                                        } else {
+                                            setSelectedPlayers(teamAPlayers + teamBPlayers)
+                                        }
+                                        gameMode = newMode
+                                        gameViewModel.updateSetupGameMode(newMode)
+                                    }
+                                },
+                                label = { if (it == GameMode.SINGLE) "Single" else "Teams" }
                             )
                         }
                     }
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 6.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.KeyboardArrowDown,
-                            contentDescription = if (settingsExpanded) "Collapse settings" else "Expand settings",
-                            tint = TextTertiary,
-                            modifier = Modifier
-                                .size(28.dp)
-                                .rotate(chevronRotation)
-                        )
+
+                    // Ranked / Casual toggle — only shown when ranking is enabled
+                    if (uiState.rankingEnabled) {
+                        Column(modifier = if (!isRanked) Modifier.weight(1f) else Modifier.fillMaxWidth()) {
+                            SectionLabel("Match type")
+                            SegmentedRow(
+                                options = listOf(false, true),
+                                selected = isRanked,
+                                onSelect = { ranked ->
+                                    isRanked = ranked
+                                    if (ranked) {
+                                        // Force single mode when switching to ranked
+                                        gameMode = GameMode.SINGLE
+                                        gameViewModel.updateSetupGameMode(GameMode.SINGLE)
+                                        // Trim to max 2 players
+                                        if (selectedPlayers.size > 2) {
+                                            setSelectedPlayers(selectedPlayers.take(2))
+                                        }
+                                    }
+                                },
+                                label = { if (!it) "Casual" else "Ranked" }
+                            )
+                        }
                     }
                 }
             }
 
-            // Players section — switches between Single and Teams layout
-            if (gameMode == GameMode.SINGLE) {
-                // ---- Single mode player list ----
+            // Game settings — locked summary shown for ranked, collapsible for casual
+            item {
+                if (isRanked) {
+                    // Locked game mode summary for ranked
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text("Starting score", style = MaterialTheme.typography.labelSmall, color = TextSecondary)
+                            Text(rankedStartScore.toString(), style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, color = TextPrimary)
+                        }
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text("Checkout", style = MaterialTheme.typography.labelSmall, color = TextSecondary)
+                            Text(
+                                rankedCheckoutRule.name.lowercase().replaceFirstChar { c -> c.uppercaseChar() },
+                                style = MaterialTheme.typography.labelMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = TextPrimary
+                            )
+                        }
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text("Legs to win", style = MaterialTheme.typography.labelSmall, color = TextSecondary)
+                            Text(rankedLegsToWin.toString(), style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, color = TextPrimary)
+                        }
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text("Mode", style = MaterialTheme.typography.labelSmall, color = TextSecondary)
+                            Text("Ranked", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, color = Accent)
+                        }
+                    }
+                } else {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable(
+                                indication = null,
+                                interactionSource = remember { MutableInteractionSource() }
+                            ) { settingsExpanded = !settingsExpanded }
+                    ) {
+                        AnimatedVisibility(
+                            visible = !settingsExpanded,
+                            enter = expandVertically() + fadeIn(),
+                            exit = shrinkVertically() + fadeOut()
+                        ) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                    Text("Starting score", style = MaterialTheme.typography.labelSmall, color = TextSecondary)
+                                    Text(startScore.toString(), style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, color = TextPrimary)
+                                }
+                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                    Text("Checkout", style = MaterialTheme.typography.labelSmall, color = TextSecondary)
+                                    Text(
+                                        checkoutRule.name.lowercase().replaceFirstChar { c -> c.uppercaseChar() },
+                                        style = MaterialTheme.typography.labelMedium,
+                                        fontWeight = FontWeight.Bold,
+                                        color = TextPrimary
+                                    )
+                                }
+                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                    Text("Legs to win", style = MaterialTheme.typography.labelSmall, color = TextSecondary)
+                                    Text(legsToWin.toString(), style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, color = TextPrimary)
+                                }
+                            }
+                        }
+                        AnimatedVisibility(
+                            visible = settingsExpanded,
+                            enter = expandVertically() + fadeIn(),
+                            exit = shrinkVertically() + fadeOut()
+                        ) {
+                            Column {
+                                SectionLabel("Starting score")
+                                SegmentedRow(
+                                    options = listOf(201, 301, 401, 501, 701),
+                                    selected = startScore,
+                                    onSelect = { startScore = it },
+                                    label = { it.toString() }
+                                )
+                                Spacer(modifier = Modifier.height(16.dp))
+                                SectionLabel("Checkout rule")
+                                SegmentedRow(
+                                    options = CheckoutRule.values().toList(),
+                                    selected = checkoutRule,
+                                    onSelect = { checkoutRule = it },
+                                    label = { it.name.lowercase().replaceFirstChar { c -> c.uppercaseChar() } }
+                                )
+                                Spacer(modifier = Modifier.height(16.dp))
+                                SectionLabel("Legs to win")
+                                SegmentedRow(
+                                    options = listOf(1, 3, 5, 7, 9),
+                                    selected = legsToWin,
+                                    onSelect = { legsToWin = it },
+                                    label = { it.toString() }
+                                )
+                            }
+                        }
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 6.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.KeyboardArrowDown,
+                                contentDescription = if (settingsExpanded) "Collapse settings" else "Expand settings",
+                                tint = TextTertiary,
+                                modifier = Modifier
+                                    .size(28.dp)
+                                    .rotate(chevronRotation)
+                            )
+                        }
+                    }
+                }
+            }
+
+            // Players section — ranked forces single mode with exactly 2 players
+            if (isRanked || gameMode == GameMode.SINGLE) {
                 item {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -295,19 +374,21 @@ fun GameSetupScreen(
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Text("Players ", style = MaterialTheme.typography.bodyLarge, color = TextSecondary)
                             Text(
-                                "${selectedPlayers.size} selected",
+                                "${selectedPlayers.size}${if (isRanked) "/2" else ""} selected",
                                 style = MaterialTheme.typography.bodyLarge,
                                 fontWeight = FontWeight.Bold,
-                                color = TextPrimary
+                                color = if (isRanked && selectedPlayers.size != 2) Amber else TextPrimary
                             )
                         }
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text("Random order", style = MaterialTheme.typography.labelMedium, color = TextSecondary)
-                            Checkbox(
-                                checked = randomOrder,
-                                onCheckedChange = { randomOrder = it },
-                                colors = CheckboxDefaults.colors(checkedColor = Accent)
-                            )
+                        if (!isRanked) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text("Random order", style = MaterialTheme.typography.labelMedium, color = TextSecondary)
+                                Checkbox(
+                                    checked = randomOrder,
+                                    onCheckedChange = { randomOrder = it },
+                                    colors = CheckboxDefaults.colors(checkedColor = Accent)
+                                )
+                            }
                         }
                     }
                 }
@@ -315,13 +396,20 @@ fun GameSetupScreen(
                 item {
                     SinglePlayerList(
                         selectedPlayers = selectedPlayers,
-                        randomOrder = randomOrder,
-                        onPlayersChanged = setSelectedPlayers
+                        randomOrder = if (isRanked) false else randomOrder,
+                        onPlayersChanged = { newList ->
+                            // Ranked caps at 2 players
+                            if (isRanked && newList.size > 2) setSelectedPlayers(newList.take(2))
+                            else setSelectedPlayers(newList)
+                        }
                     )
                 }
 
-                item {
-                    AddPlayerButton(onClick = { showPlayerPicker = true })
+                // Show add button only if not ranked or fewer than 2 players selected
+                if (!isRanked || selectedPlayers.size < 2) {
+                    item {
+                        AddPlayerButton(onClick = { showPlayerPicker = true })
+                    }
                 }
             } else {
                 // ---- Teams mode ----
@@ -344,52 +432,75 @@ fun GameSetupScreen(
         }
 
         // Start button — sticky at bottom
-        Button(
-            onClick = {
-                if (gameMode == GameMode.TEAMS) {
-                    val interleaved = interleaveTeams(teamAPlayers, teamBPlayers)
-                    val assignments = teamAPlayers.associate { it.id to 0 } + teamBPlayers.associate { it.id to 1 }
-                    val config = GameConfig(
-                        startScore = startScore,
-                        checkoutRule = checkoutRule,
-                        legsToWin = legsToWin,
-                        isSolo = false,
-                        playerIds = interleaved.map { it.id },
-                        isTeamGame = true,
-                        teamAssignments = assignments
-                    )
-                    gameViewModel.startGame(config)
-                } else {
-                    val orderedPlayers = if (randomOrder) selectedPlayers.shuffled() else selectedPlayers
-                    val config = GameConfig(
-                        startScore = startScore,
-                        checkoutRule = checkoutRule,
-                        legsToWin = legsToWin,
-                        isSolo = orderedPlayers.size == 1,
-                        playerIds = orderedPlayers.map { it.id }
-                    )
-                    gameViewModel.startGame(config)
-                }
-                onStartGame()
-            },
-            enabled = hasPlayers,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 12.dp)
-                .height(52.dp),
-            colors = ButtonDefaults.buttonColors(
-                containerColor = Accent,
-                disabledContainerColor = Surface3,
-                contentColor = Background,
-                disabledContentColor = TextTertiary
-            ),
-            shape = RoundedCornerShape(10.dp)
-        ) {
-            Text(
-                text = "Start game",
-                style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.Bold
-            )
+        Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
+            // Ranked validation hint
+            if (isRanked && selectedPlayers.size != 2) {
+                Text(
+                    text = "Ranked matches require exactly 2 players",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = Amber,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 8.dp),
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                )
+            }
+
+            Button(
+                onClick = {
+                    if (isRanked) {
+                        val config = GameConfig(
+                            startScore = rankedStartScore,
+                            checkoutRule = rankedCheckoutRule,
+                            legsToWin = rankedLegsToWin,
+                            isSolo = false,
+                            playerIds = selectedPlayers.map { it.id }
+                        )
+                        gameViewModel.startGame(config)
+                    } else if (gameMode == GameMode.TEAMS) {
+                        val interleaved = interleaveTeams(teamAPlayers, teamBPlayers)
+                        val assignments = teamAPlayers.associate { it.id to 0 } + teamBPlayers.associate { it.id to 1 }
+                        val config = GameConfig(
+                            startScore = startScore,
+                            checkoutRule = checkoutRule,
+                            legsToWin = legsToWin,
+                            isSolo = false,
+                            playerIds = interleaved.map { it.id },
+                            isTeamGame = true,
+                            teamAssignments = assignments
+                        )
+                        gameViewModel.startGame(config)
+                    } else {
+                        val orderedPlayers = if (randomOrder) selectedPlayers.shuffled() else selectedPlayers
+                        val config = GameConfig(
+                            startScore = startScore,
+                            checkoutRule = checkoutRule,
+                            legsToWin = legsToWin,
+                            isSolo = orderedPlayers.size == 1,
+                            playerIds = orderedPlayers.map { it.id }
+                        )
+                        gameViewModel.startGame(config)
+                    }
+                    onStartGame()
+                },
+                enabled = hasPlayers,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(52.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = if (isRanked) Accent else Accent,
+                    disabledContainerColor = Surface3,
+                    contentColor = Background,
+                    disabledContentColor = TextTertiary
+                ),
+                shape = RoundedCornerShape(10.dp)
+            ) {
+                Text(
+                    text = if (isRanked) "Start ranked game" else "Start game",
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Bold
+                )
+            }
         }
     }
 
@@ -399,10 +510,13 @@ fun GameSetupScreen(
             recentPlayers = recentPlayers,
             selectedPlayerIds = pickerSelectedIds,
             onPlayerSelected = { player ->
-                if (gameMode == GameMode.TEAMS) {
+                if (isRanked) {
+                    if (player.id !in selectedPlayers.map { it.id } && selectedPlayers.size < 2) {
+                        setSelectedPlayers(selectedPlayers + player)
+                    }
+                } else if (gameMode == GameMode.TEAMS) {
                     val allIds = teamAPlayers.map { it.id } + teamBPlayers.map { it.id }
                     if (player.id !in allIds) {
-                        // Add to whichever team is smaller
                         if (teamAPlayers.size <= teamBPlayers.size) {
                             setTeamPlayers(teamAPlayers + player, teamBPlayers)
                         } else {
@@ -648,7 +762,7 @@ private fun TeamPlayerRow(
     }
 }
 
-// ---- Single mode player list (extracted from original for reuse) ----
+// ---- Single mode player list ----
 @Composable
 private fun SinglePlayerList(
     selectedPlayers: List<Player>,

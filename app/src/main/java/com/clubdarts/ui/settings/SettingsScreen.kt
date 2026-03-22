@@ -7,6 +7,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.DeleteForever
+import androidx.compose.material.icons.filled.EmojiEvents
 import androidx.compose.material.icons.filled.RecordVoiceOver
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -23,6 +24,7 @@ import com.clubdarts.ui.theme.*
 @Composable
 fun SettingsScreen(
     onNavigateToTtsScores: () -> Unit,
+    onNavigateToRankingSettings: () -> Unit,
     viewModel: SettingsViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -44,6 +46,16 @@ fun SettingsScreen(
                 color = TextPrimary
             )
             Spacer(modifier = Modifier.height(16.dp))
+
+            SettingsRow(
+                icon = Icons.Default.EmojiEvents,
+                iconTint = Accent,
+                title = "Ranking System",
+                subtitle = "Elo ratings, leaderboard and ranked matches",
+                onClick = onNavigateToRankingSettings
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
 
             SettingsRow(
                 icon = Icons.Default.RecordVoiceOver,
