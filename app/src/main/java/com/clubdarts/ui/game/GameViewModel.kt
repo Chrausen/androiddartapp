@@ -424,6 +424,7 @@ class GameViewModel @Inject constructor(
 
                 val gameId = gameRepository.startGame(config)
                 val players = playerRepository.getPlayersByIds(config.playerIds)
+                    .sortedBy { p -> config.playerIds.indexOf(p.id) }
                 val leg = gameRepository.getActiveLeg(gameId)
 
                 if (config.isTeamGame) {
