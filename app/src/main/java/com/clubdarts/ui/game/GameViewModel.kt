@@ -581,11 +581,18 @@ class GameViewModel @Inject constructor(
                             }
                         } else null
 
+                        // Auto-save ranked games immediately
+                        val autoSaved = state.isRanked
+                        if (autoSaved) {
+                            gameRepository.finishGame(gameId, winnerId)
+                        }
+
                         _uiState.update { it.copy(
                             screen = GameScreen.RESULT,
                             legWins = newLegWins,
                             winnerId = winnerId,
-                            eloResults = eloResults
+                            eloResults = eloResults,
+                            gameSaved = autoSaved
                         )}
                     } else {
                         val newLegNumber = state.currentLegNumber + 1
