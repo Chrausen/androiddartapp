@@ -622,6 +622,41 @@ class GameViewModel @Inject constructor(
         }
     }
 
+    fun repeatGame() {
+        viewModelScope.launch {
+            val state = _uiState.value
+            if (!state.gameSaved) {
+                val gameId = state.gameId
+                if (gameId != null) gameRepository.deleteGame(gameId)
+            }
+            val config = state.config
+            val sameGameMode = if (state.isTeamGame) GameMode.TEAMS else GameMode.SINGLE
+            val sameTeamA = state.players.filter { state.teamAssignments[it.id] == 0 }.map { it.id }
+            val sameTeamB = state.players.filter { state.teamAssignments[it.id] == 1 }.map { it.id }
+            _uiState.update { current ->
+                GameUiState(
+                    rankingEnabled = current.rankingEnabled,
+                    isRanked = current.isRanked,
+                    rankedStartScore = current.rankedStartScore,
+                    rankedCheckoutRule = current.rankedCheckoutRule,
+                    rankedLegsToWin = current.rankedLegsToWin,
+                    showHistory = current.showHistory,
+                    isTtsMuted = current.isTtsMuted,
+                    setupSelectedPlayerIds = state.players.map { it.id },
+                    setupGameMode = sameGameMode,
+                    setupTeamAPlayerIds = sameTeamA,
+                    setupTeamBPlayerIds = sameTeamB,
+                    setupDefaults = current.setupDefaults.copy(
+                        startScore = config?.startScore ?: current.setupDefaults.startScore,
+                        checkoutRule = config?.checkoutRule ?: current.setupDefaults.checkoutRule,
+                        legsToWin = config?.legsToWin ?: current.setupDefaults.legsToWin,
+                        gameMode = sameGameMode
+                    )
+                )
+            }
+        }
+    }
+
     fun saveGame() {
         viewModelScope.launch {
             val state = _uiState.value

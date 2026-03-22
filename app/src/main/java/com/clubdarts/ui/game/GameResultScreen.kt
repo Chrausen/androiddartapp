@@ -40,7 +40,7 @@ fun GameResultScreen(
             gameSaved = gameSaved,
             onSave = { viewModel.saveGame() },
             onNewGame = {
-                viewModel.discardGame()
+                viewModel.repeatGame()
                 onNewGame()
             },
             onDone = {
@@ -54,7 +54,7 @@ fun GameResultScreen(
             gameSaved = gameSaved,
             onSave = { viewModel.saveGame() },
             onNewGame = {
-                viewModel.discardGame()
+                viewModel.repeatGame()
                 onNewGame()
             },
             onDone = {

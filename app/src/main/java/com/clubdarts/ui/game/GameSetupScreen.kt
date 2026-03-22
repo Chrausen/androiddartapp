@@ -77,8 +77,10 @@ fun GameSetupScreen(
         mutableStateOf(uiState.setupDefaults.gameMode)
     }
 
-    // Ranked/casual toggle — casual is default
-    var isRanked by remember { mutableStateOf(false) }
+    // Ranked/casual toggle — synced from ViewModel so it survives "New game" repeats
+    var isRanked by remember { mutableStateOf(uiState.isRanked) }
+
+    LaunchedEffect(uiState.isRanked) { isRanked = uiState.isRanked }
 
     // Single mode state
     var randomOrder by remember(uiState.setupDefaults.randomOrder) {
