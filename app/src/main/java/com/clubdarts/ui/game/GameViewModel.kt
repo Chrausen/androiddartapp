@@ -129,6 +129,21 @@ class GameViewModel @Inject constructor(
                 }
             }
         }
+        viewModelScope.launch {
+            settingsRepository.observeRankingStartScore().collect { v ->
+                _uiState.update { it.copy(rankedStartScore = v) }
+            }
+        }
+        viewModelScope.launch {
+            settingsRepository.observeRankingCheckoutRule().collect { v ->
+                _uiState.update { it.copy(rankedCheckoutRule = v) }
+            }
+        }
+        viewModelScope.launch {
+            settingsRepository.observeRankingLegsToWin().collect { v ->
+                _uiState.update { it.copy(rankedLegsToWin = v) }
+            }
+        }
     }
 
     override fun onCleared() {

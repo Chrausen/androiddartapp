@@ -147,6 +147,10 @@ class SettingsRepository @Inject constructor(
     suspend fun getRankingStartScore(): Int =
         get(SettingsKeys.RANKING_START_SCORE, SettingsDefaults.RANKING_START_SCORE).toIntOrNull() ?: 501
 
+    fun observeRankingStartScore(): Flow<Int> =
+        observe(SettingsKeys.RANKING_START_SCORE, SettingsDefaults.RANKING_START_SCORE)
+            .map { it.toIntOrNull() ?: 501 }
+
     suspend fun setRankingStartScore(v: Int) =
         set(SettingsKeys.RANKING_START_SCORE, v.toString())
 
@@ -154,11 +158,19 @@ class SettingsRepository @Inject constructor(
         try { CheckoutRule.valueOf(get(SettingsKeys.RANKING_CHECKOUT_RULE, SettingsDefaults.RANKING_CHECKOUT_RULE)) }
         catch (e: Exception) { CheckoutRule.DOUBLE }
 
+    fun observeRankingCheckoutRule(): Flow<CheckoutRule> =
+        observe(SettingsKeys.RANKING_CHECKOUT_RULE, SettingsDefaults.RANKING_CHECKOUT_RULE)
+            .map { try { CheckoutRule.valueOf(it) } catch (e: Exception) { CheckoutRule.DOUBLE } }
+
     suspend fun setRankingCheckoutRule(v: CheckoutRule) =
         set(SettingsKeys.RANKING_CHECKOUT_RULE, v.name)
 
     suspend fun getRankingLegsToWin(): Int =
         get(SettingsKeys.RANKING_LEGS_TO_WIN, SettingsDefaults.RANKING_LEGS_TO_WIN).toIntOrNull() ?: 1
+
+    fun observeRankingLegsToWin(): Flow<Int> =
+        observe(SettingsKeys.RANKING_LEGS_TO_WIN, SettingsDefaults.RANKING_LEGS_TO_WIN)
+            .map { it.toIntOrNull() ?: 1 }
 
     suspend fun setRankingLegsToWin(v: Int) =
         set(SettingsKeys.RANKING_LEGS_TO_WIN, v.toString())
