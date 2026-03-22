@@ -143,7 +143,7 @@ fun GameSetupScreen(
 
     // All players selected (for enable check)
     val hasPlayers = if (gameMode == GameMode.TEAMS)
-        teamAPlayers.isNotEmpty() || teamBPlayers.isNotEmpty()
+        teamAPlayers.isNotEmpty() && teamBPlayers.isNotEmpty()
     else
         selectedPlayers.isNotEmpty()
 

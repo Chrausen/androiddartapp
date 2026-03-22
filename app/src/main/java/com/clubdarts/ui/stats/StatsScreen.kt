@@ -228,55 +228,35 @@ private fun TeamGameRow(summary: TeamGameSummary) {
         colors = CardDefaults.cardColors(containerColor = Surface2),
         shape = RoundedCornerShape(10.dp)
     ) {
-        Row(
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 12.dp, vertical = 10.dp),
-            verticalAlignment = Alignment.CenterVertically
+                .padding(horizontal = 12.dp, vertical = 10.dp)
         ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    // Team A
-                    Column(modifier = Modifier.weight(1f)) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Box(modifier = Modifier.size(8.dp).background(Red, RoundedCornerShape(4.dp)))
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text("Team A", style = MaterialTheme.typography.labelSmall, color = Red)
-                        }
-                        summary.teamANames.forEach { name ->
-                            Text(name, style = MaterialTheme.typography.labelMedium, color = TextPrimary)
-                        }
-                    }
-                    // vs
-                    Text(
-                        "vs",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = TextTertiary,
-                        modifier = Modifier.padding(horizontal = 8.dp)
-                    )
-                    // Team B
-                    Column(modifier = Modifier.weight(1f)) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Box(modifier = Modifier.size(8.dp).background(Blue, RoundedCornerShape(4.dp)))
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text("Team B", style = MaterialTheme.typography.labelSmall, color = Blue)
-                        }
-                        summary.teamBNames.forEach { name ->
-                            Text(name, style = MaterialTheme.typography.labelMedium, color = TextPrimary)
-                        }
-                    }
-                }
-                Spacer(modifier = Modifier.height(4.dp))
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Text(dateStr, style = MaterialTheme.typography.labelSmall, color = TextTertiary)
-                    Text(winnerText, style = MaterialTheme.typography.labelSmall, color = winnerColor)
-                }
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    summary.teamANames.joinToString(" & "),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = Red
+                )
+                Text(
+                    " vs ",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = TextTertiary
+                )
+                Text(
+                    summary.teamBNames.joinToString(" & "),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = Blue
+                )
+            }
+            Spacer(modifier = Modifier.height(4.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(dateStr, style = MaterialTheme.typography.labelSmall, color = TextTertiary)
+                Text(winnerText, style = MaterialTheme.typography.labelSmall, color = winnerColor)
             }
         }
     }
