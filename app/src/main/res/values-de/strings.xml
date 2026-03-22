@@ -162,4 +162,11 @@
     <!-- Game setup additional -->
     <string name="game_add_player">Spieler hinzufügen</string>
     <string name="game_move_to_other_team">In anderes Team wechseln</string>
+
+    <!-- Rankings screen -->
+    <string name="rankings_title">Rangliste</string>
+    <string name="rankings_subtitle">Spieler mit %1$d+ gewerteten Spielen</string>
+    <string name="rankings_empty_title">Noch keine Rangliste</string>
+    <string name="rankings_empty_message">Spieler erscheinen hier nach %1$d gewerteten Spielen</string>
+    <string name="rankings_disclaimer">Spieler mit weniger als %1$d gewerteten Spielen haben eine vorläufige Bewertung und werden hier nicht angezeigt.</string>
 </resources>

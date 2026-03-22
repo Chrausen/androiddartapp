@@ -162,4 +162,11 @@
     <!-- Game setup additional -->
     <string name="game_add_player">Add player</string>
     <string name="game_move_to_other_team">Move to other team</string>
+
+    <!-- Rankings screen -->
+    <string name="rankings_title">Rankings</string>
+    <string name="rankings_subtitle">Players with %1$d+ ranked matches</string>
+    <string name="rankings_empty_title">No rankings yet</string>
+    <string name="rankings_empty_message">Players appear here after completing\n%1$d ranked matches</string>
+    <string name="rankings_disclaimer">Players with fewer than %1$d ranked matches have a provisional rating and are not shown here.</string>
 </resources>
