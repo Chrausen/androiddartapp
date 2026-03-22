@@ -13,6 +13,7 @@ object SettingsKeys {
     const val LAST_RANDOM_ORDER  = "last_random_order"
     const val RECENT_PLAYER_IDS  = "recent_player_ids"  // comma-separated, max 5
     const val TTS_SCORE_PHRASES  = "tts_score_phrases"  // JSON array
+    const val SHOW_HISTORY       = "show_history"
 }
 
 object SettingsDefaults {
@@ -21,6 +22,7 @@ object SettingsDefaults {
     const val LEGS_TO_WIN   = "1"
     const val RANDOM_ORDER  = "false"
     const val RECENT_IDS    = ""
+    const val SHOW_HISTORY  = "false"
 }
 
 /** Words spoken before/after the score number for a custom TTS phrase. */

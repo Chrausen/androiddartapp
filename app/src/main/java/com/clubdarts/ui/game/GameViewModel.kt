@@ -104,7 +104,11 @@ class GameViewModel @Inject constructor(
 
     fun toggleTtsMute() { _uiState.update { it.copy(isTtsMuted = !it.isTtsMuted) } }
 
-    fun toggleHistory() { _uiState.update { it.copy(showHistory = !it.showHistory) } }
+    fun toggleHistory() {
+        val newValue = !_uiState.value.showHistory
+        _uiState.update { it.copy(showHistory = newValue) }
+        viewModelScope.launch { settingsRepository.setShowHistory(newValue) }
+    }
 
     fun updateSetupSelectedPlayers(ids: List<Long>) {
         _uiState.update { it.copy(setupSelectedPlayerIds = ids) }
@@ -118,7 +122,9 @@ class GameViewModel @Inject constructor(
                 val legsToWin = settingsRepository.getLastLegsToWin()
                 val randomOrder = settingsRepository.getLastRandomOrder()
                 val recentIds = settingsRepository.getRecentPlayerIds()
+                val showHistory = settingsRepository.getShowHistory()
                 _uiState.update { it.copy(
+                    showHistory = showHistory,
                     setupDefaults = SetupDefaults(
                         startScore = startScore,
                         checkoutRule = checkoutRule,

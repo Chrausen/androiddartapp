@@ -53,6 +53,12 @@ class SettingsRepository @Inject constructor(
         set(SettingsKeys.LAST_RANDOM_ORDER, random.toString())
     }
 
+    suspend fun getShowHistory(): Boolean =
+        get(SettingsKeys.SHOW_HISTORY, SettingsDefaults.SHOW_HISTORY).toBoolean()
+
+    suspend fun setShowHistory(value: Boolean) =
+        set(SettingsKeys.SHOW_HISTORY, value.toString())
+
     suspend fun addRecentPlayer(playerId: Long) {
         val current = getRecentPlayerIds().toMutableList()
         current.remove(playerId)
