@@ -81,8 +81,6 @@ fun GameSetupScreen(
     // Teams mode state
     var teamAPlayers by remember { mutableStateOf<List<Player>>(emptyList()) }
     var teamBPlayers by remember { mutableStateOf<List<Player>>(emptyList()) }
-    var randomTeams by remember { mutableStateOf(false) }
-
     var showPlayerPicker by remember { mutableStateOf(false) }
     var settingsExpanded by remember { mutableStateOf(false) }
 
@@ -328,21 +326,7 @@ fun GameSetupScreen(
             } else {
                 // ---- Teams mode ----
                 item {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Text("Teams", style = MaterialTheme.typography.bodyLarge, color = TextPrimary, fontWeight = FontWeight.Bold)
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text("Random teams", style = MaterialTheme.typography.labelMedium, color = TextSecondary)
-                            Checkbox(
-                                checked = randomTeams,
-                                onCheckedChange = { randomTeams = it },
-                                colors = CheckboxDefaults.colors(checkedColor = Accent)
-                            )
-                        }
-                    }
+                    Text("Teams", style = MaterialTheme.typography.bodyLarge, color = TextPrimary, fontWeight = FontWeight.Bold)
                 }
 
                 item {
@@ -363,35 +347,8 @@ fun GameSetupScreen(
         Button(
             onClick = {
                 if (gameMode == GameMode.TEAMS) {
-                    // Optionally randomise teams
-                    val aList = if (randomTeams) {
-                        val all = (teamAPlayers + teamBPlayers).shuffled()
-                        val mid = (all.size + 1) / 2
-                        all.take(mid)
-                    } else teamAPlayers
-                    val bList = if (randomTeams) {
-                        val all = (teamAPlayers + teamBPlayers).shuffled()
-                        val mid = (all.size + 1) / 2
-                        // Re-compute consistently: shuffle once
-                        val shuffled = (teamAPlayers + teamBPlayers).shuffled()
-                        shuffled.drop((shuffled.size + 1) / 2)
-                    } else teamBPlayers
-
-                    // Use deterministic shuffle for randomTeams
-                    val finalA: List<Player>
-                    val finalB: List<Player>
-                    if (randomTeams) {
-                        val all = (teamAPlayers + teamBPlayers).shuffled()
-                        val mid = (all.size + 1) / 2
-                        finalA = all.take(mid)
-                        finalB = all.drop(mid)
-                    } else {
-                        finalA = teamAPlayers
-                        finalB = teamBPlayers
-                    }
-
-                    val interleaved = interleaveTeams(finalA, finalB)
-                    val assignments = finalA.associate { it.id to 0 } + finalB.associate { it.id to 1 }
+                    val interleaved = interleaveTeams(teamAPlayers, teamBPlayers)
+                    val assignments = teamAPlayers.associate { it.id to 0 } + teamBPlayers.associate { it.id to 1 }
                     val config = GameConfig(
                         startScore = startScore,
                         checkoutRule = checkoutRule,
