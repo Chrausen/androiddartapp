@@ -62,7 +62,9 @@ class HistoryViewModel @Inject constructor(
                     val summaries = games.filter { it.finishedAt != null }.mapNotNull { game ->
                         try {
                             val gamePlayers = gameRepository.getGamePlayers(game.id)
+                                .sortedBy { it.throwOrder }
                             val players = playerRepository.getPlayersByIds(gamePlayers.map { it.playerId })
+                                .sortedBy { p -> gamePlayers.indexOfFirst { it.playerId == p.id } }
                             val dateStr = dateFormat.format(Date(game.createdAt))
                             val group = when (dateStr) {
                                 todayStr      -> "Today"

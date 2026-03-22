@@ -75,6 +75,20 @@ private fun GameCard(summary: GameSummary, onClick: () -> Unit) {
     val timeFormat = SimpleDateFormat("HH:mm", Locale.getDefault())
     val timeStr = timeFormat.format(Date(summary.game.createdAt))
 
+    val isTeamGame = summary.game.isTeamGame
+    val teamAPlayers = if (isTeamGame) summary.players.filter { p ->
+        summary.gamePlayers.firstOrNull { it.playerId == p.id }?.teamIndex == 0
+    } else emptyList()
+    val teamBPlayers = if (isTeamGame) summary.players.filter { p ->
+        summary.gamePlayers.firstOrNull { it.playerId == p.id }?.teamIndex == 1
+    } else emptyList()
+
+    val title = if (isTeamGame) {
+        teamAPlayers.joinToString(" & ") { it.name } + " vs " + teamBPlayers.joinToString(" & ") { it.name }
+    } else {
+        summary.players.joinToString(" vs ") { it.name }
+    }
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -85,7 +99,7 @@ private fun GameCard(summary: GameSummary, onClick: () -> Unit) {
         Column(modifier = Modifier.padding(12.dp)) {
             // Title
             Text(
-                text = summary.players.joinToString(" vs ") { it.name },
+                text = title,
                 style = MaterialTheme.typography.titleSmall,
                 color = TextPrimary,
                 maxLines = 1
@@ -102,13 +116,25 @@ private fun GameCard(summary: GameSummary, onClick: () -> Unit) {
             Spacer(modifier = Modifier.height(4.dp))
 
             Surface(
-                color = if (summary.game.isSolo) Surface3 else Blue.copy(alpha = 0.2f),
+                color = when {
+                    isTeamGame -> Red.copy(alpha = 0.15f)
+                    summary.game.isSolo -> Surface3
+                    else -> Blue.copy(alpha = 0.2f)
+                },
                 shape = RoundedCornerShape(4.dp)
             ) {
                 Text(
-                    text = if (summary.game.isSolo) "Solo" else "Casual",
+                    text = when {
+                        isTeamGame -> "Teams"
+                        summary.game.isSolo -> "Solo"
+                        else -> "Casual"
+                    },
                     style = MaterialTheme.typography.labelSmall,
-                    color = if (summary.game.isSolo) TextSecondary else Blue,
+                    color = when {
+                        isTeamGame -> Red
+                        summary.game.isSolo -> TextSecondary
+                        else -> Blue
+                    },
                     modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
                 )
             }
@@ -117,34 +143,79 @@ private fun GameCard(summary: GameSummary, onClick: () -> Unit) {
             HorizontalDivider(color = Border)
             Spacer(modifier = Modifier.height(8.dp))
 
-            // Players
-            summary.players.forEach { player ->
-                val isWinner = player.id == summary.game.winnerId
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Box(modifier = Modifier
-                        .size(8.dp)
-                        .clip(CircleShape)
-                        .background(if (isWinner) Green else androidx.compose.ui.graphics.Color.Transparent)
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    PlayerAvatar(name = player.name, size = 28.dp)
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = player.name,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = if (isWinner) TextPrimary else TextSecondary,
-                        fontWeight = if (isWinner) FontWeight.SemiBold else FontWeight.Normal,
-                        modifier = Modifier.weight(1f)
-                    )
-                    if (isWinner) {
-                        Text("W", style = MaterialTheme.typography.labelSmall, color = Green)
-                    }
+            if (isTeamGame) {
+                // Team A players
+                teamAPlayers.forEach { player ->
+                    val isWinner = summary.game.winningTeamIndex == 0
+                    TeamPlayerRow(name = player.name, teamColor = Red, isWinner = isWinner)
+                    Spacer(modifier = Modifier.height(4.dp))
                 }
-                Spacer(modifier = Modifier.height(4.dp))
+                // Team B players
+                teamBPlayers.forEach { player ->
+                    val isWinner = summary.game.winningTeamIndex == 1
+                    TeamPlayerRow(name = player.name, teamColor = Blue, isWinner = isWinner)
+                    Spacer(modifier = Modifier.height(4.dp))
+                }
+            } else {
+                summary.players.forEach { player ->
+                    val isWinner = player.id == summary.game.winnerId
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Box(modifier = Modifier
+                            .size(8.dp)
+                            .clip(CircleShape)
+                            .background(if (isWinner) Green else androidx.compose.ui.graphics.Color.Transparent)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        PlayerAvatar(name = player.name, size = 28.dp)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = player.name,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = if (isWinner) TextPrimary else TextSecondary,
+                            fontWeight = if (isWinner) FontWeight.SemiBold else FontWeight.Normal,
+                            modifier = Modifier.weight(1f)
+                        )
+                        if (isWinner) {
+                            Text("W", style = MaterialTheme.typography.labelSmall, color = Green)
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(4.dp))
+                }
             }
+        }
+    }
+}
+
+@Composable
+private fun TeamPlayerRow(
+    name: String,
+    teamColor: androidx.compose.ui.graphics.Color,
+    isWinner: Boolean
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Box(modifier = Modifier
+            .size(8.dp)
+            .clip(CircleShape)
+            .background(teamColor)
+        )
+        Spacer(modifier = Modifier.width(8.dp))
+        PlayerAvatar(name = name, size = 28.dp)
+        Spacer(modifier = Modifier.width(8.dp))
+        Text(
+            text = name,
+            style = MaterialTheme.typography.bodySmall,
+            color = if (isWinner) TextPrimary else TextSecondary,
+            fontWeight = if (isWinner) FontWeight.SemiBold else FontWeight.Normal,
+            modifier = Modifier.weight(1f)
+        )
+        if (isWinner) {
+            Text("W", style = MaterialTheme.typography.labelSmall, color = teamColor)
         }
     }
 }

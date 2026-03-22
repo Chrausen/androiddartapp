@@ -20,9 +20,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.clubdarts.data.model.Player
 import com.clubdarts.ui.game.components.PlayerAvatar
 import com.clubdarts.ui.theme.*
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
 
 @Composable
 fun StatsScreen(
@@ -60,25 +57,6 @@ fun StatsScreen(
                 ) {
                     MetricCard("Club 180s", uiState.clubTotal180s.toString(), modifier = Modifier.weight(1f))
                     MetricCard("Best finish", uiState.clubHighestFinish?.toString() ?: "—", modifier = Modifier.weight(1f))
-                }
-            }
-
-            // Team Games section
-            if (uiState.clubTotalTeamGames > 0) {
-                item {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        MetricCard("Team games", uiState.clubTotalTeamGames.toString(), modifier = Modifier.weight(1f))
-                        Spacer(modifier = Modifier.weight(1f))
-                    }
-                }
-                item {
-                    Text("Recent team games", style = MaterialTheme.typography.titleMedium, color = TextPrimary)
-                }
-                items(uiState.recentTeamGames) { summary ->
-                    TeamGameRow(summary = summary)
                 }
             }
 
@@ -202,61 +180,6 @@ fun StatsScreen(
                         }
                     }
                 }
-            }
-        }
-    }
-}
-
-@Composable
-private fun TeamGameRow(summary: TeamGameSummary) {
-    val dateStr = remember(summary.game.createdAt) {
-        SimpleDateFormat("d MMM yyyy", Locale.getDefault()).format(Date(summary.game.createdAt))
-    }
-    val winnerText = when (summary.winningTeamIndex) {
-        0 -> "Team A won"
-        1 -> "Team B won"
-        else -> "In progress"
-    }
-    val winnerColor = when (summary.winningTeamIndex) {
-        0 -> Red
-        1 -> Blue
-        else -> TextTertiary
-    }
-
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = Surface2),
-        shape = RoundedCornerShape(10.dp)
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 12.dp, vertical = 10.dp)
-        ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(
-                    summary.teamANames.joinToString(" & "),
-                    style = MaterialTheme.typography.labelMedium,
-                    color = Red
-                )
-                Text(
-                    " vs ",
-                    style = MaterialTheme.typography.labelMedium,
-                    color = TextTertiary
-                )
-                Text(
-                    summary.teamBNames.joinToString(" & "),
-                    style = MaterialTheme.typography.labelMedium,
-                    color = Blue
-                )
-            }
-            Spacer(modifier = Modifier.height(4.dp))
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Text(dateStr, style = MaterialTheme.typography.labelSmall, color = TextTertiary)
-                Text(winnerText, style = MaterialTheme.typography.labelSmall, color = winnerColor)
             }
         }
     }
