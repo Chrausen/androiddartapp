@@ -1,5 +1,6 @@
 package com.clubdarts.ui.game
 
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.Spring
@@ -10,6 +11,7 @@ import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -26,6 +28,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
@@ -63,21 +66,31 @@ fun GameSetupScreen(
     var legsToWin by remember(uiState.setupDefaults.legsToWin) {
         mutableIntStateOf(uiState.setupDefaults.legsToWin)
     }
+
+    // Game mode state
+    var gameMode by remember(uiState.setupDefaults.gameMode) {
+        mutableStateOf(uiState.setupDefaults.gameMode)
+    }
+
+    // Single mode state
     var randomOrder by remember(uiState.setupDefaults.randomOrder) {
         mutableStateOf(uiState.setupDefaults.randomOrder)
     }
     var selectedPlayers by remember { mutableStateOf<List<Player>>(emptyList()) }
+
+    // Teams mode state
+    var teamAPlayers by remember { mutableStateOf<List<Player>>(emptyList()) }
+    var teamBPlayers by remember { mutableStateOf<List<Player>>(emptyList()) }
     var showPlayerPicker by remember { mutableStateOf(false) }
     var settingsExpanded by remember { mutableStateOf(false) }
-    var draggingIndex by remember { mutableIntStateOf(-1) }
-    var dragOffsetY by remember { mutableFloatStateOf(0f) }
-    var rowHeightPx by remember { mutableIntStateOf(0) }
-    val rowSpacingPx = with(LocalDensity.current) { 16.dp.toPx() }
-    val coroutineScope = rememberCoroutineScope()
-    val returnAnim = remember { Animatable(0f) }
-    var returningPlayerId by remember { mutableStateOf<Long?>(null) }
 
-    // Restore selected players when returning to this screen after a tab switch
+    val chevronRotation by animateFloatAsState(
+        targetValue = if (settingsExpanded) 180f else 0f,
+        animationSpec = tween(300),
+        label = "chevron"
+    )
+
+    // Restore single-mode selected players when returning from tab switch
     LaunchedEffect(uiState.setupSelectedPlayerIds, playersState.players) {
         if (selectedPlayers.isEmpty() && uiState.setupSelectedPlayerIds.isNotEmpty() && playersState.players.isNotEmpty()) {
             val map = playersState.players.associateBy { it.id }
@@ -86,23 +99,53 @@ fun GameSetupScreen(
         }
     }
 
-    // Helper: update local state and persist to ViewModel in one call
-    val setPlayers: (List<Player>) -> Unit = { players ->
+    // Restore team players when returning from tab switch
+    LaunchedEffect(uiState.setupTeamAPlayerIds, uiState.setupTeamBPlayerIds, playersState.players) {
+        val map = playersState.players.associateBy { it.id }
+        if (teamAPlayers.isEmpty() && uiState.setupTeamAPlayerIds.isNotEmpty()) {
+            teamAPlayers = uiState.setupTeamAPlayerIds.mapNotNull { map[it] }
+        }
+        if (teamBPlayers.isEmpty() && uiState.setupTeamBPlayerIds.isNotEmpty()) {
+            teamBPlayers = uiState.setupTeamBPlayerIds.mapNotNull { map[it] }
+        }
+    }
+
+    // Sync game mode from ViewModel on first load
+    LaunchedEffect(uiState.setupGameMode) {
+        gameMode = uiState.setupGameMode
+    }
+
+    // Helpers to persist state across tab switches
+    val setSelectedPlayers: (List<Player>) -> Unit = { players ->
         selectedPlayers = players
         gameViewModel.updateSetupSelectedPlayers(players.map { it.id })
     }
-    val chevronRotation by animateFloatAsState(
-        targetValue = if (settingsExpanded) 180f else 0f,
-        animationSpec = tween(300),
-        label = "chevron"
-    )
+    val setTeamPlayers: (List<Player>, List<Player>) -> Unit = { a, b ->
+        teamAPlayers = a
+        teamBPlayers = b
+        gameViewModel.updateSetupTeamPlayers(a.map { it.id }, b.map { it.id })
+    }
 
-    // Load recent players into picker
+    // Load recent players
     val recentPlayers = remember(uiState.setupDefaults.recentPlayerIds, playersState.players) {
         val ids = uiState.setupDefaults.recentPlayerIds
         val map = playersState.players.associateBy { it.id }
         ids.mapNotNull { map[it] }
     }
+
+    // Already-selected IDs for the picker (union of both teams or single list)
+    val pickerSelectedIds = remember(gameMode, selectedPlayers, teamAPlayers, teamBPlayers) {
+        if (gameMode == GameMode.TEAMS)
+            (teamAPlayers.map { it.id } + teamBPlayers.map { it.id }).toSet()
+        else
+            selectedPlayers.map { it.id }.toSet()
+    }
+
+    // All players selected (for enable check)
+    val hasPlayers = if (gameMode == GameMode.TEAMS)
+        teamAPlayers.isNotEmpty() && teamBPlayers.isNotEmpty()
+    else
+        selectedPlayers.isNotEmpty()
 
     Column(
         modifier = Modifier
@@ -124,7 +167,36 @@ fun GameSetupScreen(
                 )
             }
 
-            // Game settings (collapsible group)
+            // Game mode toggle — Single | Teams
+            item {
+                SectionLabel("Game mode")
+                SegmentedRow(
+                    options = GameMode.values().toList(),
+                    selected = gameMode,
+                    onSelect = { newMode ->
+                        if (newMode != gameMode) {
+                            // When switching modes, migrate players
+                            if (newMode == GameMode.TEAMS) {
+                                // Split current single-mode players into two teams
+                                val all = selectedPlayers
+                                val mid = (all.size + 1) / 2
+                                val a = all.take(mid)
+                                val b = all.drop(mid)
+                                setTeamPlayers(a, b)
+                            } else {
+                                // Merge teams back to single list
+                                val merged = teamAPlayers + teamBPlayers
+                                setSelectedPlayers(merged)
+                            }
+                            gameMode = newMode
+                            gameViewModel.updateSetupGameMode(newMode)
+                        }
+                    },
+                    label = { if (it == GameMode.SINGLE) "Single" else "Teams" }
+                )
+            }
+
+            // Game settings (collapsible)
             item {
                 Column(
                     modifier = Modifier
@@ -211,145 +283,96 @@ fun GameSetupScreen(
                 }
             }
 
-            // Players section header
-            item {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text("Players ", style = MaterialTheme.typography.bodyLarge, color = TextSecondary)
-                        Text(
-                            "${selectedPlayers.size} selected",
-                            style = MaterialTheme.typography.bodyLarge,
-                            fontWeight = FontWeight.Bold,
-                            color = TextPrimary
-                        )
-                    }
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text("Random order", style = MaterialTheme.typography.labelMedium, color = TextSecondary)
-                        Checkbox(
-                            checked = randomOrder,
-                            onCheckedChange = { randomOrder = it },
-                            colors = CheckboxDefaults.colors(checkedColor = Accent)
-                        )
-                    }
-                }
-            }
-
-            // Selected players list
-            item {
-                val rowTotal = (rowHeightPx + rowSpacingPx).takeIf { it > 0f } ?: 80f
-                val dropTargetIndex = if (draggingIndex >= 0) {
-                    (draggingIndex + (dragOffsetY / rowTotal).roundToInt())
-                        .coerceIn(0, selectedPlayers.size - 1)
-                } else -1
-
-                Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                    selectedPlayers.forEachIndexed { index, player ->
-                        key(player.id) {
-                            val isDragging = index == draggingIndex
-                            val isReturning = player.id == returningPlayerId
-                            val targetOffset = when {
-                                draggingIndex < 0 -> 0f
-                                isDragging -> 0f
-                                draggingIndex < dropTargetIndex && index in (draggingIndex + 1..dropTargetIndex) -> -rowTotal
-                                draggingIndex > dropTargetIndex && index in (dropTargetIndex..draggingIndex - 1) -> rowTotal
-                                else -> 0f
-                            }
-                            val animatedOffset by animateFloatAsState(
-                                targetValue = targetOffset,
-                                animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
-                                label = "item_offset"
+            // Players section — switches between Single and Teams layout
+            if (gameMode == GameMode.SINGLE) {
+                // ---- Single mode player list ----
+                item {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text("Players ", style = MaterialTheme.typography.bodyLarge, color = TextSecondary)
+                            Text(
+                                "${selectedPlayers.size} selected",
+                                style = MaterialTheme.typography.bodyLarge,
+                                fontWeight = FontWeight.Bold,
+                                color = TextPrimary
                             )
-                            val visualOffset = when {
-                                isDragging -> dragOffsetY
-                                isReturning -> returnAnim.value
-                                else -> animatedOffset
-                            }
-
-                            SelectedPlayerRow(
-                                modifier = Modifier
-                                    .zIndex(if (isDragging) 1f else 0f)
-                                    .offset { IntOffset(0, visualOffset.roundToInt()) },
-                                isDragging = isDragging,
-                                player = player,
-                                index = index,
-                                isFirst = index == 0,
-                                randomOrder = randomOrder,
-                                onRemove = { setPlayers(selectedPlayers.filter { it.id != player.id }) },
-                                onSizeChanged = { h -> if (rowHeightPx == 0) rowHeightPx = h },
-                                onDragStart = { draggingIndex = index; dragOffsetY = 0f },
-                                onDrag = { dy -> dragOffsetY += dy },
-                                onDragEnd = {
-                                    val rowTotalEnd = (rowHeightPx + rowSpacingPx).takeIf { it > 0f } ?: 80f
-                                    val shift = (dragOffsetY / rowTotalEnd).roundToInt()
-                                    val target = (draggingIndex + shift)
-                                        .coerceIn(0, selectedPlayers.size - 1)
-                                    // Remainder: how far the card is from its new slot's position
-                                    val remainder = dragOffsetY - shift * rowTotalEnd
-                                    val droppedId = selectedPlayers.getOrNull(draggingIndex)?.id
-                                    if (target != draggingIndex) {
-                                        val newList = selectedPlayers.toMutableList()
-                                        newList.add(target, newList.removeAt(draggingIndex))
-                                        setPlayers(newList)
-                                    }
-                                    draggingIndex = -1
-                                    dragOffsetY = 0f
-                                    // Animate the card from its visual drop position to its slot
-                                    if (droppedId != null) {
-                                        returningPlayerId = droppedId
-                                        coroutineScope.launch {
-                                            returnAnim.snapTo(remainder)
-                                            returnAnim.animateTo(
-                                                0f,
-                                                spring(stiffness = Spring.StiffnessMedium)
-                                            )
-                                            returningPlayerId = null
-                                        }
-                                    }
-                                }
+                        }
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text("Random order", style = MaterialTheme.typography.labelMedium, color = TextSecondary)
+                            Checkbox(
+                                checked = randomOrder,
+                                onCheckedChange = { randomOrder = it },
+                                colors = CheckboxDefaults.colors(checkedColor = Accent)
                             )
                         }
                     }
                 }
-            }
 
-            // Add player button
-            item {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(48.dp)
-                        .border(1.dp, Border2, RoundedCornerShape(10.dp))
-                        .clickable { showPlayerPicker = true },
-                    contentAlignment = Alignment.Center
-                ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Default.Add, contentDescription = null, tint = TextSecondary)
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text("Add player", style = MaterialTheme.typography.bodyMedium, color = TextSecondary)
-                    }
+                item {
+                    SinglePlayerList(
+                        selectedPlayers = selectedPlayers,
+                        randomOrder = randomOrder,
+                        onPlayersChanged = setSelectedPlayers
+                    )
+                }
+
+                item {
+                    AddPlayerButton(onClick = { showPlayerPicker = true })
+                }
+            } else {
+                // ---- Teams mode ----
+                item {
+                    Text("Teams", style = MaterialTheme.typography.bodyLarge, color = TextPrimary, fontWeight = FontWeight.Bold)
+                }
+
+                item {
+                    TeamsPlayerSection(
+                        teamAPlayers = teamAPlayers,
+                        teamBPlayers = teamBPlayers,
+                        onTeamsChanged = setTeamPlayers
+                    )
+                }
+
+                item {
+                    AddPlayerButton(onClick = { showPlayerPicker = true })
                 }
             }
         }
 
-        // Start button — sticky at bottom, always visible
+        // Start button — sticky at bottom
         Button(
             onClick = {
-                val orderedPlayers = if (randomOrder) selectedPlayers.shuffled() else selectedPlayers
-                val config = GameConfig(
-                    startScore = startScore,
-                    checkoutRule = checkoutRule,
-                    legsToWin = legsToWin,
-                    isSolo = orderedPlayers.size == 1,
-                    playerIds = orderedPlayers.map { it.id }
-                )
-                gameViewModel.startGame(config)
+                if (gameMode == GameMode.TEAMS) {
+                    val interleaved = interleaveTeams(teamAPlayers, teamBPlayers)
+                    val assignments = teamAPlayers.associate { it.id to 0 } + teamBPlayers.associate { it.id to 1 }
+                    val config = GameConfig(
+                        startScore = startScore,
+                        checkoutRule = checkoutRule,
+                        legsToWin = legsToWin,
+                        isSolo = false,
+                        playerIds = interleaved.map { it.id },
+                        isTeamGame = true,
+                        teamAssignments = assignments
+                    )
+                    gameViewModel.startGame(config)
+                } else {
+                    val orderedPlayers = if (randomOrder) selectedPlayers.shuffled() else selectedPlayers
+                    val config = GameConfig(
+                        startScore = startScore,
+                        checkoutRule = checkoutRule,
+                        legsToWin = legsToWin,
+                        isSolo = orderedPlayers.size == 1,
+                        playerIds = orderedPlayers.map { it.id }
+                    )
+                    gameViewModel.startGame(config)
+                }
                 onStartGame()
             },
-            enabled = selectedPlayers.isNotEmpty(),
+            enabled = hasPlayers,
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp, vertical = 12.dp)
@@ -374,14 +397,361 @@ fun GameSetupScreen(
         PlayerPickerSheet(
             allPlayers = playersState.players,
             recentPlayers = recentPlayers,
-            selectedPlayerIds = selectedPlayers.map { it.id }.toSet(),
+            selectedPlayerIds = pickerSelectedIds,
             onPlayerSelected = { player ->
-                if (player.id !in selectedPlayers.map { it.id }) {
-                    setPlayers(selectedPlayers + player)
+                if (gameMode == GameMode.TEAMS) {
+                    val allIds = teamAPlayers.map { it.id } + teamBPlayers.map { it.id }
+                    if (player.id !in allIds) {
+                        // Add to whichever team is smaller
+                        if (teamAPlayers.size <= teamBPlayers.size) {
+                            setTeamPlayers(teamAPlayers + player, teamBPlayers)
+                        } else {
+                            setTeamPlayers(teamAPlayers, teamBPlayers + player)
+                        }
+                    }
+                } else {
+                    if (player.id !in selectedPlayers.map { it.id }) {
+                        setSelectedPlayers(selectedPlayers + player)
+                    }
                 }
             },
             onDismiss = { showPlayerPicker = false }
         )
+    }
+}
+
+// ---- Two-column teams layout ----
+@Composable
+private fun TeamsPlayerSection(
+    teamAPlayers: List<Player>,
+    teamBPlayers: List<Player>,
+    onTeamsChanged: (List<Player>, List<Player>) -> Unit
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        // Team A (Red)
+        TeamColumn(
+            modifier = Modifier.weight(1f),
+            label = "Team A",
+            labelColor = Red,
+            players = teamAPlayers,
+            onPlayersReordered = { newList -> onTeamsChanged(newList, teamBPlayers) },
+            onMoveToOther = { player ->
+                onTeamsChanged(
+                    teamAPlayers.filter { it.id != player.id },
+                    teamBPlayers + player
+                )
+            }
+        )
+
+        // Team B (Blue)
+        TeamColumn(
+            modifier = Modifier.weight(1f),
+            label = "Team B",
+            labelColor = Blue,
+            players = teamBPlayers,
+            onPlayersReordered = { newList -> onTeamsChanged(teamAPlayers, newList) },
+            onMoveToOther = { player ->
+                onTeamsChanged(
+                    teamAPlayers + player,
+                    teamBPlayers.filter { it.id != player.id }
+                )
+            }
+        )
+    }
+}
+
+@Composable
+private fun TeamColumn(
+    label: String,
+    labelColor: Color,
+    players: List<Player>,
+    onPlayersReordered: (List<Player>) -> Unit,
+    onMoveToOther: (Player) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    var draggingIndex by remember { mutableIntStateOf(-1) }
+    var dragOffsetY by remember { mutableFloatStateOf(0f) }
+    var rowHeightPx by remember { mutableIntStateOf(0) }
+    val rowSpacingPx = with(LocalDensity.current) { 8.dp.toPx() }
+    val coroutineScope = rememberCoroutineScope()
+    val returnAnim = remember { Animatable(0f) }
+    var returningPlayerId by remember { mutableStateOf<Long?>(null) }
+
+    Column(modifier = modifier) {
+        // Team header
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(10.dp)
+                    .background(labelColor, RoundedCornerShape(5.dp))
+            )
+            Spacer(modifier = Modifier.width(6.dp))
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = FontWeight.Bold,
+                color = labelColor
+            )
+        }
+
+        // Player rows
+        val rowTotal = (rowHeightPx + rowSpacingPx).takeIf { it > 0f } ?: 60f
+        val dropTargetIndex = if (draggingIndex >= 0) {
+            (draggingIndex + (dragOffsetY / rowTotal).roundToInt())
+                .coerceIn(0, players.size - 1)
+        } else -1
+
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            players.forEachIndexed { index, player ->
+                key(player.id) {
+                    val isDragging = index == draggingIndex
+                    val isReturning = player.id == returningPlayerId
+                    val targetOffset = when {
+                        draggingIndex < 0 -> 0f
+                        isDragging -> 0f
+                        draggingIndex < dropTargetIndex && index in (draggingIndex + 1..dropTargetIndex) -> -rowTotal
+                        draggingIndex > dropTargetIndex && index in (dropTargetIndex..draggingIndex - 1) -> rowTotal
+                        else -> 0f
+                    }
+                    val animatedOffset by animateFloatAsState(
+                        targetValue = targetOffset,
+                        animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
+                        label = "item_offset"
+                    )
+                    val visualOffset = when {
+                        isDragging -> dragOffsetY
+                        isReturning -> returnAnim.value
+                        else -> animatedOffset
+                    }
+
+                    TeamPlayerRow(
+                        modifier = Modifier
+                            .zIndex(if (isDragging) 1f else 0f)
+                            .offset { IntOffset(0, visualOffset.roundToInt()) },
+                        player = player,
+                        teamColor = labelColor,
+                        isDragging = isDragging,
+                        onMoveToOther = { onMoveToOther(player) },
+                        onRemove = { onPlayersReordered(players.filter { it.id != player.id }) },
+                        onSizeChanged = { h -> if (rowHeightPx == 0) rowHeightPx = h },
+                        onDragStart = { draggingIndex = index; dragOffsetY = 0f },
+                        onDrag = { dy -> dragOffsetY += dy },
+                        onDragEnd = {
+                            val rTotal = (rowHeightPx + rowSpacingPx).takeIf { it > 0f } ?: 60f
+                            val shift = (dragOffsetY / rTotal).roundToInt()
+                            val target = (draggingIndex + shift).coerceIn(0, players.size - 1)
+                            val remainder = dragOffsetY - shift * rTotal
+                            val droppedId = players.getOrNull(draggingIndex)?.id
+                            if (target != draggingIndex) {
+                                val newList = players.toMutableList()
+                                newList.add(target, newList.removeAt(draggingIndex))
+                                onPlayersReordered(newList)
+                            }
+                            draggingIndex = -1
+                            dragOffsetY = 0f
+                            if (droppedId != null) {
+                                returningPlayerId = droppedId
+                                coroutineScope.launch {
+                                    returnAnim.snapTo(remainder)
+                                    returnAnim.animateTo(0f, spring(stiffness = Spring.StiffnessMedium))
+                                    returningPlayerId = null
+                                }
+                            }
+                        }
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun TeamPlayerRow(
+    player: Player,
+    teamColor: Color,
+    isDragging: Boolean,
+    onMoveToOther: () -> Unit,
+    onRemove: () -> Unit,
+    modifier: Modifier = Modifier,
+    onSizeChanged: (Int) -> Unit = {},
+    onDragStart: () -> Unit = {},
+    onDrag: (Float) -> Unit = {},
+    onDragEnd: () -> Unit = {}
+) {
+    val currentOnDragStart by rememberUpdatedState(onDragStart)
+    val currentOnDrag by rememberUpdatedState(onDrag)
+    val currentOnDragEnd by rememberUpdatedState(onDragEnd)
+
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .onSizeChanged { onSizeChanged(it.height) }
+            .then(if (isDragging) Modifier.shadow(6.dp, RoundedCornerShape(8.dp)) else Modifier)
+            .background(
+                color = if (isDragging) Surface3 else Surface2,
+                shape = RoundedCornerShape(8.dp)
+            )
+            .border(1.dp, teamColor.copy(alpha = 0.3f), RoundedCornerShape(8.dp))
+            .padding(horizontal = 8.dp, vertical = 6.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        // Drag handle
+        Icon(
+            imageVector = Icons.Default.DragHandle,
+            contentDescription = "Drag",
+            tint = TextTertiary,
+            modifier = Modifier
+                .size(16.dp)
+                .pointerInput(Unit) {
+                    detectDragGestures(
+                        onDragStart = { currentOnDragStart() },
+                        onDrag = { change, amount ->
+                            change.consume()
+                            currentOnDrag(amount.y)
+                        },
+                        onDragEnd = { currentOnDragEnd() },
+                        onDragCancel = { currentOnDragEnd() }
+                    )
+                }
+        )
+        Spacer(modifier = Modifier.width(4.dp))
+
+        // Player name
+        Text(
+            text = player.name,
+            style = MaterialTheme.typography.labelMedium,
+            color = TextPrimary,
+            maxLines = 1,
+            modifier = Modifier.weight(1f)
+        )
+
+        // Move to other team arrow
+        IconButton(
+            onClick = onMoveToOther,
+            modifier = Modifier.size(28.dp)
+        ) {
+            Icon(
+                imageVector = Icons.Default.SwapHoriz,
+                contentDescription = "Move to other team",
+                tint = TextTertiary,
+                modifier = Modifier.size(16.dp)
+            )
+        }
+    }
+}
+
+// ---- Single mode player list (extracted from original for reuse) ----
+@Composable
+private fun SinglePlayerList(
+    selectedPlayers: List<Player>,
+    randomOrder: Boolean,
+    onPlayersChanged: (List<Player>) -> Unit
+) {
+    var draggingIndex by remember { mutableIntStateOf(-1) }
+    var dragOffsetY by remember { mutableFloatStateOf(0f) }
+    var rowHeightPx by remember { mutableIntStateOf(0) }
+    val rowSpacingPx = with(LocalDensity.current) { 16.dp.toPx() }
+    val coroutineScope = rememberCoroutineScope()
+    val returnAnim = remember { Animatable(0f) }
+    var returningPlayerId by remember { mutableStateOf<Long?>(null) }
+
+    val rowTotal = (rowHeightPx + rowSpacingPx).takeIf { it > 0f } ?: 80f
+    val dropTargetIndex = if (draggingIndex >= 0) {
+        (draggingIndex + (dragOffsetY / rowTotal).roundToInt())
+            .coerceIn(0, selectedPlayers.size - 1)
+    } else -1
+
+    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+        selectedPlayers.forEachIndexed { index, player ->
+            key(player.id) {
+                val isDragging = index == draggingIndex
+                val isReturning = player.id == returningPlayerId
+                val targetOffset = when {
+                    draggingIndex < 0 -> 0f
+                    isDragging -> 0f
+                    draggingIndex < dropTargetIndex && index in (draggingIndex + 1..dropTargetIndex) -> -rowTotal
+                    draggingIndex > dropTargetIndex && index in (dropTargetIndex..draggingIndex - 1) -> rowTotal
+                    else -> 0f
+                }
+                val animatedOffset by animateFloatAsState(
+                    targetValue = targetOffset,
+                    animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
+                    label = "item_offset"
+                )
+                val visualOffset = when {
+                    isDragging -> dragOffsetY
+                    isReturning -> returnAnim.value
+                    else -> animatedOffset
+                }
+
+                SelectedPlayerRow(
+                    modifier = Modifier
+                        .zIndex(if (isDragging) 1f else 0f)
+                        .offset { IntOffset(0, visualOffset.roundToInt()) },
+                    isDragging = isDragging,
+                    player = player,
+                    index = index,
+                    isFirst = index == 0,
+                    randomOrder = randomOrder,
+                    onRemove = { onPlayersChanged(selectedPlayers.filter { it.id != player.id }) },
+                    onSizeChanged = { h -> if (rowHeightPx == 0) rowHeightPx = h },
+                    onDragStart = { draggingIndex = index; dragOffsetY = 0f },
+                    onDrag = { dy -> dragOffsetY += dy },
+                    onDragEnd = {
+                        val rowTotalEnd = (rowHeightPx + rowSpacingPx).takeIf { it > 0f } ?: 80f
+                        val shift = (dragOffsetY / rowTotalEnd).roundToInt()
+                        val target = (draggingIndex + shift)
+                            .coerceIn(0, selectedPlayers.size - 1)
+                        val remainder = dragOffsetY - shift * rowTotalEnd
+                        val droppedId = selectedPlayers.getOrNull(draggingIndex)?.id
+                        if (target != draggingIndex) {
+                            val newList = selectedPlayers.toMutableList()
+                            newList.add(target, newList.removeAt(draggingIndex))
+                            onPlayersChanged(newList)
+                        }
+                        draggingIndex = -1
+                        dragOffsetY = 0f
+                        if (droppedId != null) {
+                            returningPlayerId = droppedId
+                            coroutineScope.launch {
+                                returnAnim.snapTo(remainder)
+                                returnAnim.animateTo(
+                                    0f,
+                                    spring(stiffness = Spring.StiffnessMedium)
+                                )
+                                returningPlayerId = null
+                            }
+                        }
+                    }
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun AddPlayerButton(onClick: () -> Unit) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(48.dp)
+            .border(1.dp, Border2, RoundedCornerShape(10.dp))
+            .clickable { onClick() },
+        contentAlignment = Alignment.Center
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Icon(Icons.Default.Add, contentDescription = null, tint = TextSecondary)
+            Spacer(modifier = Modifier.width(8.dp))
+            Text("Add player", style = MaterialTheme.typography.bodyMedium, color = TextSecondary)
+        }
     }
 }
 
@@ -516,4 +886,13 @@ private fun ordinalSuffix(n: Int): String = when {
     n % 10 == 2 -> "nd"
     n % 10 == 3 -> "rd"
     else -> "th"
+}
+
+/** Interleave two team player lists for throw order: T1P1, T2P1, T1P2, T2P2, ... */
+fun interleaveTeams(teamA: List<Player>, teamB: List<Player>): List<Player> = buildList {
+    val max = maxOf(teamA.size, teamB.size)
+    for (i in 0 until max) {
+        if (i < teamA.size) add(teamA[i])
+        if (i < teamB.size) add(teamB[i])
+    }
 }

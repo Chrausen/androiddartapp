@@ -83,7 +83,10 @@ class StatsViewModel @Inject constructor(
                 )}
 
                 gameRepository.getAllGames().collect { games ->
-                    _uiState.update { it.copy(clubTotalGames = games.count { it.finishedAt != null }) }
+                    val finishedGames = games.filter { it.finishedAt != null }
+                    _uiState.update { it.copy(
+                        clubTotalGames = finishedGames.count { !it.isTeamGame }
+                    ) }
                 }
             } catch (e: Exception) {
                 _uiState.update { it.copy(errorMessage = e.message) }

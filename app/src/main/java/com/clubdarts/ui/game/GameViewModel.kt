@@ -19,6 +19,7 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 enum class GameScreen { SETUP, LIVE, RESULT }
+enum class GameMode { SINGLE, TEAMS }
 
 data class DartInput(val score: Int, val multiplier: Int) {
     val value: Int get() = score * multiplier
@@ -46,7 +47,8 @@ data class SetupDefaults(
     val checkoutRule: CheckoutRule = CheckoutRule.DOUBLE,
     val legsToWin: Int = 1,
     val randomOrder: Boolean = false,
-    val recentPlayerIds: List<Long> = emptyList()
+    val recentPlayerIds: List<Long> = emptyList(),
+    val gameMode: GameMode = GameMode.SINGLE
 )
 
 data class GameUiState(
@@ -54,8 +56,16 @@ data class GameUiState(
     val config: GameConfig? = null,
     val players: List<Player> = emptyList(),
     val currentPlayerIndex: Int = 0,
+    // Single mode scores
     val scores: Map<Long, Int> = emptyMap(),
     val legWins: Map<Long, Int> = emptyMap(),
+    // Team mode scores
+    val isTeamGame: Boolean = false,
+    val teamAssignments: Map<Long, Int> = emptyMap(),   // playerId → 0 (Team A) or 1 (Team B)
+    val teamScores: Map<Int, Int> = emptyMap(),          // teamIndex → remaining score
+    val teamLegWins: Map<Int, Int> = emptyMap(),         // teamIndex → legs won
+    val winningTeamIndex: Int? = null,
+    // Current visit
     val currentDarts: List<DartInput> = emptyList(),
     val pendingMultiplier: Int = 1,
     val visitHistory: List<VisitRecord> = emptyList(),
@@ -70,7 +80,11 @@ data class GameUiState(
     val gameSaved: Boolean = false,
     val isTtsMuted: Boolean = false,
     val showHistory: Boolean = false,
-    val setupSelectedPlayerIds: List<Long> = emptyList()
+    // Setup persistence across tab switches
+    val setupSelectedPlayerIds: List<Long> = emptyList(),
+    val setupGameMode: GameMode = GameMode.SINGLE,
+    val setupTeamAPlayerIds: List<Long> = emptyList(),
+    val setupTeamBPlayerIds: List<Long> = emptyList()
 )
 
 @HiltViewModel
@@ -114,6 +128,14 @@ class GameViewModel @Inject constructor(
         _uiState.update { it.copy(setupSelectedPlayerIds = ids) }
     }
 
+    fun updateSetupTeamPlayers(teamA: List<Long>, teamB: List<Long>) {
+        _uiState.update { it.copy(setupTeamAPlayerIds = teamA, setupTeamBPlayerIds = teamB) }
+    }
+
+    fun updateSetupGameMode(mode: GameMode) {
+        _uiState.update { it.copy(setupGameMode = mode) }
+    }
+
     fun loadSetupDefaults() {
         viewModelScope.launch {
             try {
@@ -123,14 +145,17 @@ class GameViewModel @Inject constructor(
                 val randomOrder = settingsRepository.getLastRandomOrder()
                 val recentIds = settingsRepository.getRecentPlayerIds()
                 val showHistory = settingsRepository.getShowHistory()
+                val gameMode = try { GameMode.valueOf(settingsRepository.getLastGameMode()) } catch (e: Exception) { GameMode.SINGLE }
                 _uiState.update { it.copy(
                     showHistory = showHistory,
+                    setupGameMode = gameMode,
                     setupDefaults = SetupDefaults(
                         startScore = startScore,
                         checkoutRule = checkoutRule,
                         legsToWin = legsToWin,
                         randomOrder = randomOrder,
-                        recentPlayerIds = recentIds
+                        recentPlayerIds = recentIds,
+                        gameMode = gameMode
                     )
                 )}
             } catch (e: Exception) {
@@ -162,7 +187,7 @@ class GameViewModel @Inject constructor(
 
         val currentState = _uiState.value
         val currentPlayer = currentState.players.getOrNull(currentState.currentPlayerIndex) ?: return
-        val remaining = currentState.scores[currentPlayer.id] ?: return
+        val remaining = currentState.remainingFor(currentPlayer.id)
         val soFar = currentState.currentDarts.sumOf { it.value }
         val rule = currentState.config?.checkoutRule ?: CheckoutRule.DOUBLE
 
@@ -190,7 +215,7 @@ class GameViewModel @Inject constructor(
     private fun updateCheckoutHint() {
         val state = _uiState.value
         val currentPlayer = state.players.getOrNull(state.currentPlayerIndex) ?: return
-        val remaining = state.scores[currentPlayer.id] ?: return
+        val remaining = state.remainingFor(currentPlayer.id)
         val soFar = state.currentDarts.sumOf { it.value }
         val remainingAfterCurrentDarts = remaining - soFar
         val dartsLeft = 3 - state.currentDarts.size
@@ -205,7 +230,7 @@ class GameViewModel @Inject constructor(
         val state = _uiState.value
         val config = state.config ?: return
         val currentPlayer = state.players.getOrNull(state.currentPlayerIndex) ?: return
-        val remaining = state.scores[currentPlayer.id] ?: return
+        val remaining = state.remainingFor(currentPlayer.id)
         val darts = state.currentDarts
         val visitTotal = darts.sumOf { it.value }
         val isCheckoutAttempt = CheckoutCalculator.isCheckoutPossible(remaining, config.checkoutRule)
@@ -222,7 +247,6 @@ class GameViewModel @Inject constructor(
             isBust = true
             effectiveTotal = 0
         } else if (afterVisit == 0) {
-            // Check checkout validity
             val lastDart = darts.last()
             val validCheckout = CheckoutCalculator.isValidCheckout(
                 lastDartScore = lastDart.score,
@@ -242,10 +266,8 @@ class GameViewModel @Inject constructor(
             effectiveTotal = visitTotal
         }
 
-        // Compute new score (needed for both VisitRecord and score map)
         val newScore = if (isBust) remaining else remaining - effectiveTotal
 
-        // Build visit record
         val visitRecord = VisitRecord(
             playerId = currentPlayer.id,
             playerName = currentPlayer.name,
@@ -285,10 +307,16 @@ class GameViewModel @Inject constructor(
             }
         }
 
-        // newScore already computed above
-        val newScores = state.scores.toMutableMap().also { it[currentPlayer.id] = newScore }
+        // Update the appropriate score map
+        val updatedState = if (state.isTeamGame) {
+            val teamIdx = state.teamAssignments[currentPlayer.id] ?: 0
+            val newTeamScores = state.teamScores.toMutableMap().also { it[teamIdx] = newScore }
+            state.copy(teamScores = newTeamScores)
+        } else {
+            val newScores = state.scores.toMutableMap().also { it[currentPlayer.id] = newScore }
+            state.copy(scores = newScores)
+        }
 
-        // Check if leg won
         val isCheckout = !isBust && newScore == 0
 
         // TTS
@@ -305,18 +333,17 @@ class GameViewModel @Inject constructor(
             )
         }
 
-        // Advance player
         val nextPlayerIndex = (state.currentPlayerIndex + 1) % state.players.size
-
         val newHistory = (listOf(visitRecord) + state.visitHistory).take(20)
 
-        _uiState.update { it.copy(
-            scores = newScores,
-            currentDarts = emptyList(),
-            pendingMultiplier = 1,
-            currentPlayerIndex = nextPlayerIndex,
-            visitHistory = newHistory
-        )}
+        _uiState.update {
+            updatedState.copy(
+                currentDarts = emptyList(),
+                pendingMultiplier = 1,
+                currentPlayerIndex = nextPlayerIndex,
+                visitHistory = newHistory
+            )
+        }
         updateCheckoutHint()
 
         if (isCheckout) {
@@ -327,18 +354,15 @@ class GameViewModel @Inject constructor(
     fun undoLastDart() {
         val state = _uiState.value
         if (state.currentDarts.isNotEmpty()) {
-            // Remove last dart from current visit (in-memory only)
             val newDarts = state.currentDarts.dropLast(1)
             _uiState.update { it.copy(currentDarts = newDarts, pendingMultiplier = 1) }
             updateCheckoutHint()
         } else {
-            // Undo across visit boundary — delete last throw from DB and restore
             viewModelScope.launch {
                 try {
                     val legId = state.legId ?: return@launch
                     val lastThrow = gameRepository.getLastThrowInLeg(legId) ?: return@launch
 
-                    // Restore previous player
                     val prevPlayerIndex = if (state.currentPlayerIndex == 0) {
                         state.players.size - 1
                     } else {
@@ -346,10 +370,8 @@ class GameViewModel @Inject constructor(
                     }
                     val prevPlayer = state.players.getOrNull(prevPlayerIndex) ?: return@launch
 
-                    // Restore score to pre-visit value
-                    val prevScore = (state.scores[prevPlayer.id] ?: 0) + lastThrow.visitTotal
+                    val prevScore = state.remainingFor(prevPlayer.id) + lastThrow.visitTotal
 
-                    // Reconstruct darts from the throw record, then drop the last one
                     val allDarts = buildList {
                         if (lastThrow.dartsUsed >= 1) add(DartInput(lastThrow.dart1Score, lastThrow.dart1Mult))
                         if (lastThrow.dartsUsed >= 2) add(DartInput(lastThrow.dart2Score, lastThrow.dart2Mult))
@@ -359,16 +381,27 @@ class GameViewModel @Inject constructor(
 
                     gameRepository.deleteThrow(lastThrow)
 
-                    // Restore visit history
                     val newHistory = state.visitHistory.drop(1)
 
-                    _uiState.update { it.copy(
-                        scores = it.scores.toMutableMap().also { m -> m[prevPlayer.id] = prevScore },
-                        currentPlayerIndex = prevPlayerIndex,
-                        currentDarts = restoredDarts,
-                        pendingMultiplier = 1,
-                        visitHistory = newHistory
-                    )}
+                    if (state.isTeamGame) {
+                        val teamIdx = state.teamAssignments[prevPlayer.id] ?: 0
+                        val newTeamScores = state.teamScores.toMutableMap().also { it[teamIdx] = prevScore }
+                        _uiState.update { it.copy(
+                            teamScores = newTeamScores,
+                            currentPlayerIndex = prevPlayerIndex,
+                            currentDarts = restoredDarts,
+                            pendingMultiplier = 1,
+                            visitHistory = newHistory
+                        )}
+                    } else {
+                        _uiState.update { it.copy(
+                            scores = it.scores.toMutableMap().also { m -> m[prevPlayer.id] = prevScore },
+                            currentPlayerIndex = prevPlayerIndex,
+                            currentDarts = restoredDarts,
+                            pendingMultiplier = 1,
+                            visitHistory = newHistory
+                        )}
+                    }
                     updateCheckoutHint()
                 } catch (e: Exception) {
                     _uiState.update { it.copy(errorMessage = e.message) }
@@ -386,31 +419,63 @@ class GameViewModel @Inject constructor(
                     legs = config.legsToWin,
                     random = config.isSolo
                 )
+                settingsRepository.setLastGameMode(if (config.isTeamGame) GameMode.TEAMS.name else GameMode.SINGLE.name)
                 config.playerIds.forEach { settingsRepository.addRecentPlayer(it) }
 
                 val gameId = gameRepository.startGame(config)
                 val players = playerRepository.getPlayersByIds(config.playerIds)
+                    .sortedBy { p -> config.playerIds.indexOf(p.id) }
                 val leg = gameRepository.getActiveLeg(gameId)
 
-                val scores = players.associate { it.id to config.startScore }
-                val legWins = players.associate { it.id to 0 }
-
-                _uiState.update { it.copy(
-                    screen = GameScreen.LIVE,
-                    config = config,
-                    players = players,
-                    gameId = gameId,
-                    legId = leg?.id,
-                    scores = scores,
-                    legWins = legWins,
-                    currentPlayerIndex = 0,
-                    currentDarts = emptyList(),
-                    pendingMultiplier = 1,
-                    visitHistory = emptyList(),
-                    currentLegNumber = 1,
-                    winnerId = null,
-                    checkoutHint = null
-                )}
+                if (config.isTeamGame) {
+                    val teamScores = mapOf(0 to config.startScore, 1 to config.startScore)
+                    val teamLegWins = mapOf(0 to 0, 1 to 0)
+                    _uiState.update { it.copy(
+                        screen = GameScreen.LIVE,
+                        config = config,
+                        players = players,
+                        gameId = gameId,
+                        legId = leg?.id,
+                        scores = emptyMap(),
+                        legWins = emptyMap(),
+                        isTeamGame = true,
+                        teamAssignments = config.teamAssignments,
+                        teamScores = teamScores,
+                        teamLegWins = teamLegWins,
+                        winningTeamIndex = null,
+                        currentPlayerIndex = 0,
+                        currentDarts = emptyList(),
+                        pendingMultiplier = 1,
+                        visitHistory = emptyList(),
+                        currentLegNumber = 1,
+                        winnerId = null,
+                        checkoutHint = null
+                    )}
+                } else {
+                    val scores = players.associate { it.id to config.startScore }
+                    val legWins = players.associate { it.id to 0 }
+                    _uiState.update { it.copy(
+                        screen = GameScreen.LIVE,
+                        config = config,
+                        players = players,
+                        gameId = gameId,
+                        legId = leg?.id,
+                        scores = scores,
+                        legWins = legWins,
+                        isTeamGame = false,
+                        teamAssignments = emptyMap(),
+                        teamScores = emptyMap(),
+                        teamLegWins = emptyMap(),
+                        winningTeamIndex = null,
+                        currentPlayerIndex = 0,
+                        currentDarts = emptyList(),
+                        pendingMultiplier = 1,
+                        visitHistory = emptyList(),
+                        currentLegNumber = 1,
+                        winnerId = null,
+                        checkoutHint = null
+                    )}
+                }
                 updateCheckoutHint()
             } catch (e: Exception) {
                 _uiState.update { it.copy(errorMessage = e.message) }
@@ -428,42 +493,69 @@ class GameViewModel @Inject constructor(
 
                 gameRepository.finishLeg(legId, winnerId)
 
-                val newLegWins = state.legWins.toMutableMap()
-                newLegWins[winnerId] = (newLegWins[winnerId] ?: 0) + 1
+                if (state.isTeamGame) {
+                    val teamIdx = state.teamAssignments[winnerId] ?: 0
+                    val newTeamLegWins = state.teamLegWins.toMutableMap()
+                    newTeamLegWins[teamIdx] = (newTeamLegWins[teamIdx] ?: 0) + 1
 
-                // Check if game is won
-                val legsWon = newLegWins[winnerId] ?: 0
-                if (legsWon >= config.legsToWin) {
-                    // Don't auto-save — the user will choose to save on the result screen.
-                    _uiState.update { it.copy(
-                        screen = GameScreen.RESULT,
-                        legWins = newLegWins,
-                        winnerId = winnerId
-                    )}
+                    val legsWon = newTeamLegWins[teamIdx] ?: 0
+                    if (legsWon >= config.legsToWin) {
+                        gameRepository.finishGame(gameId, null, winningTeamIndex = teamIdx)
+                        _uiState.update { it.copy(
+                            screen = GameScreen.RESULT,
+                            teamLegWins = newTeamLegWins,
+                            winningTeamIndex = teamIdx
+                        )}
+                    } else {
+                        val newLegNumber = state.currentLegNumber + 1
+                        val newLeg = Leg(gameId = gameId, legNumber = newLegNumber)
+                        val newLegId = gameRepository.insertLeg(newLeg)
+                        val newTeamScores = mapOf(0 to config.startScore, 1 to config.startScore)
+                        // Team games always start at index 0 (Team 1, Player 1)
+                        _uiState.update { it.copy(
+                            legId = newLegId,
+                            teamLegWins = newTeamLegWins,
+                            teamScores = newTeamScores,
+                            currentLegNumber = newLegNumber,
+                            currentPlayerIndex = 0,
+                            currentDarts = emptyList(),
+                            pendingMultiplier = 1,
+                            visitHistory = emptyList()
+                        )}
+                        updateCheckoutHint()
+                    }
                 } else {
-                    // Start new leg
-                    val newLegNumber = state.currentLegNumber + 1
-                    val newLeg = com.clubdarts.data.model.Leg(
-                        gameId = gameId,
-                        legNumber = newLegNumber
-                    )
-                    val newLegId = gameRepository.insertLeg(newLeg)
-                    val newScores = state.players.associate { it.id to config.startScore }
+                    val newLegWins = state.legWins.toMutableMap()
+                    newLegWins[winnerId] = (newLegWins[winnerId] ?: 0) + 1
 
-                    // Rotate starting player
-                    val nextStartIndex = newLegNumber % state.players.size
+                    val legsWon = newLegWins[winnerId] ?: 0
+                    if (legsWon >= config.legsToWin) {
+                        _uiState.update { it.copy(
+                            screen = GameScreen.RESULT,
+                            legWins = newLegWins,
+                            winnerId = winnerId
+                        )}
+                    } else {
+                        val newLegNumber = state.currentLegNumber + 1
+                        val newLeg = Leg(gameId = gameId, legNumber = newLegNumber)
+                        val newLegId = gameRepository.insertLeg(newLeg)
+                        val newScores = state.players.associate { it.id to config.startScore }
 
-                    _uiState.update { it.copy(
-                        legId = newLegId,
-                        legWins = newLegWins,
-                        scores = newScores,
-                        currentLegNumber = newLegNumber,
-                        currentPlayerIndex = nextStartIndex,
-                        currentDarts = emptyList(),
-                        pendingMultiplier = 1,
-                        visitHistory = emptyList()
-                    )}
-                    updateCheckoutHint()
+                        // Rotate starting player for single mode
+                        val nextStartIndex = newLegNumber % state.players.size
+
+                        _uiState.update { it.copy(
+                            legId = newLegId,
+                            legWins = newLegWins,
+                            scores = newScores,
+                            currentLegNumber = newLegNumber,
+                            currentPlayerIndex = nextStartIndex,
+                            currentDarts = emptyList(),
+                            pendingMultiplier = 1,
+                            visitHistory = emptyList()
+                        )}
+                        updateCheckoutHint()
+                    }
                 }
             } catch (e: Exception) {
                 _uiState.update { it.copy(errorMessage = e.message) }
@@ -475,8 +567,13 @@ class GameViewModel @Inject constructor(
         viewModelScope.launch {
             val state = _uiState.value
             val gameId = state.gameId ?: return@launch
-            val winnerId = state.winnerId ?: return@launch
-            gameRepository.finishGame(gameId, winnerId)
+            if (state.isTeamGame) {
+                val teamIdx = state.winningTeamIndex ?: return@launch
+                gameRepository.finishGame(gameId, null, winningTeamIndex = teamIdx)
+            } else {
+                val winnerId = state.winnerId ?: return@launch
+                gameRepository.finishGame(gameId, winnerId)
+            }
             _uiState.update { it.copy(gameSaved = true) }
         }
     }
@@ -508,6 +605,11 @@ class GameViewModel @Inject constructor(
             currentPlayerIndex = 0,
             scores = emptyMap(),
             legWins = emptyMap(),
+            isTeamGame = false,
+            teamAssignments = emptyMap(),
+            teamScores = emptyMap(),
+            teamLegWins = emptyMap(),
+            winningTeamIndex = null,
             currentDarts = emptyList(),
             pendingMultiplier = 1,
             visitHistory = emptyList(),
@@ -527,5 +629,15 @@ class GameViewModel @Inject constructor(
 
     fun clearError() {
         _uiState.update { it.copy(errorMessage = null) }
+    }
+
+    // Helper: get the remaining score for a player (team or individual)
+    private fun GameUiState.remainingFor(playerId: Long): Int {
+        return if (isTeamGame) {
+            val teamIdx = teamAssignments[playerId] ?: 0
+            teamScores[teamIdx] ?: 0
+        } else {
+            scores[playerId] ?: 0
+        }
     }
 }

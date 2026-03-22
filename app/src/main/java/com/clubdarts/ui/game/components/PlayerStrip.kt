@@ -18,6 +18,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.key
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -32,7 +33,12 @@ fun PlayerStrip(
     scores: Map<Long, Int>,
     legWins: Map<Long, Int>,
     currentDarts: List<DartInput>,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    // Team mode params (optional — default to single mode behaviour)
+    isTeamGame: Boolean = false,
+    teamAssignments: Map<Long, Int> = emptyMap(),   // playerId → 0 or 1
+    teamScores: Map<Int, Int> = emptyMap(),          // teamIndex → remaining score
+    teamLegWins: Map<Int, Int> = emptyMap()          // teamIndex → legs won
 ) {
     val orderedPlayers = if (players.isEmpty()) emptyList() else {
         players.indices.map { offset -> players[(currentPlayerIndex + offset) % players.size] }
@@ -44,8 +50,6 @@ fun PlayerStrip(
             .padding(horizontal = 8.dp, vertical = 4.dp),
         verticalArrangement = Arrangement.spacedBy(4.dp)
     ) {
-        // Each position slot is fixed in the layout; only its content animates.
-        // The top slot fades the old player upward and the new player in from below.
         orderedPlayers.forEachIndexed { index, player ->
             val isActive = index == 0
             key(index) {
@@ -54,26 +58,44 @@ fun PlayerStrip(
                     label = "player_slot_$index",
                     modifier = Modifier.fillMaxWidth().clipToBounds(),
                     transitionSpec = {
-                        // Exit plays first (120ms). Enter starts only after exit finishes
-                        // (delayMillis = 120). Clip keeps the incoming card hidden below
-                        // the slot boundary until it slides up into view.
                         slideInVertically(tween(120, delayMillis = 120)) { it } togetherWith
                                 slideOutVertically(tween(120)) { -it }
                     }
                 ) { p ->
+                    val teamIdx = teamAssignments[p.id]
+                    val teamColor: Color? = if (isTeamGame && teamIdx != null) {
+                        if (teamIdx == 0) Red else Blue
+                    } else null
+                    val displayScore = if (isTeamGame && teamIdx != null) {
+                        teamScores[teamIdx] ?: 0
+                    } else {
+                        scores[p.id] ?: 0
+                    }
+                    val displayLegWins = if (isTeamGame && teamIdx != null) {
+                        teamLegWins[teamIdx] ?: 0
+                    } else {
+                        legWins[p.id] ?: 0
+                    }
+                    val teamLabel = if (isTeamGame && teamIdx != null) {
+                        if (teamIdx == 0) "Team A" else "Team B"
+                    } else null
+
                     if (isActive) {
                         ActivePlayerPanel(
                             player = p,
-                            score = scores[p.id] ?: 0,
-                            legWins = legWins[p.id] ?: 0,
+                            score = displayScore,
+                            legWins = displayLegWins,
                             currentDarts = currentDarts,
+                            teamColor = teamColor,
+                            teamLabel = teamLabel,
                             modifier = Modifier.fillMaxWidth()
                         )
                     } else {
                         WaitingPlayerPanel(
                             player = p,
-                            score = scores[p.id] ?: 0,
-                            legWins = legWins[p.id] ?: 0,
+                            score = displayScore,
+                            legWins = displayLegWins,
+                            teamColor = teamColor,
                             modifier = Modifier.fillMaxWidth()
                         )
                     }
@@ -89,12 +111,18 @@ private fun ActivePlayerPanel(
     score: Int,
     legWins: Int,
     currentDarts: List<DartInput>,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    teamColor: Color? = null,
+    teamLabel: String? = null
 ) {
+    // Use team color (dim) or default accent
+    val highlightColor = teamColor ?: Accent
+    val highlightBg = teamColor?.copy(alpha = 0.12f) ?: AccentDim
+
     Box(
         modifier = modifier
-            .background(AccentDim, RoundedCornerShape(10.dp))
-            .border(1.dp, Accent, RoundedCornerShape(10.dp))
+            .background(highlightBg, RoundedCornerShape(10.dp))
+            .border(1.dp, highlightColor, RoundedCornerShape(10.dp))
             .padding(10.dp)
     ) {
         val dartsTotal = currentDarts.sumOf { it.value }
@@ -111,7 +139,7 @@ private fun ActivePlayerPanel(
                 )
                 Spacer(modifier = Modifier.width(6.dp))
                 Surface(
-                    color = Accent,
+                    color = highlightColor,
                     shape = RoundedCornerShape(4.dp)
                 ) {
                     Text(
@@ -121,17 +149,26 @@ private fun ActivePlayerPanel(
                         modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
                     )
                 }
+                if (teamLabel != null) {
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Surface(
+                        color = highlightColor.copy(alpha = 0.2f),
+                        shape = RoundedCornerShape(4.dp)
+                    ) {
+                        Text(
+                            text = teamLabel,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = highlightColor,
+                            modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
+                        )
+                    }
+                }
             }
 
-            // Score on the left; dart slots stacked vertically on the right,
-            // both centred in the Row so they sit at the same visual midpoint.
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                // Box with an invisible 3-digit reference keeps the layout width
-                // stable as the score shrinks from e.g. "501" → "99" → "1".
-                // DmMono is monospace so "888" matches exactly 3 digit widths.
                 Box {
                     Text(
                         text = "888",
@@ -146,7 +183,7 @@ private fun ActivePlayerPanel(
                         fontSize = 42.sp,
                         fontWeight = FontWeight.Bold,
                         fontFamily = DmMono,
-                        color = if (isBusting) Red else Accent,
+                        color = if (isBusting) Red else highlightColor,
                         lineHeight = 46.sp
                     )
                 }
@@ -195,7 +232,8 @@ private fun WaitingPlayerPanel(
     player: Player,
     score: Int,
     legWins: Int,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    teamColor: Color? = null
 ) {
     Row(
         modifier = modifier
@@ -204,18 +242,28 @@ private fun WaitingPlayerPanel(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
-        Column {
-            Text(
-                text = player.name,
-                style = MaterialTheme.typography.labelMedium,
-                color = TextSecondary,
-                maxLines = 1
-            )
-            Text(
-                text = "Legs: $legWins",
-                style = MaterialTheme.typography.labelSmall,
-                color = TextTertiary
-            )
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            if (teamColor != null) {
+                Box(
+                    modifier = Modifier
+                        .size(8.dp)
+                        .background(teamColor, RoundedCornerShape(4.dp))
+                )
+                Spacer(modifier = Modifier.width(6.dp))
+            }
+            Column {
+                Text(
+                    text = player.name,
+                    style = MaterialTheme.typography.labelMedium,
+                    color = TextSecondary,
+                    maxLines = 1
+                )
+                Text(
+                    text = "Legs: $legWins",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = TextTertiary
+                )
+            }
         }
         Text(
             text = score.toString(),

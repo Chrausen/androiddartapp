@@ -74,7 +74,11 @@ fun LiveGameScreen(
                 scores = uiState.scores,
                 legWins = uiState.legWins,
                 currentDarts = uiState.currentDarts,
-                modifier = Modifier.fillMaxWidth().weight(1f)
+                modifier = Modifier.fillMaxWidth().weight(1f),
+                isTeamGame = uiState.isTeamGame,
+                teamAssignments = uiState.teamAssignments,
+                teamScores = uiState.teamScores,
+                teamLegWins = uiState.teamLegWins
             )
 
             // Checkout hint bar — always visible so the numpad never moves.
