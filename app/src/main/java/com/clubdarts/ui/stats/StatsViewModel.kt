@@ -13,6 +13,13 @@ import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
+data class TeamGameSummary(
+    val game: Game,
+    val teamANames: List<String>,
+    val teamBNames: List<String>,
+    val winningTeamIndex: Int?
+)
+
 data class PlayerStats(
     val player: Player,
     val average: Double,
@@ -36,6 +43,8 @@ data class StatsUiState(
     val selectedPlayer: Player? = null,
     val selectedPlayerStats: PlayerStats? = null,
     val clubTotalGames: Int = 0,
+    val clubTotalTeamGames: Int = 0,
+    val recentTeamGames: List<TeamGameSummary> = emptyList(),
     val clubTotalPlayers: Int = 0,
     val clubTotal180s: Int = 0,
     val clubHighestFinish: Int? = null,
@@ -83,7 +92,34 @@ class StatsViewModel @Inject constructor(
                 )}
 
                 gameRepository.getAllGames().collect { games ->
-                    _uiState.update { it.copy(clubTotalGames = games.count { it.finishedAt != null }) }
+                    val finishedGames = games.filter { it.finishedAt != null }
+                    val teamGames = finishedGames.filter { it.isTeamGame }
+                    // Build summaries for the 5 most recent team games
+                    val recentTeamGames = teamGames.takeLast(5).reversed().mapNotNull { game ->
+                        try {
+                            val gamePlayers = gameRepository.getGamePlayers(game.id)
+                            val playerIds = gamePlayers.map { it.playerId }
+                            val players = playerRepository.getPlayersByIds(playerIds)
+                            val playerMap = players.associateBy { it.id }
+                            val teamANames = gamePlayers
+                                .filter { it.teamIndex == 0 }
+                                .mapNotNull { playerMap[it.playerId]?.name }
+                            val teamBNames = gamePlayers
+                                .filter { it.teamIndex == 1 }
+                                .mapNotNull { playerMap[it.playerId]?.name }
+                            TeamGameSummary(
+                                game = game,
+                                teamANames = teamANames,
+                                teamBNames = teamBNames,
+                                winningTeamIndex = game.winningTeamIndex
+                            )
+                        } catch (e: Exception) { null }
+                    }
+                    _uiState.update { it.copy(
+                        clubTotalGames = finishedGames.count { !it.isTeamGame },
+                        clubTotalTeamGames = teamGames.size,
+                        recentTeamGames = recentTeamGames
+                    ) }
                 }
             } catch (e: Exception) {
                 _uiState.update { it.copy(errorMessage = e.message) }

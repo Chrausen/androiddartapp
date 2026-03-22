@@ -53,6 +53,12 @@ class SettingsRepository @Inject constructor(
         set(SettingsKeys.LAST_RANDOM_ORDER, random.toString())
     }
 
+    suspend fun getLastGameMode(): String =
+        get(SettingsKeys.LAST_GAME_MODE, SettingsDefaults.GAME_MODE)
+
+    suspend fun setLastGameMode(modeString: String) =
+        set(SettingsKeys.LAST_GAME_MODE, modeString)
+
     suspend fun getShowHistory(): Boolean =
         get(SettingsKeys.SHOW_HISTORY, SettingsDefaults.SHOW_HISTORY).toBoolean()
 

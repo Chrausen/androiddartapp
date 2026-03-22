@@ -12,7 +12,9 @@ data class Game(
     val checkoutRule: CheckoutRule,
     val legsToWin: Int,
     val isSolo: Boolean = false,
+    val isTeamGame: Boolean = false,
     val createdAt: Long = System.currentTimeMillis(),
     val finishedAt: Long? = null,
-    val winnerId: Long? = null
+    val winnerId: Long? = null,
+    val winningTeamIndex: Int? = null   // 0=Team A (Red), 1=Team B (Blue); null in single mode
 )

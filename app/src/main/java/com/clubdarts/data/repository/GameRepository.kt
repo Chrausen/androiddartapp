@@ -14,7 +14,9 @@ data class GameConfig(
     val checkoutRule: CheckoutRule,
     val legsToWin: Int,
     val isSolo: Boolean,
-    val playerIds: List<Long>   // in throw order
+    val playerIds: List<Long>,                           // in throw order (interleaved for team games)
+    val isTeamGame: Boolean = false,
+    val teamAssignments: Map<Long, Int> = emptyMap()     // playerId → 0 (Team A) or 1 (Team B)
 )
 
 data class GameDetail(
@@ -65,11 +67,17 @@ class GameRepository @Inject constructor(
             startScore = config.startScore,
             checkoutRule = config.checkoutRule,
             legsToWin = config.legsToWin,
-            isSolo = config.isSolo
+            isSolo = config.isSolo,
+            isTeamGame = config.isTeamGame
         )
         val gameId = gameDao.insertGame(game)
         val gamePlayers = config.playerIds.mapIndexed { index, playerId ->
-            GamePlayer(gameId = gameId, playerId = playerId, throwOrder = index)
+            GamePlayer(
+                gameId = gameId,
+                playerId = playerId,
+                throwOrder = index,
+                teamIndex = config.teamAssignments[playerId] ?: -1
+            )
         }
         gameDao.insertGamePlayers(gamePlayers)
         val leg = Leg(gameId = gameId, legNumber = 1)
@@ -82,9 +90,13 @@ class GameRepository @Inject constructor(
         legDao.updateLeg(leg.copy(winnerId = winnerId, finishedAt = System.currentTimeMillis()))
     }
 
-    suspend fun finishGame(gameId: Long, winnerId: Long) {
+    suspend fun finishGame(gameId: Long, winnerId: Long?, winningTeamIndex: Int? = null) {
         val game = gameDao.getGameById(gameId) ?: return
-        gameDao.updateGame(game.copy(winnerId = winnerId, finishedAt = System.currentTimeMillis()))
+        gameDao.updateGame(game.copy(
+            winnerId = winnerId,
+            winningTeamIndex = winningTeamIndex,
+            finishedAt = System.currentTimeMillis()
+        ))
     }
 
     suspend fun deleteGame(gameId: Long) {
