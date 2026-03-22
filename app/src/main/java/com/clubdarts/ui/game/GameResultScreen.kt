@@ -11,11 +11,13 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.clubdarts.R
 import com.clubdarts.ui.game.components.PlayerAvatar
 import com.clubdarts.ui.theme.*
 
@@ -96,7 +98,7 @@ private fun SingleResultScreen(
                 )
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
-                        text = "Winner!",
+                        text = stringResource(R.string.result_winner),
                         fontSize = 32.sp,
                         fontWeight = FontWeight.Bold,
                         color = Accent
@@ -108,7 +110,7 @@ private fun SingleResultScreen(
                             shape = RoundedCornerShape(6.dp)
                         ) {
                             Text(
-                                text = "Ranked",
+                                text = stringResource(R.string.game_ranked),
                                 style = MaterialTheme.typography.labelSmall,
                                 color = Accent,
                                 fontWeight = FontWeight.Bold,
@@ -161,7 +163,7 @@ private fun SingleResultScreen(
                                 Spacer(modifier = Modifier.width(6.dp))
                                 Surface(color = Green, shape = RoundedCornerShape(4.dp)) {
                                     Text(
-                                        "Winner",
+                                        stringResource(R.string.result_winner_label),
                                         style = MaterialTheme.typography.labelSmall,
                                         color = Background,
                                         modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
@@ -171,7 +173,7 @@ private fun SingleResultScreen(
                         }
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
-                            text = "Legs: ${uiState.legWins[player.id] ?: 0}",
+                            text = stringResource(R.string.result_legs, uiState.legWins[player.id] ?: 0),
                             style = MaterialTheme.typography.bodySmall,
                             color = TextSecondary
                         )
@@ -222,7 +224,9 @@ private fun TeamResultScreen(
 ) {
     val winTeamIdx = uiState.winningTeamIndex
     val winTeamColor = if (winTeamIdx == 0) Red else Blue
-    val winTeamName = if (winTeamIdx == 0) "Team A" else "Team B"
+    val teamALabel = stringResource(R.string.result_team_a)
+    val teamBLabel = stringResource(R.string.result_team_b)
+    val winTeamName = if (winTeamIdx == 0) teamALabel else teamBLabel
     val teamAPlayers = uiState.players.filter { uiState.teamAssignments[it.id] == 0 }
     val teamBPlayers = uiState.players.filter { uiState.teamAssignments[it.id] == 1 }
     val winTeamPlayers = if (winTeamIdx == 0) teamAPlayers else teamBPlayers
@@ -259,7 +263,7 @@ private fun TeamResultScreen(
                 color = TextPrimary
             )
             Text(
-                text = "Wins!",
+                text = stringResource(R.string.result_wins),
                 fontSize = 32.sp,
                 fontWeight = FontWeight.Bold,
                 color = winTeamColor
@@ -278,7 +282,7 @@ private fun TeamResultScreen(
         // Team leg score
         item {
             Text(
-                text = "Team A: ${uiState.teamLegWins[0] ?: 0}  —  Team B: ${uiState.teamLegWins[1] ?: 0}",
+                text = stringResource(R.string.result_team_score, uiState.teamLegWins[0] ?: 0, uiState.teamLegWins[1] ?: 0),
                 fontSize = 24.sp,
                 fontFamily = DmMono,
                 fontWeight = FontWeight.Bold,
@@ -289,7 +293,7 @@ private fun TeamResultScreen(
         // Team A player cards
         item {
             TeamPlayerCards(
-                teamLabel = "Team A",
+                teamLabel = teamALabel,
                 teamColor = Red,
                 players = teamAPlayers,
                 legWins = uiState.teamLegWins[0] ?: 0,
@@ -300,7 +304,7 @@ private fun TeamResultScreen(
         // Team B player cards
         item {
             TeamPlayerCards(
-                teamLabel = "Team B",
+                teamLabel = teamBLabel,
                 teamColor = Blue,
                 players = teamBPlayers,
                 legWins = uiState.teamLegWins[1] ?: 0,
@@ -350,7 +354,7 @@ private fun TeamPlayerCards(
                         Spacer(modifier = Modifier.width(8.dp))
                         Surface(color = Green, shape = RoundedCornerShape(4.dp)) {
                             Text(
-                                "Winners",
+                                stringResource(R.string.result_winners_label),
                                 style = MaterialTheme.typography.labelSmall,
                                 color = Background,
                                 modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
@@ -359,7 +363,7 @@ private fun TeamPlayerCards(
                     }
                 }
                 Text(
-                    text = "Legs: $legWins",
+                    text = stringResource(R.string.result_legs, legWins),
                     style = MaterialTheme.typography.bodySmall,
                     color = TextSecondary
                 )
@@ -396,12 +400,12 @@ private fun ResultActions(
             colors = ButtonDefaults.buttonColors(containerColor = Accent),
             shape = RoundedCornerShape(10.dp)
         ) {
-            Text("Save to history", fontWeight = FontWeight.Bold, color = Background)
+            Text(stringResource(R.string.result_save), fontWeight = FontWeight.Bold, color = Background)
         }
         Spacer(modifier = Modifier.height(8.dp))
     } else {
         Text(
-            text = "Saved to history",
+            text = stringResource(R.string.result_saved),
             style = MaterialTheme.typography.labelSmall,
             color = TextTertiary
         )
@@ -414,7 +418,7 @@ private fun ResultActions(
         colors = ButtonDefaults.buttonColors(containerColor = Surface2),
         shape = RoundedCornerShape(10.dp)
     ) {
-        Text("New game", fontWeight = FontWeight.Bold, color = TextPrimary)
+        Text(stringResource(R.string.result_new_game), fontWeight = FontWeight.Bold, color = TextPrimary)
     }
     Spacer(modifier = Modifier.height(8.dp))
     OutlinedButton(
@@ -422,6 +426,6 @@ private fun ResultActions(
         modifier = Modifier.fillMaxWidth().height(52.dp),
         shape = RoundedCornerShape(10.dp)
     ) {
-        Text("Done", color = TextSecondary)
+        Text(stringResource(R.string.result_done), color = TextSecondary)
     }
 }

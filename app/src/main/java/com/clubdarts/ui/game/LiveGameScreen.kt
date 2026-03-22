@@ -15,10 +15,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.clubdarts.R
 import com.clubdarts.data.model.CheckoutRule
 import com.clubdarts.data.repository.GameConfig
 import com.clubdarts.ui.game.components.DartNumpad
@@ -112,7 +114,7 @@ fun LiveGameScreen(
                 ) {
                     Icon(
                         imageVector = Icons.Default.Undo,
-                        contentDescription = "Undo",
+                        contentDescription = stringResource(R.string.live_abort),
                         tint = Amber,
                         modifier = Modifier.size(18.dp)
                     )
@@ -146,11 +148,11 @@ fun LiveGameScreen(
             onDismissRequest = { showAbortDialog = false },
             containerColor = Surface2,
             title = {
-                Text("Abort game?", style = MaterialTheme.typography.titleMedium, color = TextPrimary)
+                Text(stringResource(R.string.dialog_abort_game_title), style = MaterialTheme.typography.titleMedium, color = TextPrimary)
             },
             text = {
                 Text(
-                    "The current game will be abandoned.",
+                    stringResource(R.string.dialog_abort_game_message),
                     style = MaterialTheme.typography.bodySmall,
                     color = TextSecondary
                 )
@@ -161,12 +163,12 @@ fun LiveGameScreen(
                     viewModel.abortGame()
                     onBack()
                 }) {
-                    Text("Abort", color = Red, fontWeight = FontWeight.SemiBold)
+                    Text(stringResource(R.string.btn_abort), color = Red, fontWeight = FontWeight.SemiBold)
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showAbortDialog = false }) {
-                    Text("Cancel", color = TextSecondary)
+                    Text(stringResource(R.string.btn_cancel), color = TextSecondary)
                 }
             }
         )
@@ -236,13 +238,13 @@ private fun GameStatusBar(
             SlashedIconButton(
                 icon = Icons.Default.VolumeUp,
                 slashed = isTtsMuted,
-                contentDescription = if (isTtsMuted) "Unmute TTS" else "Mute TTS",
+                contentDescription = if (isTtsMuted) stringResource(R.string.live_unmute_tts) else stringResource(R.string.live_mute_tts),
                 onClick = onToggleMute
             )
             SlashedIconButton(
                 icon = Icons.Default.History,
                 slashed = !showHistory,
-                contentDescription = if (showHistory) "Hide history" else "Show history",
+                contentDescription = if (showHistory) stringResource(R.string.live_hide_history) else stringResource(R.string.live_show_history),
                 onClick = onToggleHistory
             )
             Surface(
@@ -251,7 +253,7 @@ private fun GameStatusBar(
                 shape = RoundedCornerShape(6.dp)
             ) {
                 Text(
-                    text = "Abort",
+                    text = stringResource(R.string.live_abort),
                     style = MaterialTheme.typography.labelMedium,
                     color = Red,
                     modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)

@@ -32,12 +32,14 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.clubdarts.R
 import com.clubdarts.data.model.CheckoutRule
 import com.clubdarts.data.model.Player
 import com.clubdarts.data.repository.GameConfig
@@ -166,6 +168,12 @@ fun GameSetupScreen(
         selectedPlayers.isNotEmpty()
     }
 
+    // Pre-resolved labels for SegmentedRow lambdas (can't call stringResource inside non-composable lambdas)
+    val gameSingleLabel = stringResource(R.string.game_mode_single)
+    val gameTeamsLabel = stringResource(R.string.game_mode_teams)
+    val casualLabel = stringResource(R.string.game_casual)
+    val rankedLabel = stringResource(R.string.game_ranked)
+
     // Effective config values (ranked uses locked settings, casual uses user choice)
     val effectiveStartScore = if (isRanked) rankedStartScore else startScore
     val effectiveCheckoutRule = if (isRanked) rankedCheckoutRule else checkoutRule
@@ -185,7 +193,7 @@ fun GameSetupScreen(
         ) {
             item {
                 Text(
-                    text = "New game",
+                    text = stringResource(R.string.game_new_game),
                     style = MaterialTheme.typography.headlineMedium,
                     color = TextPrimary
                 )
@@ -201,7 +209,7 @@ fun GameSetupScreen(
                     // Game mode (Single / Teams) — hidden in ranked mode
                     if (!isRanked) {
                         Column(modifier = Modifier.weight(1f)) {
-                            SectionLabel("Game mode")
+                            SectionLabel(stringResource(R.string.game_mode_label))
                             SegmentedRow(
                                 options = GameMode.values().toList(),
                                 selected = gameMode,
@@ -218,7 +226,7 @@ fun GameSetupScreen(
                                         gameViewModel.updateSetupGameMode(newMode)
                                     }
                                 },
-                                label = { if (it == GameMode.SINGLE) "Single" else "Teams" }
+                                label = { if (it == GameMode.SINGLE) gameSingleLabel else gameTeamsLabel }
                             )
                         }
                     }
@@ -226,7 +234,7 @@ fun GameSetupScreen(
                     // Ranked / Casual toggle — only shown when ranking is enabled
                     if (uiState.rankingEnabled) {
                         Column(modifier = if (!isRanked) Modifier.weight(1f) else Modifier.fillMaxWidth()) {
-                            SectionLabel("Match type")
+                            SectionLabel(stringResource(R.string.game_match_type))
                             SegmentedRow(
                                 options = listOf(false, true),
                                 selected = isRanked,
@@ -238,7 +246,7 @@ fun GameSetupScreen(
                                         gameViewModel.updateSetupGameMode(GameMode.SINGLE)
                                     }
                                 },
-                                label = { if (!it) "Casual" else "Ranked" }
+                                label = { if (!it) casualLabel else rankedLabel }
                             )
                         }
                     }
@@ -254,7 +262,7 @@ fun GameSetupScreen(
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text("Starting score", style = MaterialTheme.typography.labelSmall, color = TextSecondary)
+                            Text(stringResource(R.string.game_starting_score), style = MaterialTheme.typography.labelSmall, color = TextSecondary)
                             Text(rankedStartScore.toString(), style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, color = TextPrimary)
                         }
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -267,12 +275,12 @@ fun GameSetupScreen(
                             )
                         }
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text("Legs to win", style = MaterialTheme.typography.labelSmall, color = TextSecondary)
+                            Text(stringResource(R.string.game_legs_to_win), style = MaterialTheme.typography.labelSmall, color = TextSecondary)
                             Text(rankedLegsToWin.toString(), style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, color = TextPrimary)
                         }
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text("Mode", style = MaterialTheme.typography.labelSmall, color = TextSecondary)
-                            Text("Ranked", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, color = Accent)
+                            Text(stringResource(R.string.game_mode_display), style = MaterialTheme.typography.labelSmall, color = TextSecondary)
+                            Text(stringResource(R.string.game_ranked), style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, color = Accent)
                         }
                     }
                 } else {
@@ -294,7 +302,7 @@ fun GameSetupScreen(
                                 horizontalArrangement = Arrangement.SpaceBetween
                             ) {
                                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                    Text("Starting score", style = MaterialTheme.typography.labelSmall, color = TextSecondary)
+                                    Text(stringResource(R.string.game_starting_score), style = MaterialTheme.typography.labelSmall, color = TextSecondary)
                                     Text(startScore.toString(), style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, color = TextPrimary)
                                 }
                                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -307,7 +315,7 @@ fun GameSetupScreen(
                                     )
                                 }
                                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                    Text("Legs to win", style = MaterialTheme.typography.labelSmall, color = TextSecondary)
+                                    Text(stringResource(R.string.game_legs_to_win), style = MaterialTheme.typography.labelSmall, color = TextSecondary)
                                     Text(legsToWin.toString(), style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, color = TextPrimary)
                                 }
                             }
@@ -318,7 +326,7 @@ fun GameSetupScreen(
                             exit = shrinkVertically() + fadeOut()
                         ) {
                             Column {
-                                SectionLabel("Starting score")
+                                SectionLabel(stringResource(R.string.game_starting_score))
                                 SegmentedRow(
                                     options = listOf(201, 301, 401, 501, 701),
                                     selected = startScore,
@@ -334,7 +342,7 @@ fun GameSetupScreen(
                                     label = { it.name.lowercase().replaceFirstChar { c -> c.uppercaseChar() } }
                                 )
                                 Spacer(modifier = Modifier.height(16.dp))
-                                SectionLabel("Legs to win")
+                                SectionLabel(stringResource(R.string.game_legs_to_win))
                                 SegmentedRow(
                                     options = listOf(1, 3, 5, 7, 9),
                                     selected = legsToWin,
@@ -351,7 +359,7 @@ fun GameSetupScreen(
                         ) {
                             Icon(
                                 imageVector = Icons.Default.KeyboardArrowDown,
-                                contentDescription = if (settingsExpanded) "Collapse settings" else "Expand settings",
+                                contentDescription = if (settingsExpanded) stringResource(R.string.live_collapse_settings) else stringResource(R.string.live_expand_settings),
                                 tint = TextTertiary,
                                 modifier = Modifier
                                     .size(28.dp)
@@ -371,9 +379,9 @@ fun GameSetupScreen(
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text("Players ", style = MaterialTheme.typography.bodyLarge, color = TextSecondary)
+                            Text(stringResource(R.string.game_players_section) + " ", style = MaterialTheme.typography.bodyLarge, color = TextSecondary)
                             Text(
-                                "${selectedPlayers.size} selected",
+                                stringResource(R.string.game_selected_count, selectedPlayers.size),
                                 style = MaterialTheme.typography.bodyLarge,
                                 fontWeight = FontWeight.Bold,
                                 color = if (isRanked && selectedPlayers.size < 2) Amber else TextPrimary
@@ -381,7 +389,7 @@ fun GameSetupScreen(
                         }
                         if (!isRanked) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
-                                Text("Random order", style = MaterialTheme.typography.labelMedium, color = TextSecondary)
+                                Text(stringResource(R.string.game_random_order), style = MaterialTheme.typography.labelMedium, color = TextSecondary)
                                 Checkbox(
                                     checked = randomOrder,
                                     onCheckedChange = { randomOrder = it },
@@ -406,7 +414,7 @@ fun GameSetupScreen(
             } else {
                 // ---- Teams mode ----
                 item {
-                    Text("Teams", style = MaterialTheme.typography.bodyLarge, color = TextPrimary, fontWeight = FontWeight.Bold)
+                    Text(stringResource(R.string.game_teams_section), style = MaterialTheme.typography.bodyLarge, color = TextPrimary, fontWeight = FontWeight.Bold)
                 }
 
                 item {
@@ -428,7 +436,7 @@ fun GameSetupScreen(
             // Ranked validation hint
             if (isRanked && selectedPlayers.size < 2) {
                 Text(
-                    text = "Ranked matches require at least 2 players",
+                    text = stringResource(R.string.game_ranked_min_players),
                     style = MaterialTheme.typography.labelSmall,
                     color = Amber,
                     modifier = Modifier
@@ -488,7 +496,7 @@ fun GameSetupScreen(
                 shape = RoundedCornerShape(10.dp)
             ) {
                 Text(
-                    text = if (isRanked) "Start ranked game" else "Start game",
+                    text = if (isRanked) stringResource(R.string.game_start_ranked) else stringResource(R.string.game_start),
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.Bold
                 )
@@ -540,7 +548,7 @@ private fun TeamsPlayerSection(
         // Team A (Red)
         TeamColumn(
             modifier = Modifier.weight(1f),
-            label = "Team A",
+            label = stringResource(R.string.result_team_a),
             labelColor = Red,
             players = teamAPlayers,
             onPlayersReordered = { newList -> onTeamsChanged(newList, teamBPlayers) },
@@ -555,7 +563,7 @@ private fun TeamsPlayerSection(
         // Team B (Blue)
         TeamColumn(
             modifier = Modifier.weight(1f),
-            label = "Team B",
+            label = stringResource(R.string.result_team_b),
             labelColor = Blue,
             players = teamBPlayers,
             onPlayersReordered = { newList -> onTeamsChanged(teamAPlayers, newList) },
@@ -746,7 +754,7 @@ private fun TeamPlayerRow(
         ) {
             Icon(
                 imageVector = Icons.Default.SwapHoriz,
-                contentDescription = "Move to other team",
+                contentDescription = stringResource(R.string.game_move_to_other_team),
                 tint = TextTertiary,
                 modifier = Modifier.size(16.dp)
             )
@@ -856,7 +864,7 @@ private fun AddPlayerButton(onClick: () -> Unit) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Icon(Icons.Default.Add, contentDescription = null, tint = TextSecondary)
             Spacer(modifier = Modifier.width(8.dp))
-            Text("Add player", style = MaterialTheme.typography.bodyMedium, color = TextSecondary)
+            Text(stringResource(R.string.game_add_player), style = MaterialTheme.typography.bodyMedium, color = TextSecondary)
         }
     }
 }

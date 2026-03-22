@@ -9,22 +9,26 @@ import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.DeleteForever
 import androidx.compose.material.icons.filled.EmojiEvents
 import androidx.compose.material.icons.filled.RecordVoiceOver
+import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.clubdarts.R
 import com.clubdarts.ui.theme.*
 
 @Composable
 fun SettingsScreen(
     onNavigateToTtsScores: () -> Unit,
     onNavigateToRankingSettings: () -> Unit,
+    onNavigateToGeneralSettings: () -> Unit,
     viewModel: SettingsViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -41,17 +45,27 @@ fun SettingsScreen(
         Column(modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp)) {
             Spacer(modifier = Modifier.height(16.dp))
             Text(
-                "Settings",
+                stringResource(R.string.settings_title),
                 style = MaterialTheme.typography.headlineMedium,
                 color = TextPrimary
             )
             Spacer(modifier = Modifier.height(16.dp))
 
             SettingsRow(
+                icon = Icons.Default.Tune,
+                iconTint = Accent,
+                title = stringResource(R.string.settings_general),
+                subtitle = stringResource(R.string.settings_general_subtitle),
+                onClick = onNavigateToGeneralSettings
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            SettingsRow(
                 icon = Icons.Default.EmojiEvents,
                 iconTint = Accent,
-                title = "Ranking System",
-                subtitle = "Elo ratings, leaderboard and ranked matches",
+                title = stringResource(R.string.settings_ranking_system),
+                subtitle = stringResource(R.string.settings_ranking_subtitle),
                 onClick = onNavigateToRankingSettings
             )
 
@@ -60,8 +74,8 @@ fun SettingsScreen(
             SettingsRow(
                 icon = Icons.Default.RecordVoiceOver,
                 iconTint = Accent,
-                title = "TTS Score Phrases",
-                subtitle = "Custom announcements after each visit",
+                title = stringResource(R.string.settings_tts_phrases),
+                subtitle = stringResource(R.string.settings_tts_subtitle),
                 onClick = onNavigateToTtsScores
             )
 
@@ -70,8 +84,8 @@ fun SettingsScreen(
             SettingsRow(
                 icon = Icons.Default.DeleteForever,
                 iconTint = Red,
-                title = "Delete all data",
-                subtitle = "Remove all players, games and history",
+                title = stringResource(R.string.settings_delete_all),
+                subtitle = stringResource(R.string.settings_delete_all_subtitle),
                 titleColor = Red,
                 onClick = { viewModel.requestDeleteAll() }
             )
@@ -81,21 +95,21 @@ fun SettingsScreen(
     if (uiState.showDeleteConfirm) {
         AlertDialog(
             onDismissRequest = { viewModel.dismissDeleteConfirm() },
-            title = { Text("Delete all data?", color = TextPrimary) },
+            title = { Text(stringResource(R.string.dialog_delete_all_title), color = TextPrimary) },
             text = {
                 Text(
-                    "This will permanently delete all players, games, and history. TTS phrases and preferences will be kept. This cannot be undone.",
+                    stringResource(R.string.dialog_delete_all_message),
                     color = TextSecondary
                 )
             },
             confirmButton = {
                 TextButton(onClick = { viewModel.confirmDeleteAll() }) {
-                    Text("Delete", color = Red, fontWeight = FontWeight.Bold)
+                    Text(stringResource(R.string.btn_delete), color = Red, fontWeight = FontWeight.Bold)
                 }
             },
             dismissButton = {
                 TextButton(onClick = { viewModel.dismissDeleteConfirm() }) {
-                    Text("Cancel", color = TextSecondary)
+                    Text(stringResource(R.string.btn_cancel), color = TextSecondary)
                 }
             },
             containerColor = Surface2

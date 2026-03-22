@@ -12,11 +12,13 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.clubdarts.R
 import com.clubdarts.data.model.Game
 import com.clubdarts.data.model.Player
 import com.clubdarts.ui.game.components.PlayerAvatar
@@ -38,12 +40,12 @@ fun HistoryScreen(
             .padding(horizontal = 16.dp)
     ) {
         Spacer(modifier = Modifier.height(16.dp))
-        Text("Match history", style = MaterialTheme.typography.headlineMedium, color = TextPrimary)
+        Text(stringResource(R.string.history_title), style = MaterialTheme.typography.headlineMedium, color = TextPrimary)
         Spacer(modifier = Modifier.height(16.dp))
 
         if (uiState.gameSummaries.isEmpty()) {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Text("No matches yet", style = MaterialTheme.typography.bodyMedium, color = TextTertiary)
+                Text(stringResource(R.string.history_empty), style = MaterialTheme.typography.bodyMedium, color = TextTertiary)
             }
         } else {
             val grouped = uiState.gameSummaries.groupBy { it.dateGroup }
@@ -125,9 +127,9 @@ private fun GameCard(summary: GameSummary, onClick: () -> Unit) {
             ) {
                 Text(
                     text = when {
-                        isTeamGame -> "Teams"
-                        summary.game.isSolo -> "Solo"
-                        else -> "Casual"
+                        isTeamGame -> stringResource(R.string.history_teams)
+                        summary.game.isSolo -> stringResource(R.string.history_solo)
+                        else -> stringResource(R.string.history_casual)
                     },
                     style = MaterialTheme.typography.labelSmall,
                     color = when {

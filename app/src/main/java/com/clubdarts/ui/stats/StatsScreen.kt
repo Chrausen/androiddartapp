@@ -12,11 +12,13 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.clubdarts.R
 import com.clubdarts.data.model.Player
 import com.clubdarts.ui.game.components.PlayerAvatar
 import com.clubdarts.ui.theme.*
@@ -39,15 +41,15 @@ fun StatsScreen(
         if (uiState.selectedPlayer == null) {
             // Club overview
             item {
-                Text("Club stats", style = MaterialTheme.typography.headlineMedium, color = TextPrimary)
+                Text(stringResource(R.string.stats_title), style = MaterialTheme.typography.headlineMedium, color = TextPrimary)
             }
             item {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    MetricCard("Games", uiState.clubTotalGames.toString(), modifier = Modifier.weight(1f))
-                    MetricCard("Players", uiState.clubTotalPlayers.toString(), modifier = Modifier.weight(1f))
+                    MetricCard(stringResource(R.string.stats_games), uiState.clubTotalGames.toString(), modifier = Modifier.weight(1f))
+                    MetricCard(stringResource(R.string.stats_players), uiState.clubTotalPlayers.toString(), modifier = Modifier.weight(1f))
                 }
             }
             item {
@@ -55,14 +57,14 @@ fun StatsScreen(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    MetricCard("Club 180s", uiState.clubTotal180s.toString(), modifier = Modifier.weight(1f))
-                    MetricCard("Best finish", uiState.clubHighestFinish?.toString() ?: "—", modifier = Modifier.weight(1f))
+                    MetricCard(stringResource(R.string.stats_club_180s), uiState.clubTotal180s.toString(), modifier = Modifier.weight(1f))
+                    MetricCard(stringResource(R.string.stats_best_finish), uiState.clubHighestFinish?.toString() ?: "—", modifier = Modifier.weight(1f))
                 }
             }
 
             // Leaderboard
             item {
-                Text("Top averages", style = MaterialTheme.typography.titleMedium, color = TextPrimary)
+                Text(stringResource(R.string.stats_top_averages), style = MaterialTheme.typography.titleMedium, color = TextPrimary)
             }
             items(uiState.players.sortedByDescending { uiState.averages[it.id] ?: 0.0 }) { player ->
                 val avg = uiState.averages[player.id] ?: 0.0
@@ -90,15 +92,15 @@ fun StatsScreen(
             if (stats != null) {
                 item {
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        MetricCard("Avg", "%.1f".format(stats.average), modifier = Modifier.weight(1f))
-                        MetricCard("Best", stats.highestFinish.toString(), modifier = Modifier.weight(1f))
-                        MetricCard("Checkout%", "%.0f%%".format(stats.checkoutPercent * 100), modifier = Modifier.weight(1f))
+                        MetricCard(stringResource(R.string.stats_avg), "%.1f".format(stats.average), modifier = Modifier.weight(1f))
+                        MetricCard(stringResource(R.string.stats_best), stats.highestFinish.toString(), modifier = Modifier.weight(1f))
+                        MetricCard(stringResource(R.string.stats_checkout_pct), "%.0f%%".format(stats.checkoutPercent * 100), modifier = Modifier.weight(1f))
                     }
                 }
                 item {
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        MetricCard("180s", stats.count180s.toString(), modifier = Modifier.weight(1f))
-                        MetricCard("100+", stats.hundredPlus.toString(), modifier = Modifier.weight(1f))
+                        MetricCard(stringResource(R.string.stats_180s), stats.count180s.toString(), modifier = Modifier.weight(1f))
+                        MetricCard(stringResource(R.string.stats_100plus), stats.hundredPlus.toString(), modifier = Modifier.weight(1f))
                     }
                 }
 
@@ -110,7 +112,9 @@ fun StatsScreen(
                             .background(Surface2, RoundedCornerShape(10.dp)),
                         horizontalArrangement = Arrangement.spacedBy(2.dp)
                     ) {
-                        listOf("Top scores" to false, "Buckets" to true).forEach { (label, isBuckets) ->
+                        val topScoresLabel = stringResource(R.string.stats_top_scores)
+                    val bucketsLabel = stringResource(R.string.stats_buckets)
+                    listOf(topScoresLabel to false, bucketsLabel to true).forEach { (label, isBuckets) ->
                             Box(
                                 modifier = Modifier
                                     .weight(1f)
@@ -135,7 +139,7 @@ fun StatsScreen(
 
                 if (!uiState.showBuckets) {
                     item {
-                        Text("Most thrown visit scores", style = MaterialTheme.typography.labelMedium, color = TextSecondary)
+                        Text(stringResource(R.string.stats_most_thrown), style = MaterialTheme.typography.labelMedium, color = TextSecondary)
                     }
                     items(stats.topScores) { sf ->
                         val maxFreq = stats.topScores.maxOfOrNull { it.frequency } ?: 1
@@ -167,7 +171,7 @@ fun StatsScreen(
                     }
                 } else {
                     item {
-                        Text("Score buckets", style = MaterialTheme.typography.labelMedium, color = TextSecondary)
+                        Text(stringResource(R.string.stats_score_buckets), style = MaterialTheme.typography.labelMedium, color = TextSecondary)
                     }
                     item {
                         val total = stats.bucketHigh + stats.bucketMid + stats.bucketLow + stats.bucketVeryLow + stats.bucketBusts
@@ -176,7 +180,7 @@ fun StatsScreen(
                             BucketBar("60–99", stats.bucketMid, total, Blue.copy(alpha = 0.7f))
                             BucketBar("40–59", stats.bucketLow, total, Blue.copy(alpha = 0.5f))
                             BucketBar("1–39", stats.bucketVeryLow, total, TextTertiary)
-                            BucketBar("Busts", stats.bucketBusts, total, Red)
+                            BucketBar(stringResource(R.string.stats_busts), stats.bucketBusts, total, Red)
                         }
                     }
                 }
