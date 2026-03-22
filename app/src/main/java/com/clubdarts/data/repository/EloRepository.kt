@@ -114,8 +114,6 @@ class EloRepository @Inject constructor(
             playerDao.updateAll(players.map {
                 it.copy(elo = STARTING_ELO, matchesPlayed = 0, wins = 0, losses = 0)
             })
-            eloMatchEntryDao.deleteAll()
-            eloMatchDao.deleteAll()
         }
     }
 }
