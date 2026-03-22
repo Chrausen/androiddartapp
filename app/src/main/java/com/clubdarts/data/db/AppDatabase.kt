@@ -39,10 +39,34 @@ val MIGRATION_2_3 = object : Migration(2, 3) {
     }
 }
 
+val MIGRATION_3_4 = object : Migration(3, 4) {
+    override fun migrate(database: SupportSQLiteDatabase) {
+        database.execSQL("DROP TABLE IF EXISTS elo_matches")
+        database.execSQL("""
+            CREATE TABLE IF NOT EXISTS elo_matches (
+                id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                winnerId INTEGER NOT NULL,
+                playedAt INTEGER NOT NULL
+            )
+        """)
+        database.execSQL("""
+            CREATE TABLE IF NOT EXISTS elo_match_entries (
+                id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                matchId INTEGER NOT NULL,
+                playerId INTEGER NOT NULL,
+                eloBefore REAL NOT NULL,
+                eloAfter REAL NOT NULL,
+                eloChange REAL NOT NULL
+            )
+        """)
+    }
+}
+
 @Database(
     entities = [Player::class, Game::class, GamePlayer::class,
-                Leg::class, Throw::class, AppSettings::class, EloMatch::class],
-    version = 3,
+                Leg::class, Throw::class, AppSettings::class,
+                EloMatch::class, EloMatchEntry::class],
+    version = 4,
     exportSchema = false
 )
 @TypeConverters(Converters::class)
@@ -53,4 +77,5 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun throwDao(): ThrowDao
     abstract fun appSettingsDao(): AppSettingsDao
     abstract fun eloMatchDao(): EloMatchDao
+    abstract fun eloMatchEntryDao(): EloMatchEntryDao
 }

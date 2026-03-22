@@ -5,6 +5,7 @@ import androidx.room.Room
 import com.clubdarts.data.db.AppDatabase
 import com.clubdarts.data.db.MIGRATION_1_2
 import com.clubdarts.data.db.MIGRATION_2_3
+import com.clubdarts.data.db.MIGRATION_3_4
 import com.clubdarts.data.db.dao.*
 import dagger.Module
 import dagger.Provides
@@ -21,7 +22,7 @@ object DatabaseModule {
     @Singleton
     fun provideAppDatabase(@ApplicationContext context: Context): AppDatabase =
         Room.databaseBuilder(context, AppDatabase::class.java, "clubdarts.db")
-            .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
+            .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
             .build()
 
     @Provides
@@ -47,4 +48,8 @@ object DatabaseModule {
     @Provides
     @Singleton
     fun provideEloMatchDao(db: AppDatabase): EloMatchDao = db.eloMatchDao()
+
+    @Provides
+    @Singleton
+    fun provideEloMatchEntryDao(db: AppDatabase): EloMatchEntryDao = db.eloMatchEntryDao()
 }

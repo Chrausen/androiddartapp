@@ -2,14 +2,15 @@ package com.clubdarts.data.repository
 
 import com.clubdarts.data.db.AppDatabase
 import com.clubdarts.data.db.dao.EloMatchDao
+import com.clubdarts.data.db.dao.EloMatchEntryDao
 import com.clubdarts.data.db.dao.PlayerDao
 import com.clubdarts.data.model.EloMatch
+import com.clubdarts.data.model.EloMatchEntry
 import com.clubdarts.data.model.Player
 import androidx.room.withTransaction
 import kotlinx.coroutines.flow.first
 import javax.inject.Inject
 import javax.inject.Singleton
-import kotlin.math.absoluteValue
 import kotlin.math.pow
 
 @Singleton
@@ -17,6 +18,7 @@ class EloRepository @Inject constructor(
     private val db: AppDatabase,
     private val playerDao: PlayerDao,
     private val eloMatchDao: EloMatchDao,
+    private val eloMatchEntryDao: EloMatchEntryDao,
     private val settingsRepository: SettingsRepository
 ) {
     companion object {
@@ -24,65 +26,80 @@ class EloRepository @Inject constructor(
         const val LEADERBOARD_MIN_MATCHES = 5
     }
 
-    private fun calculateElo(
-        ratingA: Double,
-        ratingB: Double,
+    /**
+     * Compute signed Elo changes for all players using pairwise normalization.
+     *
+     * For every pair (i, j):
+     *   score_i = 1.0 if i is winner, 0.0 if j is winner, 0.5 if neither is winner (draw among losers)
+     *   delta_i += K * (score_i - expected_i_vs_j)
+     *
+     * The sum is then divided by (N-1) so the effective K-factor is constant regardless of player count.
+     * For N=2 this reduces exactly to the standard Elo formula.
+     */
+    private fun computeChanges(
+        players: List<Player>,
         winnerId: Long,
-        playerAId: Long,
         kFactor: Double
-    ): Triple<Double, Double, Double> {
-        val expectedA = 1.0 / (1.0 + 10.0.pow((ratingB - ratingA) / 400.0))
-        val expectedB = 1.0 - expectedA
-        val scoreA = if (winnerId == playerAId) 1.0 else 0.0
-        val scoreB = 1.0 - scoreA
-        val newA = ratingA + kFactor * (scoreA - expectedA)
-        val newB = ratingB + kFactor * (scoreB - expectedB)
-        val change = (kFactor * (scoreA - expectedA)).absoluteValue
-        return Triple(newA, newB, change)
+    ): Map<Long, Double> {
+        val n = players.size
+        return players.associate { player ->
+            var delta = 0.0
+            players.forEach { opponent ->
+                if (player.id != opponent.id) {
+                    val expected = 1.0 / (1.0 + 10.0.pow((opponent.elo - player.elo) / 400.0))
+                    val score = when {
+                        player.id == winnerId   -> 1.0
+                        opponent.id == winnerId -> 0.0
+                        else                    -> 0.5   // draw among losers
+                    }
+                    delta += kFactor * (score - expected)
+                }
+            }
+            player.id to (delta / (n - 1))
+        }
     }
 
-    suspend fun recordMatch(playerAId: Long, playerBId: Long, winnerId: Long): EloMatch {
-        require(playerAId != playerBId) { "Players must be different" }
+    /**
+     * Record a ranked match for 2+ players and update their Elo ratings atomically.
+     * Returns a map of playerId → signed Elo change (positive = gain, negative = loss).
+     */
+    suspend fun recordMatch(players: List<Player>, winnerId: Long): Map<Long, Double> {
+        require(players.size >= 2) { "Need at least 2 players" }
+        require(players.map { it.id }.distinct().size == players.size) { "Duplicate players" }
+        require(players.any { it.id == winnerId }) { "Winner not in player list" }
+
         val kFactor = settingsRepository.getRankingKFactor().toDouble()
 
         return db.withTransaction {
-            val playerA = playerDao.getPlayerById(playerAId)
-                ?: error("Player $playerAId not found")
-            val playerB = playerDao.getPlayerById(playerBId)
-                ?: error("Player $playerBId not found")
+            // Reload fresh ratings inside the transaction to avoid stale data
+            val freshPlayers = players.map {
+                playerDao.getPlayerById(it.id) ?: error("Player ${it.id} not found")
+            }
+            val changes = computeChanges(freshPlayers, winnerId, kFactor)
 
-            val (newA, newB, change) = calculateElo(
-                playerA.elo, playerB.elo, winnerId, playerAId, kFactor
-            )
+            val matchId = eloMatchDao.insert(EloMatch(winnerId = winnerId))
 
-            val match = EloMatch(
-                playerAId = playerAId,
-                playerBId = playerBId,
-                winnerId = winnerId,
-                playerAEloBefore = playerA.elo,
-                playerBEloBefore = playerB.elo,
-                playerAEloAfter = newA,
-                playerBEloAfter = newB,
-                eloChange = change
-            )
-            eloMatchDao.insert(match)
-
-            playerDao.updateAll(listOf(
-                playerA.copy(
-                    elo = newA,
-                    matchesPlayed = playerA.matchesPlayed + 1,
-                    wins = if (winnerId == playerAId) playerA.wins + 1 else playerA.wins,
-                    losses = if (winnerId != playerAId) playerA.losses + 1 else playerA.losses
-                ),
-                playerB.copy(
-                    elo = newB,
-                    matchesPlayed = playerB.matchesPlayed + 1,
-                    wins = if (winnerId == playerBId) playerB.wins + 1 else playerB.wins,
-                    losses = if (winnerId != playerBId) playerB.losses + 1 else playerB.losses
+            val updatedPlayers = freshPlayers.map { p ->
+                val delta = changes[p.id] ?: 0.0
+                eloMatchEntryDao.insert(
+                    EloMatchEntry(
+                        matchId = matchId,
+                        playerId = p.id,
+                        eloBefore = p.elo,
+                        eloAfter = p.elo + delta,
+                        eloChange = delta
+                    )
                 )
-            ))
+                p.copy(
+                    elo = p.elo + delta,
+                    matchesPlayed = p.matchesPlayed + 1,
+                    wins = if (p.id == winnerId) p.wins + 1 else p.wins,
+                    losses = if (p.id != winnerId) p.losses + 1 else p.losses
+                )
+            }
+            playerDao.updateAll(updatedPlayers)
 
-            match
+            changes
         }
     }
 
@@ -97,6 +114,7 @@ class EloRepository @Inject constructor(
             playerDao.updateAll(players.map {
                 it.copy(elo = STARTING_ELO, matchesPlayed = 0, wins = 0, losses = 0)
             })
+            eloMatchEntryDao.deleteAll()
             eloMatchDao.deleteAll()
         }
     }

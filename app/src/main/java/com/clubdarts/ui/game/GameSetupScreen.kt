@@ -157,9 +157,9 @@ fun GameSetupScreen(
     }
 
     // All players selected (for enable check)
-    // Ranked requires exactly 2 players in single mode
+    // Ranked requires at least 2 players
     val hasPlayers = if (isRanked) {
-        selectedPlayers.size == 2
+        selectedPlayers.size >= 2
     } else if (gameMode == GameMode.TEAMS) {
         teamAPlayers.isNotEmpty() && teamBPlayers.isNotEmpty()
     } else {
@@ -236,10 +236,6 @@ fun GameSetupScreen(
                                         // Force single mode when switching to ranked
                                         gameMode = GameMode.SINGLE
                                         gameViewModel.updateSetupGameMode(GameMode.SINGLE)
-                                        // Trim to max 2 players
-                                        if (selectedPlayers.size > 2) {
-                                            setSelectedPlayers(selectedPlayers.take(2))
-                                        }
                                     }
                                 },
                                 label = { if (!it) "Casual" else "Ranked" }
@@ -366,7 +362,7 @@ fun GameSetupScreen(
                 }
             }
 
-            // Players section — ranked forces single mode with exactly 2 players
+            // Players section — ranked forces single mode
             if (isRanked || gameMode == GameMode.SINGLE) {
                 item {
                     Row(
@@ -377,10 +373,10 @@ fun GameSetupScreen(
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Text("Players ", style = MaterialTheme.typography.bodyLarge, color = TextSecondary)
                             Text(
-                                "${selectedPlayers.size}${if (isRanked) "/2" else ""} selected",
+                                "${selectedPlayers.size} selected",
                                 style = MaterialTheme.typography.bodyLarge,
                                 fontWeight = FontWeight.Bold,
-                                color = if (isRanked && selectedPlayers.size != 2) Amber else TextPrimary
+                                color = if (isRanked && selectedPlayers.size < 2) Amber else TextPrimary
                             )
                         }
                         if (!isRanked) {
@@ -400,19 +396,12 @@ fun GameSetupScreen(
                     SinglePlayerList(
                         selectedPlayers = selectedPlayers,
                         randomOrder = if (isRanked) false else randomOrder,
-                        onPlayersChanged = { newList ->
-                            // Ranked caps at 2 players
-                            if (isRanked && newList.size > 2) setSelectedPlayers(newList.take(2))
-                            else setSelectedPlayers(newList)
-                        }
+                        onPlayersChanged = { newList -> setSelectedPlayers(newList) }
                     )
                 }
 
-                // Show add button only if not ranked or fewer than 2 players selected
-                if (!isRanked || selectedPlayers.size < 2) {
-                    item {
-                        AddPlayerButton(onClick = { showPlayerPicker = true })
-                    }
+                item {
+                    AddPlayerButton(onClick = { showPlayerPicker = true })
                 }
             } else {
                 // ---- Teams mode ----
@@ -437,9 +426,9 @@ fun GameSetupScreen(
         // Start button — sticky at bottom
         Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
             // Ranked validation hint
-            if (isRanked && selectedPlayers.size != 2) {
+            if (isRanked && selectedPlayers.size < 2) {
                 Text(
-                    text = "Ranked matches require exactly 2 players",
+                    text = "Ranked matches require at least 2 players",
                     style = MaterialTheme.typography.labelSmall,
                     color = Amber,
                     modifier = Modifier
@@ -514,7 +503,7 @@ fun GameSetupScreen(
             selectedPlayerIds = pickerSelectedIds,
             onPlayerSelected = { player ->
                 if (isRanked) {
-                    if (player.id !in selectedPlayers.map { it.id } && selectedPlayers.size < 2) {
+                    if (player.id !in selectedPlayers.map { it.id }) {
                         setSelectedPlayers(selectedPlayers + player)
                     }
                 } else if (gameMode == GameMode.TEAMS) {

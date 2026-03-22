@@ -561,20 +561,10 @@ class GameViewModel @Inject constructor(
 
                     val legsWon = newLegWins[winnerId] ?: 0
                     if (legsWon >= config.legsToWin) {
-                        // Record Elo for ranked 1v1 games
-                        val eloResults = if (state.isRanked && state.players.size == 2) {
-                            val playerA = state.players[0]
-                            val playerB = state.players[1]
+                        // Record Elo for ranked games (2+ players)
+                        val eloResults = if (state.isRanked && state.players.size >= 2) {
                             try {
-                                val match = eloRepository.recordMatch(
-                                    playerAId = playerA.id,
-                                    playerBId = playerB.id,
-                                    winnerId = winnerId
-                                )
-                                // Signed changes: winner gets positive, loser gets negative
-                                val changeA = if (winnerId == playerA.id) match.eloChange else -match.eloChange
-                                val changeB = if (winnerId == playerB.id) match.eloChange else -match.eloChange
-                                mapOf(playerA.id to changeA, playerB.id to changeB)
+                                eloRepository.recordMatch(state.players, winnerId)
                             } catch (e: Exception) {
                                 _uiState.update { it.copy(errorMessage = e.message) }
                                 null
