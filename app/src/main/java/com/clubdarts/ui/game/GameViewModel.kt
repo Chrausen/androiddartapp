@@ -42,7 +42,7 @@ data class VisitRecord(
 )
 
 data class SetupDefaults(
-    val startScore: Int = 501,
+    val startScore: Int = 301,
     val checkoutRule: CheckoutRule = CheckoutRule.DOUBLE,
     val legsToWin: Int = 1,
     val randomOrder: Boolean = false,
@@ -69,7 +69,8 @@ data class GameUiState(
     val snackbarMessage: String? = null,
     val gameSaved: Boolean = false,
     val isTtsMuted: Boolean = false,
-    val showHistory: Boolean = false
+    val showHistory: Boolean = false,
+    val setupSelectedPlayerIds: List<Long> = emptyList()
 )
 
 @HiltViewModel
@@ -103,7 +104,15 @@ class GameViewModel @Inject constructor(
 
     fun toggleTtsMute() { _uiState.update { it.copy(isTtsMuted = !it.isTtsMuted) } }
 
-    fun toggleHistory() { _uiState.update { it.copy(showHistory = !it.showHistory) } }
+    fun toggleHistory() {
+        val newValue = !_uiState.value.showHistory
+        _uiState.update { it.copy(showHistory = newValue) }
+        viewModelScope.launch { settingsRepository.setShowHistory(newValue) }
+    }
+
+    fun updateSetupSelectedPlayers(ids: List<Long>) {
+        _uiState.update { it.copy(setupSelectedPlayerIds = ids) }
+    }
 
     fun loadSetupDefaults() {
         viewModelScope.launch {
@@ -113,7 +122,9 @@ class GameViewModel @Inject constructor(
                 val legsToWin = settingsRepository.getLastLegsToWin()
                 val randomOrder = settingsRepository.getLastRandomOrder()
                 val recentIds = settingsRepository.getRecentPlayerIds()
+                val showHistory = settingsRepository.getShowHistory()
                 _uiState.update { it.copy(
+                    showHistory = showHistory,
                     setupDefaults = SetupDefaults(
                         startScore = startScore,
                         checkoutRule = checkoutRule,

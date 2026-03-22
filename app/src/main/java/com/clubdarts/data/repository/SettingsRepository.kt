@@ -28,7 +28,7 @@ class SettingsRepository @Inject constructor(
         dao.observe(key).map { it?.value ?: default }
 
     suspend fun getLastStartScore(): Int =
-        get(SettingsKeys.LAST_START_SCORE, SettingsDefaults.START_SCORE).toIntOrNull() ?: 501
+        get(SettingsKeys.LAST_START_SCORE, SettingsDefaults.START_SCORE).toIntOrNull() ?: 301
 
     suspend fun getLastCheckoutRule(): CheckoutRule =
         try { CheckoutRule.valueOf(get(SettingsKeys.LAST_CHECKOUT_RULE, SettingsDefaults.CHECKOUT_RULE)) }
@@ -52,6 +52,12 @@ class SettingsRepository @Inject constructor(
         set(SettingsKeys.LAST_LEGS_TO_WIN, legs.toString())
         set(SettingsKeys.LAST_RANDOM_ORDER, random.toString())
     }
+
+    suspend fun getShowHistory(): Boolean =
+        get(SettingsKeys.SHOW_HISTORY, SettingsDefaults.SHOW_HISTORY).toBoolean()
+
+    suspend fun setShowHistory(value: Boolean) =
+        set(SettingsKeys.SHOW_HISTORY, value.toString())
 
     suspend fun addRecentPlayer(playerId: Long) {
         val current = getRecentPlayerIds().toMutableList()

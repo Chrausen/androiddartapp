@@ -30,14 +30,17 @@ fun PlayerPickerSheet(
     onDismiss: () -> Unit
 ) {
     var searchQuery by remember { mutableStateOf("") }
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = false)
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
+        sheetState = sheetState,
         containerColor = Surface2
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
+                .fillMaxHeight()
                 .padding(16.dp)
         ) {
             Text(
@@ -65,10 +68,12 @@ fun PlayerPickerSheet(
             )
             Spacer(modifier = Modifier.height(12.dp))
 
-            val filteredAll = if (searchQuery.isBlank()) allPlayers
+            val recentIds = recentPlayers.map { it.id }.toSet()
+            val filteredAll = if (searchQuery.isBlank())
+                allPlayers.filter { it.id !in recentIds }
             else allPlayers.filter { it.name.contains(searchQuery, ignoreCase = true) }
 
-            LazyColumn(modifier = Modifier.heightIn(max = 400.dp)) {
+            LazyColumn(modifier = Modifier.weight(1f)) {
                 if (searchQuery.isBlank() && recentPlayers.isNotEmpty()) {
                     item {
                         Text(
