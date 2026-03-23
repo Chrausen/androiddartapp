@@ -18,6 +18,7 @@ import com.clubdarts.ui.game.LiveGameScreen
 import com.clubdarts.ui.history.HistoryScreen
 import com.clubdarts.ui.history.MatchDetailScreen
 import com.clubdarts.ui.players.PlayersScreen
+import com.clubdarts.ui.rankings.PlayerDetailScreen
 import com.clubdarts.ui.rankings.RankingsScreen
 import com.clubdarts.ui.settings.GeneralSettingsScreen
 import com.clubdarts.ui.settings.RankingSettingsScreen
@@ -151,7 +152,17 @@ fun ClubDartsNavHost(
                 )
             }
             composable("rankings") {
-                RankingsScreen()
+                RankingsScreen(
+                    onPlayerClick = { playerId ->
+                        navController.navigate("rankings/player/$playerId")
+                    }
+                )
+            }
+            composable(
+                "rankings/player/{playerId}",
+                arguments = listOf(navArgument("playerId") { type = NavType.LongType })
+            ) {
+                PlayerDetailScreen(onBack = { navController.popBackStack() })
             }
             composable("players") {
                 PlayersScreen()
