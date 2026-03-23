@@ -121,6 +121,7 @@ private fun GameCard(summary: GameSummary, onClick: () -> Unit) {
                 color = when {
                     isTeamGame -> Red.copy(alpha = 0.15f)
                     summary.game.isSolo -> Surface3
+                    summary.game.isRanked -> Accent.copy(alpha = 0.15f)
                     else -> Blue.copy(alpha = 0.2f)
                 },
                 shape = RoundedCornerShape(4.dp)
@@ -129,12 +130,14 @@ private fun GameCard(summary: GameSummary, onClick: () -> Unit) {
                     text = when {
                         isTeamGame -> stringResource(R.string.history_teams)
                         summary.game.isSolo -> stringResource(R.string.history_solo)
+                        summary.game.isRanked -> stringResource(R.string.history_ranked)
                         else -> stringResource(R.string.history_casual)
                     },
                     style = MaterialTheme.typography.labelSmall,
                     color = when {
                         isTeamGame -> Red
                         summary.game.isSolo -> TextSecondary
+                        summary.game.isRanked -> Accent
                         else -> Blue
                     },
                     modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)

@@ -255,6 +255,8 @@ fun GameSetupScreen(
 
             // Game settings — locked summary shown for ranked, collapsible for casual
             item {
+                SectionLabel(stringResource(R.string.game_options_label))
+                Spacer(modifier = Modifier.height(6.dp))
                 if (isRanked) {
                     // Locked game mode summary for ranked
                     Row(
@@ -454,7 +456,8 @@ fun GameSetupScreen(
                             checkoutRule = rankedCheckoutRule,
                             legsToWin = rankedLegsToWin,
                             isSolo = false,
-                            playerIds = selectedPlayers.map { it.id }
+                            playerIds = selectedPlayers.map { it.id },
+                            isRanked = true
                         )
                         gameViewModel.startGame(config)
                     } else if (gameMode == GameMode.TEAMS) {
@@ -509,6 +512,7 @@ fun GameSetupScreen(
             allPlayers = playersState.players,
             recentPlayers = recentPlayers,
             selectedPlayerIds = pickerSelectedIds,
+            onCreatePlayer = { name -> playersViewModel.insertPlayerByName(name) },
             onPlayerSelected = { player ->
                 if (isRanked) {
                     if (player.id !in selectedPlayers.map { it.id }) {

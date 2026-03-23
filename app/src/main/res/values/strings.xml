@@ -55,6 +55,7 @@
     <string name="game_new_game">New game</string>
     <string name="game_mode_label">Game mode</string>
     <string name="game_match_type">Match type</string>
+    <string name="game_options_label">Game options</string>
     <string name="game_casual">Casual</string>
     <string name="game_ranked">Ranked</string>
     <string name="game_mode_single">Single</string>
@@ -100,6 +101,7 @@
     <string name="history_title">Match history</string>
     <string name="history_empty">No matches yet</string>
     <string name="history_casual">Casual</string>
+    <string name="history_ranked">Ranked</string>
     <string name="history_solo">Solo</string>
     <string name="history_teams">Teams</string>
 

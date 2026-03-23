@@ -69,11 +69,17 @@ val MIGRATION_4_5 = object : Migration(4, 5) {
     }
 }
 
+val MIGRATION_5_6 = object : Migration(5, 6) {
+    override fun migrate(database: SupportSQLiteDatabase) {
+        database.execSQL("ALTER TABLE games ADD COLUMN isRanked INTEGER NOT NULL DEFAULT 0")
+    }
+}
+
 @Database(
     entities = [Player::class, Game::class, GamePlayer::class,
                 Leg::class, Throw::class, AppSettings::class,
                 EloMatch::class, EloMatchEntry::class],
-    version = 5,
+    version = 6,
     exportSchema = false
 )
 @TypeConverters(Converters::class)

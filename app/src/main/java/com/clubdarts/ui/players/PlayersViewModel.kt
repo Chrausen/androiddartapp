@@ -63,12 +63,18 @@ class PlayersViewModel @Inject constructor(
     }
 
     fun updateDialogName(name: String) {
-        val current = _uiState.value.dialogState
+        val trimmed = name.trim()
         _uiState.update {
-            it.copy(dialogState = when (current) {
-                is PlayerDialogState.Add  -> current.copy(name = name, error = null)
-                is PlayerDialogState.Edit -> current.copy(name = name, error = null)
-                else                      -> current
+            it.copy(dialogState = when (val current = it.dialogState) {
+                is PlayerDialogState.Add -> {
+                    val dup = trimmed.isNotBlank() && it.players.any { p -> p.name.equals(trimmed, ignoreCase = true) }
+                    current.copy(name = name, error = if (dup) "Player already exists" else null)
+                }
+                is PlayerDialogState.Edit -> {
+                    val dup = trimmed.isNotBlank() && it.players.any { p -> p.name.equals(trimmed, ignoreCase = true) && p.id != current.player.id }
+                    current.copy(name = name, error = if (dup) "Player name already taken" else null)
+                }
+                else -> current
             })
         }
     }
@@ -107,6 +113,15 @@ class PlayersViewModel @Inject constructor(
                 }
                 else -> {}
             }
+        }
+    }
+
+    fun insertPlayerByName(name: String) {
+        val trimmed = name.trim()
+        if (trimmed.isBlank()) return
+        viewModelScope.launch {
+            val exists = _uiState.value.players.any { it.name.equals(trimmed, ignoreCase = true) }
+            if (!exists) playerRepository.insertPlayer(Player(name = trimmed))
         }
     }
 

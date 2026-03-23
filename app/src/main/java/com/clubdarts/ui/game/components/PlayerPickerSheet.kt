@@ -27,7 +27,8 @@ fun PlayerPickerSheet(
     recentPlayers: List<Player>,
     selectedPlayerIds: Set<Long>,
     onPlayerSelected: (Player) -> Unit,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
+    onCreatePlayer: ((String) -> Unit)? = null
 ) {
     var searchQuery by remember { mutableStateOf("") }
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = false)
@@ -68,10 +69,14 @@ fun PlayerPickerSheet(
             )
             Spacer(modifier = Modifier.height(12.dp))
 
+            val trimmedQuery = searchQuery.trim()
             val recentIds = recentPlayers.map { it.id }.toSet()
             val filteredAll = if (searchQuery.isBlank())
                 allPlayers.filter { it.id !in recentIds }
             else allPlayers.filter { it.name.contains(searchQuery, ignoreCase = true) }
+            val nameAlreadyExists = trimmedQuery.isNotBlank() &&
+                allPlayers.any { it.name.equals(trimmedQuery, ignoreCase = true) }
+            val showCreateButton = onCreatePlayer != null && trimmedQuery.isNotBlank() && !nameAlreadyExists
 
             LazyColumn(modifier = Modifier.weight(1f)) {
                 if (searchQuery.isBlank() && recentPlayers.isNotEmpty()) {
@@ -109,7 +114,7 @@ fun PlayerPickerSheet(
                     )
                 }
 
-                if (filteredAll.isEmpty()) {
+                if (filteredAll.isEmpty() && !showCreateButton) {
                     item {
                         Text(
                             text = "No players found",
@@ -117,6 +122,46 @@ fun PlayerPickerSheet(
                             color = TextTertiary,
                             modifier = Modifier.padding(16.dp)
                         )
+                    }
+                }
+
+                if (showCreateButton) {
+                    item {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { onCreatePlayer!!(trimmedQuery) }
+                                .padding(vertical = 10.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(36.dp)
+                                    .clip(CircleShape)
+                                    .background(Accent.copy(alpha = 0.15f)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Add,
+                                    contentDescription = null,
+                                    tint = Accent,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            }
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Column {
+                                Text(
+                                    text = "Create \"$trimmedQuery\"",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = TextPrimary
+                                )
+                                Text(
+                                    text = "Add as new player",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = TextTertiary
+                                )
+                            }
+                        }
                     }
                 }
             }
