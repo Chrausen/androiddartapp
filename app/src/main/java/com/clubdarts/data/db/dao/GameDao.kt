@@ -22,16 +22,16 @@ interface GameDao {
     @Query("SELECT * FROM games WHERE id = :id")
     suspend fun getGameById(id: Long): Game?
 
-    @Query("SELECT * FROM games WHERE winnerId IS NULL ORDER BY createdAt DESC LIMIT 1")
+    @Query("SELECT * FROM games WHERE finishedAt IS NULL ORDER BY createdAt DESC LIMIT 1")
     suspend fun getActiveGame(): Game?
 
-    @Query("SELECT * FROM games WHERE winnerId IS NULL ORDER BY createdAt DESC LIMIT 1")
+    @Query("SELECT * FROM games WHERE finishedAt IS NULL ORDER BY createdAt DESC LIMIT 1")
     fun observeActiveGame(): Flow<Game?>
 
     @Query("""
         SELECT gp.playerId FROM game_players gp
         INNER JOIN games g ON gp.gameId = g.id
-        WHERE g.winnerId IS NULL
+        WHERE g.finishedAt IS NULL
     """)
     fun observeActiveGamePlayerIds(): Flow<List<Long>>
 

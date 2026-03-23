@@ -74,8 +74,8 @@ fun HistoryScreen(
 
 @Composable
 private fun GameCard(summary: GameSummary, onClick: () -> Unit) {
-    val timeFormat = SimpleDateFormat("HH:mm", Locale.getDefault())
-    val timeStr = timeFormat.format(Date(summary.game.createdAt))
+    val dateTimeFormat = SimpleDateFormat("dd MMM · HH:mm", Locale.getDefault())
+    val dateTimeStr = dateTimeFormat.format(Date(summary.game.createdAt))
 
     val isTeamGame = summary.game.isTeamGame
     val teamAPlayers = if (isTeamGame) summary.players.filter { p ->
@@ -110,7 +110,7 @@ private fun GameCard(summary: GameSummary, onClick: () -> Unit) {
 
             // Format line
             Text(
-                text = "${summary.game.startScore} · ${summary.game.checkoutRule.name.lowercase().replaceFirstChar { it.uppercaseChar() }} out · Best of ${summary.game.legsToWin * 2 - 1} · $timeStr",
+                text = "${summary.game.startScore} · ${summary.game.checkoutRule.name.lowercase().replaceFirstChar { it.uppercaseChar() }} out · Best of ${summary.game.legsToWin * 2 - 1} · $dateTimeStr",
                 style = MaterialTheme.typography.labelSmall,
                 fontFamily = DmMono,
                 color = TextTertiary
