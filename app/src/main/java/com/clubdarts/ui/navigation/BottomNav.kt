@@ -1,19 +1,12 @@
 package com.clubdarts.ui.navigation
 
 import androidx.annotation.StringRes
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
 import com.clubdarts.R
 import com.clubdarts.ui.theme.Accent
 import com.clubdarts.ui.theme.Surface
@@ -34,18 +27,18 @@ sealed class BottomNavItem(
 
 val baseBottomNavItems = listOf(
     BottomNavItem.Game,
+    BottomNavItem.Players,
     BottomNavItem.Stats,
     BottomNavItem.History,
-    BottomNavItem.Players,
     BottomNavItem.Settings
 )
 
 val rankingBottomNavItems = listOf(
     BottomNavItem.Game,
-    BottomNavItem.Stats,
-    BottomNavItem.History,
     BottomNavItem.Rankings,
     BottomNavItem.Players,
+    BottomNavItem.Stats,
+    BottomNavItem.History,
     BottomNavItem.Settings
 )
 
@@ -69,21 +62,10 @@ fun ClubDartsBottomNav(
                 selected = isActive,
                 onClick = { onNavigate(item.route) },
                 icon = {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Icon(
-                            imageVector = item.icon,
-                            contentDescription = stringResource(item.labelRes)
-                        )
-                        if (isActive) {
-                            Spacer(modifier = Modifier.height(2.dp))
-                            Box(
-                                modifier = Modifier
-                                    .size(4.dp)
-                                    .clip(CircleShape)
-                                    .background(Accent)
-                            )
-                        }
-                    }
+                    Icon(
+                        imageVector = item.icon,
+                        contentDescription = stringResource(item.labelRes)
+                    )
                 },
                 label = { Text(stringResource(item.labelRes)) },
                 colors = NavigationBarItemDefaults.colors(
