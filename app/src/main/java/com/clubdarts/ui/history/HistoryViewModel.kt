@@ -24,7 +24,7 @@ data class GameSummary(
 
 data class HistoryUiState(
     val gameSummaries: List<GameSummary> = emptyList(),
-    val isLoading: Boolean = false,
+    val isLoading: Boolean = true,
     val errorMessage: String? = null
 )
 

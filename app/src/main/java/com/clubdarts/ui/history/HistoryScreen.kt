@@ -43,7 +43,11 @@ fun HistoryScreen(
         Text(stringResource(R.string.history_title), style = MaterialTheme.typography.headlineMedium, color = TextPrimary)
         Spacer(modifier = Modifier.height(16.dp))
 
-        if (uiState.gameSummaries.isEmpty()) {
+        if (uiState.isLoading) {
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator(color = Accent, strokeWidth = 2.dp)
+            }
+        } else if (uiState.gameSummaries.isEmpty()) {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 Text(stringResource(R.string.history_empty), style = MaterialTheme.typography.bodyMedium, color = TextTertiary)
             }
