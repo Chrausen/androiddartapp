@@ -5,11 +5,13 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -29,6 +31,9 @@ fun StatsScreen(
     viewModel: StatsViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val sortedPlayers = remember(uiState.players, uiState.averages) {
+        uiState.players.sortedByDescending { uiState.averages[it.id] ?: 0.0 }
+    }
 
     LazyColumn(
         modifier = Modifier
@@ -66,10 +71,10 @@ fun StatsScreen(
             item {
                 Text(stringResource(R.string.stats_top_averages), style = MaterialTheme.typography.titleMedium, color = TextPrimary)
             }
-            items(uiState.players.sortedByDescending { uiState.averages[it.id] ?: 0.0 }) { player ->
+            itemsIndexed(sortedPlayers, key = { _, player -> player.id }) { index, player ->
                 val avg = uiState.averages[player.id] ?: 0.0
                 LeaderboardRow(
-                    rank = uiState.players.sortedByDescending { uiState.averages[it.id] ?: 0.0 }.indexOf(player) + 1,
+                    rank = index + 1,
                     player = player,
                     average = avg,
                     onClick = { viewModel.selectPlayer(player) }

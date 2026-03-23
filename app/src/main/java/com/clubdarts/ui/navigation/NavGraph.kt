@@ -37,18 +37,34 @@ fun ClubDartsNavHost(
     val rankingEnabled by settingsRepository.observeRankingEnabled()
         .collectAsStateWithLifecycle(initialValue = false)
 
+    // Track the last active game sub-route so the Game tab restores to it.
+    // Only game/live is remembered — setup and result always go back to setup.
+    var lastGameRoute by remember { mutableStateOf("game") }
+    LaunchedEffect(currentRoute) {
+        lastGameRoute = when (currentRoute) {
+            "game/live" -> "game/live"
+            "game", "game/result" -> "game"
+            else -> lastGameRoute
+        }
+    }
+
     Scaffold(
         bottomBar = {
             ClubDartsBottomNav(
                 currentRoute = currentRoute,
                 rankingEnabled = rankingEnabled,
                 onNavigate = { route ->
-                    navController.navigate(route) {
-                        popUpTo("game") {
-                            saveState = true
+                    if (route == "game") {
+                        // Navigate directly to the last game sub-route (live game or setup)
+                        navController.navigate(lastGameRoute) {
+                            popUpTo("game")          // clear any non-game tab from the stack
+                            launchSingleTop = true
                         }
-                        launchSingleTop = true
-                        restoreState = true
+                    } else {
+                        navController.navigate(route) {
+                            popUpTo("game")          // always return to game root when leaving
+                            launchSingleTop = true
+                        }
                     }
                 }
             )

@@ -43,6 +43,9 @@ class GameRepository @Inject constructor(
     fun getAllGames(): Flow<List<Game>> = gameDao.getAllGames()
     suspend fun getGameById(id: Long): Game? = gameDao.getGameById(id)
     suspend fun getActiveGame(): Game? = gameDao.getActiveGame()
+    fun observeActiveGame(): Flow<Game?> = gameDao.observeActiveGame()
+    fun observeActiveGamePlayerIds(): Flow<List<Long>> = gameDao.observeActiveGamePlayerIds()
+    suspend fun deleteAll() = gameDao.deleteAll()
     suspend fun getGamePlayers(gameId: Long): List<GamePlayer> = gameDao.getGamePlayers(gameId)
     suspend fun deleteGamePlayers(gameId: Long) = gameDao.deleteGamePlayers(gameId)
 

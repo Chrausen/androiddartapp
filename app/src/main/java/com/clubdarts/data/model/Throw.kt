@@ -2,6 +2,7 @@ package com.clubdarts.data.model
 
 import androidx.room.Entity
 import androidx.room.ForeignKey
+import androidx.room.Index
 import androidx.room.PrimaryKey
 
 @Entity(
@@ -9,6 +10,10 @@ import androidx.room.PrimaryKey
     foreignKeys = [
         ForeignKey(Leg::class,    ["id"], ["legId"],    onDelete = ForeignKey.CASCADE),
         ForeignKey(Player::class, ["id"], ["playerId"], onDelete = ForeignKey.CASCADE)
+    ],
+    indices = [
+        Index("playerId"),
+        Index("legId")
     ]
 )
 data class Throw(

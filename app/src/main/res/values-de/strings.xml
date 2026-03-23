@@ -20,6 +20,7 @@
     <string name="settings_tts_subtitle">Eigene Ansagen nach jedem Visit</string>
     <string name="settings_delete_all">Alle Daten löschen</string>
     <string name="settings_delete_all_subtitle">Alle Spieler, Spiele und Verlauf entfernen</string>
+    <string name="settings_delete_all_active_game">Beende zuerst das aktuelle Spiel</string>
     <string name="dialog_delete_all_title">Alle Daten löschen?</string>
     <string name="dialog_delete_all_message">Dies löscht dauerhaft alle Spieler, Spiele und den Verlauf. TTS-Phrasen und Einstellungen bleiben erhalten. Dieser Vorgang kann nicht rückgängig gemacht werden.</string>
 
@@ -28,6 +29,8 @@
     <string name="general_language_label">Sprache</string>
     <string name="language_english">Englisch</string>
     <string name="language_german">Deutsch</string>
+    <string name="general_animations_label">Animationen</string>
+    <string name="general_animations_subtitle">Spielerleisten-Animation bei Spielerwechsel</string>
 
     <!-- Common buttons / actions -->
     <string name="btn_delete">Löschen</string>
@@ -45,6 +48,7 @@
     <string name="players_edit_title">Spieler bearbeiten</string>
     <string name="players_delete_title">Spieler löschen</string>
     <string name="players_delete_message">%1$s löschen? Der Spielverlauf bleibt erhalten.</string>
+    <string name="players_in_active_game">Im aktiven Spiel</string>
     <string name="player_name_label">Spielername</string>
 
     <!-- Game setup screen -->

@@ -12,7 +12,8 @@ import javax.inject.Inject
 
 data class GeneralSettingsUiState(
     val currentLanguage: String = "en",
-    val shouldRecreate: Boolean = false
+    val shouldRecreate: Boolean = false,
+    val animationsEnabled: Boolean = true
 )
 
 @HiltViewModel
@@ -24,7 +25,8 @@ class GeneralSettingsViewModel @Inject constructor(
 
     private val _uiState = MutableStateFlow(
         GeneralSettingsUiState(
-            currentLanguage = prefs.getString(KEY_LANGUAGE, "en") ?: "en"
+            currentLanguage = prefs.getString(KEY_LANGUAGE, "en") ?: "en",
+            animationsEnabled = prefs.getBoolean(KEY_ANIMATIONS, true)
         )
     )
     val uiState: StateFlow<GeneralSettingsUiState> = _uiState.asStateFlow()
@@ -39,8 +41,14 @@ class GeneralSettingsViewModel @Inject constructor(
         _uiState.update { it.copy(shouldRecreate = false) }
     }
 
+    fun setAnimationsEnabled(enabled: Boolean) {
+        prefs.edit().putBoolean(KEY_ANIMATIONS, enabled).apply()
+        _uiState.update { it.copy(animationsEnabled = enabled) }
+    }
+
     companion object {
         const val PREFS_NAME = "club_darts_prefs"
         const val KEY_LANGUAGE = "app_language"
+        const val KEY_ANIMATIONS = "animations_enabled"
     }
 }
