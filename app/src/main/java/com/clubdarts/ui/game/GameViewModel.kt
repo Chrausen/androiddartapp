@@ -103,6 +103,9 @@ data class GameUiState(
     val cricketMarks: Map<Long, Map<Int, Int>> = emptyMap(),
     // Single mode: playerId → points; Teams mode: teamIndex.toLong() → points
     val cricketScores: Map<Long, Int> = emptyMap(),
+    // Snapshot of marks/scores at the start of the current player's visit (for undo & visit score calc)
+    val cricketMarksSnapshot: Map<Long, Map<Int, Int>> = emptyMap(),
+    val cricketScoresSnapshot: Map<Long, Int> = emptyMap(),
     val setupGameType: GameType = GameType.X01
 )
 
@@ -591,12 +594,61 @@ class GameViewModel @Inject constructor(
                     gameSaved = false,
                     eloResults = null,
                     cricketMarks = initialMarks,
-                    cricketScores = initialScores
+                    cricketScores = initialScores,
+                    cricketMarksSnapshot = initialMarks,
+                    cricketScoresSnapshot = initialScores
                 )}
             } catch (e: Exception) {
                 _uiState.update { it.copy(errorMessage = e.message) }
             }
         }
+    }
+
+    // Apply a single dart's effect to mutable marks/scores in-place.
+    private fun applyCricketDart(
+        dart: DartInput,
+        scoringKey: Long,
+        unitKeys: List<Long>,
+        marks: MutableMap<Long, MutableMap<Int, Int>>,
+        scores: MutableMap<Long, Int>
+    ) {
+        val number = dart.score
+        val mult = dart.multiplier
+        if (number !in cricketNumbers) return
+        if (unitKeys.all { key -> (marks[key]?.get(number) ?: 0) >= 3 }) return  // number dead
+
+        val currentCount = marks.getOrPut(scoringKey) { mutableMapOf() }.getOrDefault(number, 0)
+        if (currentCount >= 3) {
+            val pts = if (number == 25) (if (mult == 2) 50 else 25) else number * mult
+            scores[scoringKey] = (scores[scoringKey] ?: 0) + pts
+        } else {
+            val newCount = currentCount + mult
+            marks.getOrPut(scoringKey) { mutableMapOf() }[number] = newCount
+            val excess = newCount - 3
+            if (excess > 0) {
+                val allClosedAfter = unitKeys.all { key ->
+                    if (key == scoringKey) newCount >= 3 else (marks[key]?.get(number) ?: 0) >= 3
+                }
+                if (!allClosedAfter) {
+                    val pts = if (number == 25) excess * 25 else number * excess
+                    scores[scoringKey] = (scores[scoringKey] ?: 0) + pts
+                }
+            }
+        }
+    }
+
+    // Replay darts on top of a snapshot to get the resulting marks/scores.
+    private fun recomputeFromSnapshot(
+        marksSnapshot: Map<Long, Map<Int, Int>>,
+        scoresSnapshot: Map<Long, Int>,
+        darts: List<DartInput>,
+        scoringKey: Long,
+        unitKeys: List<Long>
+    ): Pair<Map<Long, Map<Int, Int>>, Map<Long, Int>> {
+        val marks = marksSnapshot.mapValues { it.value.toMutableMap() }.toMutableMap()
+        val scores = scoresSnapshot.toMutableMap()
+        for (dart in darts) applyCricketDart(dart, scoringKey, unitKeys, marks, scores)
+        return marks to scores
     }
 
     fun recordCricketDart(score: Int) {
@@ -607,91 +659,57 @@ class GameViewModel @Inject constructor(
             return
         }
         val dart = DartInput(score = score, multiplier = mult)
-        val newDarts = state.currentDarts + dart
-        _uiState.update { it.copy(currentDarts = newDarts, pendingMultiplier = 1) }
-        if (_uiState.value.currentDarts.size >= 3) {
-            resolveCricketVisit()
-        }
+        val currentPlayer = state.players.getOrNull(state.currentPlayerIndex) ?: return
+        val scoringKey = cricketScoringKey(state, currentPlayer)
+        val unitKeys: List<Long> = if (state.isTeamGame) listOf(0L, 1L) else state.players.map { it.id }
+        val allDarts = state.currentDarts + dart
+        val (newMarks, newScores) = recomputeFromSnapshot(
+            state.cricketMarksSnapshot, state.cricketScoresSnapshot, allDarts, scoringKey, unitKeys
+        )
+        _uiState.update { it.copy(currentDarts = allDarts, pendingMultiplier = 1, cricketMarks = newMarks, cricketScores = newScores) }
+        if (allDarts.size >= 3) finalizeCricketVisit()
     }
 
     fun recordCricketMiss() {
-        val dart = DartInput(score = 0, multiplier = 0)
         val state = _uiState.value
-        val newDarts = state.currentDarts + dart
-        _uiState.update { it.copy(currentDarts = newDarts, pendingMultiplier = 1) }
-        if (_uiState.value.currentDarts.size >= 3) {
-            resolveCricketVisit()
-        }
+        val dart = DartInput(score = 0, multiplier = 0)
+        val currentPlayer = state.players.getOrNull(state.currentPlayerIndex) ?: return
+        val scoringKey = cricketScoringKey(state, currentPlayer)
+        val unitKeys: List<Long> = if (state.isTeamGame) listOf(0L, 1L) else state.players.map { it.id }
+        val allDarts = state.currentDarts + dart
+        val (newMarks, newScores) = recomputeFromSnapshot(
+            state.cricketMarksSnapshot, state.cricketScoresSnapshot, allDarts, scoringKey, unitKeys
+        )
+        _uiState.update { it.copy(currentDarts = allDarts, pendingMultiplier = 1, cricketMarks = newMarks, cricketScores = newScores) }
+        if (allDarts.size >= 3) finalizeCricketVisit()
     }
 
     fun undoCricketDart() {
         val state = _uiState.value
-        if (state.currentDarts.isNotEmpty()) {
-            val newDarts = state.currentDarts.dropLast(1)
-            _uiState.update { it.copy(currentDarts = newDarts, pendingMultiplier = 1) }
-        }
+        if (state.currentDarts.isEmpty()) return
+        val currentPlayer = state.players.getOrNull(state.currentPlayerIndex) ?: return
+        val scoringKey = cricketScoringKey(state, currentPlayer)
+        val unitKeys: List<Long> = if (state.isTeamGame) listOf(0L, 1L) else state.players.map { it.id }
+        val remainingDarts = state.currentDarts.dropLast(1)
+        val (newMarks, newScores) = recomputeFromSnapshot(
+            state.cricketMarksSnapshot, state.cricketScoresSnapshot, remainingDarts, scoringKey, unitKeys
+        )
+        _uiState.update { it.copy(currentDarts = remainingDarts, pendingMultiplier = 1, cricketMarks = newMarks, cricketScores = newScores) }
     }
 
     private fun cricketScoringKey(state: GameUiState, player: Player): Long =
         if (state.isTeamGame) (state.teamAssignments[player.id] ?: 0).toLong() else player.id
 
-    private fun resolveCricketVisit() {
+    private fun finalizeCricketVisit() {
         val state = _uiState.value
         val currentPlayer = state.players.getOrNull(state.currentPlayerIndex) ?: return
         val darts = state.currentDarts
         val scoringKey = cricketScoringKey(state, currentPlayer)
+        val unitKeys: List<Long> = if (state.isTeamGame) listOf(0L, 1L) else state.players.map { it.id }
 
-        // Number of scoring units (players in single, teams in team mode)
-        val unitKeys: List<Long> = if (state.isTeamGame) listOf(0L, 1L)
-                                   else state.players.map { it.id }
+        // Visit score = points gained this visit (marks already applied per-dart)
+        val visitScore = (state.cricketScores[scoringKey] ?: 0) - (state.cricketScoresSnapshot[scoringKey] ?: 0)
 
-        var newMarks = state.cricketMarks.toMutableMap()
-        var newScores = state.cricketScores.toMutableMap()
-        var visitScore = 0
-
-        for (dart in darts) {
-            val number = dart.score
-            val mult = dart.multiplier
-            if (number !in cricketNumbers) continue  // miss or irrelevant number
-
-            val currentCount = newMarks[scoringKey]?.get(number) ?: 0
-
-            // Check if this number is already fully closed by everyone
-            val allClosedBefore = unitKeys.all { key -> (newMarks[key]?.get(number) ?: 0) >= 3 }
-            if (allClosedBefore) continue  // no effect at all
-
-            val pointsPerMark = if (number == 25) 25 else number
-
-            if (currentCount >= 3) {
-                // Scoring unit already has this number closed — score points
-                // Points: mult × number (for bull: single=25, double=50)
-                val pts = if (number == 25) (if (mult == 2) 50 else 25) else number * mult
-                visitScore += pts
-            } else {
-                // Add marks; excess marks score points
-                val newCount = currentCount + mult
-                val updatedNumberMarks = (newMarks[scoringKey] ?: emptyMap()).toMutableMap()
-                updatedNumberMarks[number] = newCount
-                newMarks[scoringKey] = updatedNumberMarks
-
-                val excess = newCount - 3
-                if (excess > 0) {
-                    // Check if closing this number causes everyone to be closed (no scoring then)
-                    val allClosedAfter = unitKeys.all { key ->
-                        if (key == scoringKey) newCount >= 3
-                        else (newMarks[key]?.get(number) ?: 0) >= 3
-                    }
-                    if (!allClosedAfter) {
-                        val pts = if (number == 25) excess * 25 else number * excess
-                        visitScore += pts
-                    }
-                }
-            }
-        }
-
-        newScores[scoringKey] = (newScores[scoringKey] ?: 0) + visitScore
-
-        // Persist visit to DB (for history)
         viewModelScope.launch {
             try {
                 val legId = state.legId ?: return@launch
@@ -726,28 +744,28 @@ class GameViewModel @Inject constructor(
             dart3 = darts.getOrNull(2),
             total = visitScore,
             isBust = false,
-            scoreAfterVisit = newScores[scoringKey] ?: 0
+            scoreAfterVisit = state.cricketScores[scoringKey] ?: 0
         )
         val newHistory = (listOf(visitRecord) + state.visitHistory).take(20)
         val nextPlayerIndex = (state.currentPlayerIndex + 1) % state.players.size
 
-        _uiState.update { state.copy(
-            cricketMarks = newMarks,
-            cricketScores = newScores,
+        _uiState.update { it.copy(
             currentDarts = emptyList(),
             pendingMultiplier = 1,
             currentPlayerIndex = nextPlayerIndex,
-            visitHistory = newHistory
+            visitHistory = newHistory,
+            // Snapshot advances to current state for next player's visit
+            cricketMarksSnapshot = state.cricketMarks,
+            cricketScoresSnapshot = state.cricketScores
         )}
 
         // Check win condition: scoring unit closed all 7 numbers AND score >= all opponents
-        val unitKeys2: List<Long> = if (state.isTeamGame) listOf(0L, 1L) else state.players.map { it.id }
-        val unitMarks = newMarks[scoringKey] ?: emptyMap()
+        val unitMarks = state.cricketMarks[scoringKey] ?: emptyMap()
         val allNumbersClosed = cricketNumbers.all { (unitMarks[it] ?: 0) >= 3 }
         if (allNumbersClosed) {
-            val myScore = newScores[scoringKey] ?: 0
-            val maxOpponentScore = unitKeys2.filter { it != scoringKey }
-                .maxOfOrNull { newScores[it] ?: 0 } ?: 0
+            val myScore = state.cricketScores[scoringKey] ?: 0
+            val maxOpponentScore = unitKeys.filter { it != scoringKey }
+                .maxOfOrNull { state.cricketScores[it] ?: 0 } ?: 0
             if (myScore >= maxOpponentScore) {
                 onCricketLegWon(currentPlayer.id)
             }
@@ -830,6 +848,8 @@ class GameViewModel @Inject constructor(
             visitHistory = emptyList(),
             cricketMarks = freshMarks,
             cricketScores = freshScores,
+            cricketMarksSnapshot = freshMarks,
+            cricketScoresSnapshot = freshScores,
             legWins = newLegWins ?: it.legWins,
             teamLegWins = newTeamLegWins ?: it.teamLegWins
         )}
@@ -1062,7 +1082,9 @@ class GameViewModel @Inject constructor(
             isRanked = false,
             eloResults = null,
             cricketMarks = emptyMap(),
-            cricketScores = emptyMap()
+            cricketScores = emptyMap(),
+            cricketMarksSnapshot = emptyMap(),
+            cricketScoresSnapshot = emptyMap()
         )}
         loadSetupDefaults()
     }

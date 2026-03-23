@@ -32,6 +32,7 @@ private val CRICKET_NUMBERS = listOf(20, 19, 18, 17, 16, 15, 25)
 @Composable
 fun CricketGameScreen(
     onGameFinished: () -> Unit,
+    onAborted: () -> Unit = {},
     viewModel: GameViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -172,6 +173,7 @@ fun CricketGameScreen(
                 TextButton(onClick = {
                     showAbortDialog = false
                     viewModel.abortCricketGame()
+                    onAborted()
                 }) {
                     Text(stringResource(R.string.btn_abort), color = Red)
                 }
@@ -287,20 +289,25 @@ private fun CricketSingleScoreboard(
 ) {
     val players = uiState.players
     val n = players.size
-    // Split: left players = first floor(n/2), right players = remaining
     val leftPlayers = players.take(n / 2)
     val rightPlayers = players.drop(n / 2)
     val currentPlayer = players.getOrNull(uiState.currentPlayerIndex)
 
-    val scrollState = rememberScrollState()
+    BoxWithConstraints(modifier = modifier) {
+        val numbersColWidth = 52.dp
+        val minColWidth = 80.dp
+        val numCols = n.coerceAtLeast(1)
+        // Compute player column width so all columns fit; fall back to minColWidth + scroll
+        val computedColWidth = ((maxWidth - numbersColWidth) / numCols).coerceAtLeast(minColWidth)
+        val totalContentWidth = computedColWidth * numCols + numbersColWidth
+        val needsScroll = totalContentWidth > maxWidth
 
-    Box(modifier = modifier) {
+        val scrollState = rememberScrollState()
         Row(
             modifier = Modifier
-                .fillMaxSize()
-                .horizontalScroll(scrollState)
+                .fillMaxHeight()
+                .then(if (needsScroll) Modifier.horizontalScroll(scrollState) else Modifier)
         ) {
-            // Left player columns
             leftPlayers.forEach { player ->
                 PlayerColumn(
                     player = player,
@@ -309,14 +316,10 @@ private fun CricketSingleScoreboard(
                     score = uiState.cricketScores[player.id] ?: 0,
                     legWins = uiState.legWins[player.id] ?: 0,
                     isLeftSide = true,
-                    modifier = Modifier.widthIn(min = 72.dp)
+                    modifier = Modifier.width(computedColWidth)
                 )
             }
-
-            // Center numbers column
             NumbersColumn()
-
-            // Right player columns
             rightPlayers.forEach { player ->
                 PlayerColumn(
                     player = player,
@@ -325,7 +328,7 @@ private fun CricketSingleScoreboard(
                     score = uiState.cricketScores[player.id] ?: 0,
                     legWins = uiState.legWins[player.id] ?: 0,
                     isLeftSide = false,
-                    modifier = Modifier.widthIn(min = 72.dp)
+                    modifier = Modifier.width(computedColWidth)
                 )
             }
         }

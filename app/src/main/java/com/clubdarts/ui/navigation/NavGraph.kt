@@ -108,6 +108,7 @@ fun ClubDartsNavHost(
                 if (liveUiState.screen == GameScreen.CRICKET_LIVE) {
                     CricketGameScreen(
                         onGameFinished = toResult,
+                        onAborted = toSetup,
                         viewModel = gvm
                     )
                 } else {
