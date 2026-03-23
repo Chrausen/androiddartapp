@@ -48,7 +48,8 @@ fun PlayerStrip(
     ) {
         orderedPlayers.forEachIndexed { index, player ->
             val isActive = index == 0
-            key(player.id) {
+            // key by slot index so the active slot (0) animates when a new player rotates in
+            key(index) {
                 val teamIdx = teamAssignments[player.id]
                 val teamColor: Color? = if (isTeamGame && teamIdx != null) {
                     if (teamIdx == 0) Red else Blue
@@ -68,10 +69,10 @@ fun PlayerStrip(
                 } else null
 
                 if (isActive) {
-                    // Single lightweight crossfade only on the active slot
+                    // Crossfade on the active slot only — fires on turn change
                     Crossfade(
                         targetState = player,
-                        animationSpec = tween(100),
+                        animationSpec = tween(120),
                         label = "active_player"
                     ) { p ->
                         ActivePlayerPanel(
