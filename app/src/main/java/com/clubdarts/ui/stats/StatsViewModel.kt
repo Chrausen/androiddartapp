@@ -102,37 +102,30 @@ class StatsViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 _uiState.update { it.copy(isLoading = true, selectedPlayer = player) }
-                val avg = throwDao.getAverageForPlayer(player.id) ?: 0.0
-                val highestFinish = throwDao.getHighestFinishForPlayer(player.id) ?: 0
-                val checkoutAttempts = throwDao.getCheckoutAttemptsForPlayer(player.id)
-                val successfulCheckouts = throwDao.getSuccessfulCheckoutsForPlayer(player.id)
-                val checkoutPct = if (checkoutAttempts > 0) successfulCheckouts.toFloat() / checkoutAttempts else 0f
-                val count180s = throwDao.get180sForPlayer(player.id)
-                val hundredPlus = throwDao.getHundredPlusForPlayer(player.id)
-                val bucketHigh = throwDao.getBucketHigh(player.id)
-                val bucketMid = throwDao.getBucketMid(player.id)
-                val bucketLow = throwDao.getBucketLow(player.id)
-                val bucketVeryLow = throwDao.getBucketVeryLow(player.id)
-                val bucketBusts = throwDao.getBucketBusts(player.id)
+
+                // Single aggregated query replaces 11 individual DB round-trips
+                val agg = throwDao.getPlayerStatsAggregate(player.id)
+                val checkoutPct = if (agg.checkoutAttempts > 0) {
+                    agg.successfulCheckouts.toFloat() / agg.checkoutAttempts
+                } else 0f
+
                 val topScores = throwDao.getVisitScoreFrequencyForPlayer(player.id)
-
                 val legsWon = gameRepository.getLegWinsForPlayer(player.id)
-
                 val games = gameRepository.getAllGames().first().filter { it.finishedAt != null }
 
                 val stats = PlayerStats(
                     player = player,
-                    average = avg,
-                    highestFinish = highestFinish,
+                    average = agg.average ?: 0.0,
+                    highestFinish = agg.highestFinish ?: 0,
                     checkoutPercent = checkoutPct,
-                    count180s = count180s,
-                    hundredPlus = hundredPlus,
+                    count180s = agg.count180s,
+                    hundredPlus = agg.hundredPlus,
                     legsWon = legsWon,
-                    bucketHigh = bucketHigh,
-                    bucketMid = bucketMid,
-                    bucketLow = bucketLow,
-                    bucketVeryLow = bucketVeryLow,
-                    bucketBusts = bucketBusts,
+                    bucketHigh = agg.bucketHigh,
+                    bucketMid = agg.bucketMid,
+                    bucketLow = agg.bucketLow,
+                    bucketVeryLow = agg.bucketVeryLow,
+                    bucketBusts = agg.bucketBusts,
                     topScores = topScores,
                     games = games
                 )

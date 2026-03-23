@@ -6,6 +6,20 @@ import kotlinx.coroutines.flow.Flow
 
 data class ScoreFrequency(val visitTotal: Int, val frequency: Int)
 
+data class PlayerStatsAggregate(
+    val average: Double?,
+    val count180s: Int,
+    val hundredPlus: Int,
+    val checkoutAttempts: Int,
+    val successfulCheckouts: Int,
+    val highestFinish: Int?,
+    val bucketHigh: Int,
+    val bucketMid: Int,
+    val bucketLow: Int,
+    val bucketVeryLow: Int,
+    val bucketBusts: Int
+)
+
 @Dao
 interface ThrowDao {
     @Insert
@@ -81,6 +95,25 @@ interface ThrowDao {
 
     @Query("SELECT COUNT(*) FROM throws WHERE playerId = :playerId AND isBust = 1")
     suspend fun getBucketBusts(playerId: Long): Int
+
+    @Query("""
+        SELECT
+            AVG(CASE WHEN t.isBust = 0 THEN t.visitTotal ELSE NULL END) AS average,
+            COUNT(CASE WHEN t.visitTotal = 180 THEN 1 ELSE NULL END) AS count180s,
+            COUNT(CASE WHEN t.visitTotal >= 100 AND t.isBust = 0 THEN 1 ELSE NULL END) AS hundredPlus,
+            COUNT(CASE WHEN t.isCheckoutAttempt = 1 THEN 1 ELSE NULL END) AS checkoutAttempts,
+            COUNT(CASE WHEN t.isCheckoutAttempt = 1 AND l.winnerId = t.playerId THEN 1 ELSE NULL END) AS successfulCheckouts,
+            MAX(CASE WHEN t.isCheckoutAttempt = 1 AND t.isBust = 0 AND l.winnerId = t.playerId THEN t.visitTotal ELSE NULL END) AS highestFinish,
+            COUNT(CASE WHEN t.visitTotal >= 100 AND t.visitTotal <= 180 AND t.isBust = 0 THEN 1 ELSE NULL END) AS bucketHigh,
+            COUNT(CASE WHEN t.visitTotal >= 60 AND t.visitTotal <= 99 AND t.isBust = 0 THEN 1 ELSE NULL END) AS bucketMid,
+            COUNT(CASE WHEN t.visitTotal >= 40 AND t.visitTotal <= 59 AND t.isBust = 0 THEN 1 ELSE NULL END) AS bucketLow,
+            COUNT(CASE WHEN t.visitTotal >= 1 AND t.visitTotal <= 39 AND t.isBust = 0 THEN 1 ELSE NULL END) AS bucketVeryLow,
+            COUNT(CASE WHEN t.isBust = 1 THEN 1 ELSE NULL END) AS bucketBusts
+        FROM throws t
+        INNER JOIN legs l ON t.legId = l.id
+        WHERE t.playerId = :playerId
+    """)
+    suspend fun getPlayerStatsAggregate(playerId: Long): PlayerStatsAggregate
 
     @Query("SELECT COUNT(*) FROM throws WHERE visitTotal = 180")
     suspend fun getTotalClub180s(): Int

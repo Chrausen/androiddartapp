@@ -62,11 +62,18 @@ val MIGRATION_3_4 = object : Migration(3, 4) {
     }
 }
 
+val MIGRATION_4_5 = object : Migration(4, 5) {
+    override fun migrate(database: SupportSQLiteDatabase) {
+        database.execSQL("CREATE INDEX IF NOT EXISTS index_throws_playerId ON throws (playerId)")
+        database.execSQL("CREATE INDEX IF NOT EXISTS index_throws_legId ON throws (legId)")
+    }
+}
+
 @Database(
     entities = [Player::class, Game::class, GamePlayer::class,
                 Leg::class, Throw::class, AppSettings::class,
                 EloMatch::class, EloMatchEntry::class],
-    version = 4,
+    version = 5,
     exportSchema = false
 )
 @TypeConverters(Converters::class)

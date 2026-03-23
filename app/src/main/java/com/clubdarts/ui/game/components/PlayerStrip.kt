@@ -1,12 +1,8 @@
 package com.clubdarts.ui.game.components
 
-import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.tween
-import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutVertically
-import androidx.compose.animation.togetherWith
 import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
@@ -52,35 +48,32 @@ fun PlayerStrip(
     ) {
         orderedPlayers.forEachIndexed { index, player ->
             val isActive = index == 0
-            key(index) {
-                AnimatedContent(
-                    targetState = player,
-                    label = "player_slot_$index",
-                    modifier = Modifier.fillMaxWidth().clipToBounds(),
-                    transitionSpec = {
-                        slideInVertically(tween(120, delayMillis = 120)) { it } togetherWith
-                                slideOutVertically(tween(120)) { -it }
-                    }
-                ) { p ->
-                    val teamIdx = teamAssignments[p.id]
-                    val teamColor: Color? = if (isTeamGame && teamIdx != null) {
-                        if (teamIdx == 0) Red else Blue
-                    } else null
-                    val displayScore = if (isTeamGame && teamIdx != null) {
-                        teamScores[teamIdx] ?: 0
-                    } else {
-                        scores[p.id] ?: 0
-                    }
-                    val displayLegWins = if (isTeamGame && teamIdx != null) {
-                        teamLegWins[teamIdx] ?: 0
-                    } else {
-                        legWins[p.id] ?: 0
-                    }
-                    val teamLabel = if (isTeamGame && teamIdx != null) {
-                        if (teamIdx == 0) "Team A" else "Team B"
-                    } else null
+            key(player.id) {
+                val teamIdx = teamAssignments[player.id]
+                val teamColor: Color? = if (isTeamGame && teamIdx != null) {
+                    if (teamIdx == 0) Red else Blue
+                } else null
+                val displayScore = if (isTeamGame && teamIdx != null) {
+                    teamScores[teamIdx] ?: 0
+                } else {
+                    scores[player.id] ?: 0
+                }
+                val displayLegWins = if (isTeamGame && teamIdx != null) {
+                    teamLegWins[teamIdx] ?: 0
+                } else {
+                    legWins[player.id] ?: 0
+                }
+                val teamLabel = if (isTeamGame && teamIdx != null) {
+                    if (teamIdx == 0) "Team A" else "Team B"
+                } else null
 
-                    if (isActive) {
+                if (isActive) {
+                    // Single lightweight crossfade only on the active slot
+                    Crossfade(
+                        targetState = player,
+                        animationSpec = tween(100),
+                        label = "active_player"
+                    ) { p ->
                         ActivePlayerPanel(
                             player = p,
                             score = displayScore,
@@ -90,15 +83,15 @@ fun PlayerStrip(
                             teamLabel = teamLabel,
                             modifier = Modifier.fillMaxWidth()
                         )
-                    } else {
-                        WaitingPlayerPanel(
-                            player = p,
-                            score = displayScore,
-                            legWins = displayLegWins,
-                            teamColor = teamColor,
-                            modifier = Modifier.fillMaxWidth()
-                        )
                     }
+                } else {
+                    WaitingPlayerPanel(
+                        player = player,
+                        score = displayScore,
+                        legWins = displayLegWins,
+                        teamColor = teamColor,
+                        modifier = Modifier.fillMaxWidth()
+                    )
                 }
             }
         }
