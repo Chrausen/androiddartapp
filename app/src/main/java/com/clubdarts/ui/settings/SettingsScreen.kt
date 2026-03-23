@@ -5,6 +5,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.BugReport
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.DeleteForever
 import androidx.compose.material.icons.filled.EmojiEvents
@@ -21,6 +22,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.clubdarts.BuildConfig
 import com.clubdarts.R
 import com.clubdarts.ui.theme.*
 
@@ -29,12 +31,16 @@ fun SettingsScreen(
     onNavigateToTtsScores: () -> Unit,
     onNavigateToRankingSettings: () -> Unit,
     onNavigateToGeneralSettings: () -> Unit,
+    onDataDeleted: () -> Unit = {},
     viewModel: SettingsViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     if (uiState.deleteSuccess) {
-        LaunchedEffect(Unit) { viewModel.clearDeleteSuccess() }
+        LaunchedEffect(Unit) {
+            onDataDeleted()
+            viewModel.clearDeleteSuccess()
+        }
     }
 
     Box(
@@ -83,16 +89,56 @@ fun SettingsScreen(
 
             SettingsRow(
                 icon = Icons.Default.DeleteForever,
-                iconTint = if (uiState.hasActiveGame) TextTertiary else Red,
+                iconTint = Red,
                 title = stringResource(R.string.settings_delete_all),
-                subtitle = if (uiState.hasActiveGame)
-                    stringResource(R.string.settings_delete_all_active_game)
-                else
-                    stringResource(R.string.settings_delete_all_subtitle),
-                titleColor = if (uiState.hasActiveGame) TextTertiary else Red,
-                enabled = !uiState.hasActiveGame,
+                subtitle = stringResource(R.string.settings_delete_all_subtitle),
+                titleColor = Red,
                 onClick = { viewModel.requestDeleteAll() }
             )
+
+            if (BuildConfig.DEBUG) {
+                Spacer(modifier = Modifier.height(8.dp))
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(Surface, RoundedCornerShape(10.dp))
+                        .clickable(
+                            enabled = !uiState.isGeneratingDebugData,
+                            onClick = { viewModel.generateDebugData() }
+                        )
+                        .padding(horizontal = 12.dp, vertical = 14.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    if (uiState.isGeneratingDebugData) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(22.dp),
+                            strokeWidth = 2.dp,
+                            color = Accent
+                        )
+                    } else {
+                        Icon(
+                            imageVector = Icons.Default.BugReport,
+                            contentDescription = null,
+                            tint = Accent,
+                            modifier = Modifier.size(22.dp)
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            "Generate Debug Data",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = if (uiState.isGeneratingDebugData) TextTertiary else TextPrimary
+                        )
+                        Text(
+                            if (uiState.isGeneratingDebugData) "Creating 20 players and 500 games…"
+                            else "20 players · 500 games",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = TextSecondary
+                        )
+                    }
+                }
+            }
         }
     }
 

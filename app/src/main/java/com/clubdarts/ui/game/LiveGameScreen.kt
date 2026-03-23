@@ -1,5 +1,6 @@
 package com.clubdarts.ui.game
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -47,6 +48,8 @@ fun LiveGameScreen(
 
     val snackbarHostState = remember { SnackbarHostState() }
     var showAbortDialog by remember { mutableStateOf(false) }
+
+    BackHandler { showAbortDialog = true }
 
     LaunchedEffect(uiState.snackbarMessage) {
         uiState.snackbarMessage?.let { msg ->
