@@ -28,6 +28,8 @@
     <string name="general_language_label">Sprache</string>
     <string name="language_english">Englisch</string>
     <string name="language_german">Deutsch</string>
+    <string name="general_animations_label">Animationen</string>
+    <string name="general_animations_subtitle">Spielerleisten-Animation bei Spielerwechsel</string>
 
     <!-- Common buttons / actions -->
     <string name="btn_delete">Löschen</string>

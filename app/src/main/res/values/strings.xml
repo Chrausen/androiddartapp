@@ -28,6 +28,8 @@
     <string name="general_language_label">Language</string>
     <string name="language_english">English</string>
     <string name="language_german">German</string>
+    <string name="general_animations_label">Animations</string>
+    <string name="general_animations_subtitle">Player strip slide animation on turn change</string>
 
     <!-- Common buttons / actions -->
     <string name="btn_delete">Delete</string>

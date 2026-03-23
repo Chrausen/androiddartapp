@@ -2,6 +2,8 @@ package com.clubdarts.ui.game.components
 
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
@@ -38,7 +40,8 @@ fun PlayerStrip(
     isTeamGame: Boolean = false,
     teamAssignments: Map<Long, Int> = emptyMap(),   // playerId → 0 or 1
     teamScores: Map<Int, Int> = emptyMap(),          // teamIndex → remaining score
-    teamLegWins: Map<Int, Int> = emptyMap()          // teamIndex → legs won
+    teamLegWins: Map<Int, Int> = emptyMap(),         // teamIndex → legs won
+    animationsEnabled: Boolean = true
 ) {
     val orderedPlayers = if (players.isEmpty()) emptyList() else {
         players.indices.map { offset -> players[(currentPlayerIndex + offset) % players.size] }
@@ -58,8 +61,12 @@ fun PlayerStrip(
                     label = "player_slot_$index",
                     modifier = Modifier.fillMaxWidth().clipToBounds(),
                     transitionSpec = {
-                        slideInVertically(tween(120, delayMillis = 120)) { it } togetherWith
-                                slideOutVertically(tween(120)) { -it }
+                        if (animationsEnabled) {
+                            slideInVertically(tween(120, delayMillis = 120)) { it } togetherWith
+                                    slideOutVertically(tween(120)) { -it }
+                        } else {
+                            fadeIn(tween(0)) togetherWith fadeOut(tween(0))
+                        }
                     }
                 ) { p ->
                     val teamIdx = teamAssignments[p.id]

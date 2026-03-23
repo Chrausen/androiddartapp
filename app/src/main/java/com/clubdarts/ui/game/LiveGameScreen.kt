@@ -20,7 +20,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import android.content.Context
+import androidx.compose.ui.platform.LocalContext
 import com.clubdarts.R
+import com.clubdarts.ui.settings.GeneralSettingsViewModel
 import com.clubdarts.data.model.CheckoutRule
 import com.clubdarts.data.repository.GameConfig
 import com.clubdarts.ui.game.components.DartNumpad
@@ -35,6 +38,12 @@ fun LiveGameScreen(
     viewModel: GameViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+
+    val context = LocalContext.current
+    val animationsEnabled = remember {
+        context.getSharedPreferences(GeneralSettingsViewModel.PREFS_NAME, Context.MODE_PRIVATE)
+            .getBoolean(GeneralSettingsViewModel.KEY_ANIMATIONS, true)
+    }
 
     val snackbarHostState = remember { SnackbarHostState() }
     var showAbortDialog by remember { mutableStateOf(false) }
@@ -80,7 +89,8 @@ fun LiveGameScreen(
                 isTeamGame = uiState.isTeamGame,
                 teamAssignments = uiState.teamAssignments,
                 teamScores = uiState.teamScores,
-                teamLegWins = uiState.teamLegWins
+                teamLegWins = uiState.teamLegWins,
+                animationsEnabled = animationsEnabled
             )
 
             // Checkout hint bar — always visible so the numpad never moves.
