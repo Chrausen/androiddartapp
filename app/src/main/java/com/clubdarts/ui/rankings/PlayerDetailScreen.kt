@@ -202,32 +202,31 @@ private fun EloGraph(points: List<EloPoint>) {
                     )
                 }
 
-                // Line path
+                // Smooth line path (Catmull-Rom spline → cubic bezier)
                 val path = Path()
-                points.forEachIndexed { i, point ->
-                    val x = xOf(i)
-                    val y = yOf(point.elo)
-                    if (i == 0) path.moveTo(x, y) else path.lineTo(x, y)
+                if (n == 1) {
+                    path.moveTo(xOf(0), yOf(points[0].elo))
+                } else {
+                    path.moveTo(xOf(0), yOf(points[0].elo))
+                    for (i in 0 until n - 1) {
+                        val x0 = xOf(maxOf(i - 1, 0))
+                        val y0 = yOf(points[maxOf(i - 1, 0)].elo)
+                        val x1 = xOf(i);     val y1 = yOf(points[i].elo)
+                        val x2 = xOf(i + 1); val y2 = yOf(points[i + 1].elo)
+                        val x3 = xOf(minOf(i + 2, n - 1))
+                        val y3 = yOf(points[minOf(i + 2, n - 1)].elo)
+                        val cp1x = x1 + (x2 - x0) / 6f
+                        val cp1y = y1 + (y2 - y0) / 6f
+                        val cp2x = x2 - (x3 - x1) / 6f
+                        val cp2y = y2 - (y3 - y1) / 6f
+                        path.cubicTo(cp1x, cp1y, cp2x, cp2y, x2, y2)
+                    }
                 }
                 drawPath(
                     path = path,
                     color = accentColor,
                     style = Stroke(width = 2.dp.toPx())
                 )
-
-                // Dots
-                points.forEachIndexed { i, point ->
-                    drawCircle(
-                        color = accentColor,
-                        radius = 4.dp.toPx(),
-                        center = Offset(xOf(i), yOf(point.elo))
-                    )
-                    drawCircle(
-                        color = androidx.compose.ui.graphics.Color(0xFF0E0F11),
-                        radius = 2.dp.toPx(),
-                        center = Offset(xOf(i), yOf(point.elo))
-                    )
-                }
             }
         }
 

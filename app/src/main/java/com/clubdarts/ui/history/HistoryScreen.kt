@@ -43,7 +43,11 @@ fun HistoryScreen(
         Text(stringResource(R.string.history_title), style = MaterialTheme.typography.headlineMedium, color = TextPrimary)
         Spacer(modifier = Modifier.height(16.dp))
 
-        if (uiState.gameSummaries.isEmpty()) {
+        if (uiState.isLoading) {
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator(color = Accent, strokeWidth = 2.dp)
+            }
+        } else if (uiState.gameSummaries.isEmpty()) {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 Text(stringResource(R.string.history_empty), style = MaterialTheme.typography.bodyMedium, color = TextTertiary)
             }
@@ -74,8 +78,8 @@ fun HistoryScreen(
 
 @Composable
 private fun GameCard(summary: GameSummary, onClick: () -> Unit) {
-    val timeFormat = SimpleDateFormat("HH:mm", Locale.getDefault())
-    val timeStr = timeFormat.format(Date(summary.game.createdAt))
+    val dateTimeFormat = SimpleDateFormat("dd MMM · HH:mm", Locale.getDefault())
+    val dateTimeStr = dateTimeFormat.format(Date(summary.game.createdAt))
 
     val isTeamGame = summary.game.isTeamGame
     val teamAPlayers = if (isTeamGame) summary.players.filter { p ->
@@ -110,7 +114,7 @@ private fun GameCard(summary: GameSummary, onClick: () -> Unit) {
 
             // Format line
             Text(
-                text = "${summary.game.startScore} · ${summary.game.checkoutRule.name.lowercase().replaceFirstChar { it.uppercaseChar() }} out · Best of ${summary.game.legsToWin * 2 - 1} · $timeStr",
+                text = "${summary.game.startScore} · ${summary.game.checkoutRule.name.lowercase().replaceFirstChar { it.uppercaseChar() }} out · Best of ${summary.game.legsToWin * 2 - 1} · $dateTimeStr",
                 style = MaterialTheme.typography.labelSmall,
                 fontFamily = DmMono,
                 color = TextTertiary
@@ -121,6 +125,7 @@ private fun GameCard(summary: GameSummary, onClick: () -> Unit) {
                 color = when {
                     isTeamGame -> Red.copy(alpha = 0.15f)
                     summary.game.isSolo -> Surface3
+                    summary.game.isRanked -> Accent.copy(alpha = 0.15f)
                     else -> Blue.copy(alpha = 0.2f)
                 },
                 shape = RoundedCornerShape(4.dp)
@@ -129,12 +134,14 @@ private fun GameCard(summary: GameSummary, onClick: () -> Unit) {
                     text = when {
                         isTeamGame -> stringResource(R.string.history_teams)
                         summary.game.isSolo -> stringResource(R.string.history_solo)
+                        summary.game.isRanked -> stringResource(R.string.history_ranked)
                         else -> stringResource(R.string.history_casual)
                     },
                     style = MaterialTheme.typography.labelSmall,
                     color = when {
                         isTeamGame -> Red
                         summary.game.isSolo -> TextSecondary
+                        summary.game.isRanked -> Accent
                         else -> Blue
                     },
                     modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)

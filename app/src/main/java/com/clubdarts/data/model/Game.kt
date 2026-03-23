@@ -13,6 +13,7 @@ data class Game(
     val legsToWin: Int,
     val isSolo: Boolean = false,
     val isTeamGame: Boolean = false,
+    val isRanked: Boolean = false,
     val createdAt: Long = System.currentTimeMillis(),
     val finishedAt: Long? = null,
     val winnerId: Long? = null,

@@ -54,6 +54,7 @@
     <!-- Game setup screen -->
     <string name="game_new_game">Neues Spiel</string>
     <string name="game_mode_label">Spielmodus</string>
+    <string name="game_options_label">Spieloptionen</string>
     <string name="game_match_type">Spieltyp</string>
     <string name="game_casual">Casual</string>
     <string name="game_ranked">Ranked</string>
@@ -100,6 +101,7 @@
     <string name="history_title">Spielverlauf</string>
     <string name="history_empty">Noch keine Spiele</string>
     <string name="history_casual">Casual</string>
+    <string name="history_ranked">Gewertet</string>
     <string name="history_solo">Solo</string>
     <string name="history_teams">Teams</string>
 

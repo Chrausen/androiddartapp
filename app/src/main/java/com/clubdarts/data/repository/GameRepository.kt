@@ -16,6 +16,7 @@ data class GameConfig(
     val isSolo: Boolean,
     val playerIds: List<Long>,                           // in throw order (interleaved for team games)
     val isTeamGame: Boolean = false,
+    val isRanked: Boolean = false,
     val teamAssignments: Map<Long, Int> = emptyMap()     // playerId → 0 (Team A) or 1 (Team B)
 )
 
@@ -71,7 +72,8 @@ class GameRepository @Inject constructor(
             checkoutRule = config.checkoutRule,
             legsToWin = config.legsToWin,
             isSolo = config.isSolo,
-            isTeamGame = config.isTeamGame
+            isTeamGame = config.isTeamGame,
+            isRanked = config.isRanked
         )
         val gameId = gameDao.insertGame(game)
         val gamePlayers = config.playerIds.mapIndexed { index, playerId ->
