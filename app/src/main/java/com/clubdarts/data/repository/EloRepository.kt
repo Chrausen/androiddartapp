@@ -63,7 +63,11 @@ class EloRepository @Inject constructor(
      * Record a ranked match for 2+ players and update their Elo ratings atomically.
      * Returns a map of playerId → signed Elo change (positive = gain, negative = loss).
      */
-    suspend fun recordMatch(players: List<Player>, winnerId: Long): Map<Long, Double> {
+    suspend fun recordMatch(
+        players: List<Player>,
+        winnerId: Long,
+        playedAt: Long = System.currentTimeMillis()
+    ): Map<Long, Double> {
         require(players.size >= 2) { "Need at least 2 players" }
         require(players.map { it.id }.distinct().size == players.size) { "Duplicate players" }
         require(players.any { it.id == winnerId }) { "Winner not in player list" }
@@ -77,7 +81,7 @@ class EloRepository @Inject constructor(
             }
             val changes = computeChanges(freshPlayers, winnerId, kFactor)
 
-            val matchId = eloMatchDao.insert(EloMatch(winnerId = winnerId))
+            val matchId = eloMatchDao.insert(EloMatch(winnerId = winnerId, playedAt = playedAt))
 
             val updatedPlayers = freshPlayers.map { p ->
                 val delta = changes[p.id] ?: 0.0
