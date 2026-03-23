@@ -199,57 +199,47 @@ fun GameSetupScreen(
                 )
             }
 
-            // Game mode toggle — Single | Teams  (hidden when ranked, forced to single)
-            item {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    // Game mode (Single / Teams) — hidden in ranked mode
-                    if (!isRanked) {
-                        Column(modifier = Modifier.weight(1f)) {
-                            SectionLabel(stringResource(R.string.game_mode_label))
-                            SegmentedRow(
-                                options = GameMode.values().toList(),
-                                selected = gameMode,
-                                onSelect = { newMode ->
-                                    if (newMode != gameMode) {
-                                        if (newMode == GameMode.TEAMS) {
-                                            val all = selectedPlayers
-                                            val mid = (all.size + 1) / 2
-                                            setTeamPlayers(all.take(mid), all.drop(mid))
-                                        } else {
-                                            setSelectedPlayers(teamAPlayers + teamBPlayers)
-                                        }
-                                        gameMode = newMode
-                                        gameViewModel.updateSetupGameMode(newMode)
-                                    }
-                                },
-                                label = { if (it == GameMode.SINGLE) gameSingleLabel else gameTeamsLabel }
-                            )
-                        }
-                    }
+            // Match type toggle (Ranked / Casual) — only shown when ranking is enabled
+            if (uiState.rankingEnabled) {
+                item {
+                    SectionLabel(stringResource(R.string.game_match_type))
+                    SegmentedRow(
+                        options = listOf(false, true),
+                        selected = isRanked,
+                        onSelect = { ranked ->
+                            isRanked = ranked
+                            if (ranked) {
+                                gameMode = GameMode.SINGLE
+                                gameViewModel.updateSetupGameMode(GameMode.SINGLE)
+                            }
+                        },
+                        label = { if (!it) casualLabel else rankedLabel }
+                    )
+                }
+            }
 
-                    // Ranked / Casual toggle — only shown when ranking is enabled
-                    if (uiState.rankingEnabled) {
-                        Column(modifier = if (!isRanked) Modifier.weight(1f) else Modifier.fillMaxWidth()) {
-                            SectionLabel(stringResource(R.string.game_match_type))
-                            SegmentedRow(
-                                options = listOf(false, true),
-                                selected = isRanked,
-                                onSelect = { ranked ->
-                                    isRanked = ranked
-                                    if (ranked) {
-                                        // Force single mode when switching to ranked
-                                        gameMode = GameMode.SINGLE
-                                        gameViewModel.updateSetupGameMode(GameMode.SINGLE)
-                                    }
-                                },
-                                label = { if (!it) casualLabel else rankedLabel }
-                            )
-                        }
-                    }
+            // Game mode toggle (Single / Teams) — hidden when ranked
+            if (!isRanked) {
+                item {
+                    SectionLabel(stringResource(R.string.game_mode_label))
+                    SegmentedRow(
+                        options = GameMode.values().toList(),
+                        selected = gameMode,
+                        onSelect = { newMode ->
+                            if (newMode != gameMode) {
+                                if (newMode == GameMode.TEAMS) {
+                                    val all = selectedPlayers
+                                    val mid = (all.size + 1) / 2
+                                    setTeamPlayers(all.take(mid), all.drop(mid))
+                                } else {
+                                    setSelectedPlayers(teamAPlayers + teamBPlayers)
+                                }
+                                gameMode = newMode
+                                gameViewModel.updateSetupGameMode(newMode)
+                            }
+                        },
+                        label = { if (it == GameMode.SINGLE) gameSingleLabel else gameTeamsLabel }
+                    )
                 }
             }
 
@@ -389,15 +379,13 @@ fun GameSetupScreen(
                                 color = if (isRanked && selectedPlayers.size < 2) Amber else TextPrimary
                             )
                         }
-                        if (!isRanked) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Text(stringResource(R.string.game_random_order), style = MaterialTheme.typography.labelMedium, color = TextSecondary)
-                                Checkbox(
-                                    checked = randomOrder,
-                                    onCheckedChange = { randomOrder = it },
-                                    colors = CheckboxDefaults.colors(checkedColor = Accent)
-                                )
-                            }
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(stringResource(R.string.game_random_order), style = MaterialTheme.typography.labelMedium, color = TextSecondary)
+                            Checkbox(
+                                checked = randomOrder,
+                                onCheckedChange = { randomOrder = it },
+                                colors = CheckboxDefaults.colors(checkedColor = Accent)
+                            )
                         }
                     }
                 }
@@ -405,7 +393,7 @@ fun GameSetupScreen(
                 item {
                     SinglePlayerList(
                         selectedPlayers = selectedPlayers,
-                        randomOrder = if (isRanked) false else randomOrder,
+                        randomOrder = randomOrder,
                         onPlayersChanged = { newList -> setSelectedPlayers(newList) }
                     )
                 }
@@ -451,12 +439,13 @@ fun GameSetupScreen(
             Button(
                 onClick = {
                     if (isRanked) {
+                        val orderedPlayers = if (randomOrder) selectedPlayers.shuffled() else selectedPlayers
                         val config = GameConfig(
                             startScore = rankedStartScore,
                             checkoutRule = rankedCheckoutRule,
                             legsToWin = rankedLegsToWin,
                             isSolo = false,
-                            playerIds = selectedPlayers.map { it.id },
+                            playerIds = orderedPlayers.map { it.id },
                             isRanked = true
                         )
                         gameViewModel.startGame(config)
