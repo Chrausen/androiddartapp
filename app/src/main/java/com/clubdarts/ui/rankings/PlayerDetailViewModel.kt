@@ -70,9 +70,9 @@ class PlayerDetailViewModel @Inject constructor(
                 )
             }
 
-            // Graph: last 20 matches in chronological order (oldest → newest)
+            // Graph: last 100 matches in chronological order (oldest → newest)
             val eloGraphPoints = matchHistory
-                .take(20)          // take 20 newest
+                .take(100)         // take 100 newest
                 .reversed()        // flip to chronological order
                 .mapNotNull { item ->
                     val match = matchMap[item.matchId] ?: return@mapNotNull null
