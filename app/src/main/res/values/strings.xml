@@ -20,6 +20,7 @@
     <string name="settings_tts_subtitle">Custom announcements after each visit</string>
     <string name="settings_delete_all">Delete all data</string>
     <string name="settings_delete_all_subtitle">Remove all players, games and history</string>
+    <string name="settings_delete_all_active_game">Finish the current game first</string>
     <string name="dialog_delete_all_title">Delete all data?</string>
     <string name="dialog_delete_all_message">This will permanently delete all players, games, and history. TTS phrases and preferences will be kept. This cannot be undone.</string>
 
@@ -47,6 +48,7 @@
     <string name="players_edit_title">Edit player</string>
     <string name="players_delete_title">Delete player</string>
     <string name="players_delete_message">Delete %1$s? Their game history will be preserved.</string>
+    <string name="players_in_active_game">In active game</string>
     <string name="player_name_label">Player name</string>
 
     <!-- Game setup screen -->

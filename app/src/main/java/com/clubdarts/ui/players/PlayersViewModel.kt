@@ -3,6 +3,7 @@ package com.clubdarts.ui.players
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.clubdarts.data.model.Player
+import com.clubdarts.data.repository.GameRepository
 import com.clubdarts.data.repository.PlayerRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
@@ -11,6 +12,7 @@ import javax.inject.Inject
 
 data class PlayersUiState(
     val players: List<Player> = emptyList(),
+    val activeGamePlayerIds: Set<Long> = emptySet(),
     val isLoading: Boolean = false,
     val errorMessage: String? = null,
     val dialogState: PlayerDialogState? = null
@@ -24,7 +26,8 @@ sealed class PlayerDialogState {
 
 @HiltViewModel
 class PlayersViewModel @Inject constructor(
-    private val playerRepository: PlayerRepository
+    private val playerRepository: PlayerRepository,
+    private val gameRepository: GameRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(PlayersUiState())
@@ -34,6 +37,11 @@ class PlayersViewModel @Inject constructor(
         viewModelScope.launch {
             playerRepository.getAllPlayers().collect { players ->
                 _uiState.update { it.copy(players = players) }
+            }
+        }
+        viewModelScope.launch {
+            gameRepository.observeActiveGamePlayerIds().collect { ids ->
+                _uiState.update { it.copy(activeGamePlayerIds = ids.toSet()) }
             }
         }
     }

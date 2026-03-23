@@ -83,10 +83,14 @@ fun SettingsScreen(
 
             SettingsRow(
                 icon = Icons.Default.DeleteForever,
-                iconTint = Red,
+                iconTint = if (uiState.hasActiveGame) TextTertiary else Red,
                 title = stringResource(R.string.settings_delete_all),
-                subtitle = stringResource(R.string.settings_delete_all_subtitle),
-                titleColor = Red,
+                subtitle = if (uiState.hasActiveGame)
+                    stringResource(R.string.settings_delete_all_active_game)
+                else
+                    stringResource(R.string.settings_delete_all_subtitle),
+                titleColor = if (uiState.hasActiveGame) TextTertiary else Red,
+                enabled = !uiState.hasActiveGame,
                 onClick = { viewModel.requestDeleteAll() }
             )
         }
@@ -124,13 +128,14 @@ private fun SettingsRow(
     title: String,
     subtitle: String,
     titleColor: Color = TextPrimary,
+    enabled: Boolean = true,
     onClick: () -> Unit
 ) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .background(Surface, RoundedCornerShape(10.dp))
-            .clickable(onClick = onClick)
+            .clickable(enabled = enabled, onClick = onClick)
             .padding(horizontal = 12.dp, vertical = 14.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {

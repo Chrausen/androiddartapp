@@ -38,8 +38,10 @@ fun PlayersScreen(viewModel: PlayersViewModel = hiltViewModel()) {
             } else {
                 LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     items(uiState.players) { player ->
+                        val inActiveGame = player.id in uiState.activeGamePlayerIds
                         PlayerRow(
                             player = player,
+                            inActiveGame = inActiveGame,
                             onEdit = { viewModel.showEditDialog(player) },
                             onDelete = { viewModel.showDeleteConfirmDialog(player) }
                         )
@@ -109,6 +111,7 @@ fun PlayersScreen(viewModel: PlayersViewModel = hiltViewModel()) {
 @Composable
 private fun PlayerRow(
     player: Player,
+    inActiveGame: Boolean,
     onEdit: () -> Unit,
     onDelete: () -> Unit
 ) {
@@ -123,12 +126,29 @@ private fun PlayerRow(
         Spacer(modifier = Modifier.width(12.dp))
         Column(modifier = Modifier.weight(1f)) {
             Text(player.name, style = MaterialTheme.typography.bodyMedium, color = TextPrimary)
+            if (inActiveGame) {
+                Text(
+                    stringResource(R.string.players_in_active_game),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = Accent
+                )
+            }
         }
-        IconButton(onClick = onEdit) {
-            Icon(Icons.Default.Edit, contentDescription = stringResource(R.string.players_edit_title), tint = TextSecondary, modifier = Modifier.size(20.dp))
+        IconButton(onClick = onEdit, enabled = !inActiveGame) {
+            Icon(
+                Icons.Default.Edit,
+                contentDescription = stringResource(R.string.players_edit_title),
+                tint = if (inActiveGame) TextTertiary else TextSecondary,
+                modifier = Modifier.size(20.dp)
+            )
         }
-        IconButton(onClick = onDelete) {
-            Icon(Icons.Default.Delete, contentDescription = stringResource(R.string.btn_delete), tint = Red.copy(alpha = 0.7f), modifier = Modifier.size(20.dp))
+        IconButton(onClick = onDelete, enabled = !inActiveGame) {
+            Icon(
+                Icons.Default.Delete,
+                contentDescription = stringResource(R.string.btn_delete),
+                tint = if (inActiveGame) TextTertiary else Red.copy(alpha = 0.7f),
+                modifier = Modifier.size(20.dp)
+            )
         }
     }
 }
