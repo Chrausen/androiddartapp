@@ -14,6 +14,7 @@ data class Game(
     val isSolo: Boolean = false,
     val isTeamGame: Boolean = false,
     val isRanked: Boolean = false,
+    val gameType: GameType = GameType.X01,
     val createdAt: Long = System.currentTimeMillis(),
     val finishedAt: Long? = null,
     val winnerId: Long? = null,

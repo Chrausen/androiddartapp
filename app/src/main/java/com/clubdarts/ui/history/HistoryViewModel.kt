@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.clubdarts.data.model.Game
 import com.clubdarts.data.model.GamePlayer
+import com.clubdarts.data.model.GameType
 import com.clubdarts.data.model.Player
 import com.clubdarts.data.repository.GameDetail
 import com.clubdarts.data.repository.GameRepository
@@ -22,10 +23,13 @@ data class GameSummary(
     val dateGroup: String
 )
 
+enum class GameTypeFilter { ALL, X01, CRICKET }
+
 data class HistoryUiState(
     val gameSummaries: List<GameSummary> = emptyList(),
     val isLoading: Boolean = true,
-    val errorMessage: String? = null
+    val errorMessage: String? = null,
+    val gameTypeFilter: GameTypeFilter = GameTypeFilter.ALL
 )
 
 data class MatchDetailUiState(
@@ -80,6 +84,10 @@ class HistoryViewModel @Inject constructor(
                 _uiState.update { it.copy(errorMessage = e.message, isLoading = false) }
             }
         }
+    }
+
+    fun setGameTypeFilter(filter: GameTypeFilter) {
+        _uiState.update { it.copy(gameTypeFilter = filter) }
     }
 
     fun loadMatchDetail(gameId: Long) {

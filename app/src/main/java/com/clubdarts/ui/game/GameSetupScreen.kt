@@ -41,6 +41,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.clubdarts.R
 import com.clubdarts.data.model.CheckoutRule
+import com.clubdarts.data.model.GameType
 import com.clubdarts.data.model.Player
 import com.clubdarts.data.repository.GameConfig
 import com.clubdarts.ui.game.components.PlayerAvatar
@@ -77,6 +78,11 @@ fun GameSetupScreen(
     // Game mode state
     var gameMode by remember(uiState.setupDefaults.gameMode) {
         mutableStateOf(uiState.setupDefaults.gameMode)
+    }
+
+    // Game type state (X01 / Cricket)
+    var gameType by remember(uiState.setupGameType) {
+        mutableStateOf(uiState.setupGameType)
     }
 
     // Ranked/casual toggle — synced from ViewModel so it survives "New game" repeats
@@ -127,6 +133,11 @@ fun GameSetupScreen(
         gameMode = uiState.setupGameMode
     }
 
+    // Sync game type from ViewModel
+    LaunchedEffect(uiState.setupGameType) {
+        gameType = uiState.setupGameType
+    }
+
     // When ranked mode is toggled off, also update ViewModel
     LaunchedEffect(isRanked) {
         gameViewModel.setRanked(isRanked)
@@ -173,6 +184,16 @@ fun GameSetupScreen(
     val gameTeamsLabel = stringResource(R.string.game_mode_teams)
     val casualLabel = stringResource(R.string.game_casual)
     val rankedLabel = stringResource(R.string.game_ranked)
+    val x01Label = stringResource(R.string.game_type_x01)
+    val cricketLabel = stringResource(R.string.game_type_cricket)
+
+    // Max players: Cricket supports up to 4; X01 is unlimited
+    val maxPlayers = if (!isRanked && gameType == GameType.CRICKET) 4 else Int.MAX_VALUE
+    val totalPlayerCount = if (gameMode == GameMode.TEAMS)
+        teamAPlayers.size + teamBPlayers.size
+    else
+        selectedPlayers.size
+    val canAddMorePlayers = totalPlayerCount < maxPlayers
 
     // Effective config values (ranked uses locked settings, casual uses user choice)
     val effectiveStartScore = if (isRanked) rankedStartScore else startScore
@@ -218,31 +239,6 @@ fun GameSetupScreen(
                 }
             }
 
-            // Game mode toggle (Single / Teams) — hidden when ranked
-            if (!isRanked) {
-                item {
-                    SectionLabel(stringResource(R.string.game_mode_label))
-                    SegmentedRow(
-                        options = GameMode.values().toList(),
-                        selected = gameMode,
-                        onSelect = { newMode ->
-                            if (newMode != gameMode) {
-                                if (newMode == GameMode.TEAMS) {
-                                    val all = selectedPlayers
-                                    val mid = (all.size + 1) / 2
-                                    setTeamPlayers(all.take(mid), all.drop(mid))
-                                } else {
-                                    setSelectedPlayers(teamAPlayers + teamBPlayers)
-                                }
-                                gameMode = newMode
-                                gameViewModel.updateSetupGameMode(newMode)
-                            }
-                        },
-                        label = { if (it == GameMode.SINGLE) gameSingleLabel else gameTeamsLabel }
-                    )
-                }
-            }
-
             // Game settings — locked summary shown for ranked, collapsible for casual
             item {
                 SectionLabel(stringResource(R.string.game_options_label))
@@ -284,6 +280,7 @@ fun GameSetupScreen(
                                 interactionSource = remember { MutableInteractionSource() }
                             ) { settingsExpanded = !settingsExpanded }
                     ) {
+                        // Collapsed summary
                         AnimatedVisibility(
                             visible = !settingsExpanded,
                             enter = expandVertically() + fadeIn(),
@@ -294,17 +291,31 @@ fun GameSetupScreen(
                                 horizontalArrangement = Arrangement.SpaceBetween
                             ) {
                                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                    Text(stringResource(R.string.game_starting_score), style = MaterialTheme.typography.labelSmall, color = TextSecondary)
-                                    Text(startScore.toString(), style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, color = TextPrimary)
+                                    Text(stringResource(R.string.game_mode_label), style = MaterialTheme.typography.labelSmall, color = TextSecondary)
+                                    Text(
+                                        if (gameMode == GameMode.TEAMS) gameTeamsLabel else gameSingleLabel,
+                                        style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, color = TextPrimary
+                                    )
                                 }
                                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                    Text("Checkout", style = MaterialTheme.typography.labelSmall, color = TextSecondary)
+                                    Text(stringResource(R.string.game_type_label), style = MaterialTheme.typography.labelSmall, color = TextSecondary)
                                     Text(
-                                        checkoutRule.name.lowercase().replaceFirstChar { c -> c.uppercaseChar() },
-                                        style = MaterialTheme.typography.labelMedium,
-                                        fontWeight = FontWeight.Bold,
-                                        color = TextPrimary
+                                        if (gameType == GameType.CRICKET) cricketLabel else x01Label,
+                                        style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, color = TextPrimary
                                     )
+                                }
+                                if (gameType == GameType.X01) {
+                                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                        Text(stringResource(R.string.game_starting_score), style = MaterialTheme.typography.labelSmall, color = TextSecondary)
+                                        Text(startScore.toString(), style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, color = TextPrimary)
+                                    }
+                                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                        Text("Checkout", style = MaterialTheme.typography.labelSmall, color = TextSecondary)
+                                        Text(
+                                            checkoutRule.name.lowercase().replaceFirstChar { c -> c.uppercaseChar() },
+                                            style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, color = TextPrimary
+                                        )
+                                    }
                                 }
                                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                     Text(stringResource(R.string.game_legs_to_win), style = MaterialTheme.typography.labelSmall, color = TextSecondary)
@@ -312,28 +323,71 @@ fun GameSetupScreen(
                                 }
                             }
                         }
+
+                        // Expanded options
                         AnimatedVisibility(
                             visible = settingsExpanded,
                             enter = expandVertically() + fadeIn(),
                             exit = shrinkVertically() + fadeOut()
                         ) {
                             Column {
-                                SectionLabel(stringResource(R.string.game_starting_score))
+                                // Game mode: Single / Teams
+                                SectionLabel(stringResource(R.string.game_mode_label))
                                 SegmentedRow(
-                                    options = listOf(201, 301, 401, 501, 701),
-                                    selected = startScore,
-                                    onSelect = { startScore = it },
-                                    label = { it.toString() }
+                                    options = GameMode.values().toList(),
+                                    selected = gameMode,
+                                    onSelect = { newMode ->
+                                        if (newMode != gameMode) {
+                                            if (newMode == GameMode.TEAMS) {
+                                                val mid = (selectedPlayers.size + 1) / 2
+                                                setTeamPlayers(selectedPlayers.take(mid), selectedPlayers.drop(mid))
+                                            } else {
+                                                setSelectedPlayers(teamAPlayers + teamBPlayers)
+                                            }
+                                            gameMode = newMode
+                                            gameViewModel.updateSetupGameMode(newMode)
+                                        }
+                                    },
+                                    label = { if (it == GameMode.SINGLE) gameSingleLabel else gameTeamsLabel }
                                 )
+
                                 Spacer(modifier = Modifier.height(16.dp))
-                                SectionLabel("Checkout rule")
+
+                                // Game type: X01 / Cricket
+                                SectionLabel(stringResource(R.string.game_type_label))
                                 SegmentedRow(
-                                    options = CheckoutRule.values().toList(),
-                                    selected = checkoutRule,
-                                    onSelect = { checkoutRule = it },
-                                    label = { it.name.lowercase().replaceFirstChar { c -> c.uppercaseChar() } }
+                                    options = listOf(GameType.X01, GameType.CRICKET),
+                                    selected = gameType,
+                                    onSelect = { newType ->
+                                        gameType = newType
+                                        gameViewModel.updateSetupGameType(newType)
+                                    },
+                                    label = { if (it == GameType.X01) x01Label else cricketLabel }
                                 )
+
                                 Spacer(modifier = Modifier.height(16.dp))
+
+                                // X01-only options
+                                if (gameType == GameType.X01) {
+                                    SectionLabel(stringResource(R.string.game_starting_score))
+                                    SegmentedRow(
+                                        options = listOf(201, 301, 401, 501, 701),
+                                        selected = startScore,
+                                        onSelect = { startScore = it },
+                                        label = { it.toString() }
+                                    )
+                                    Spacer(modifier = Modifier.height(16.dp))
+                                    SectionLabel("Checkout rule")
+                                    SegmentedRow(
+                                        options = CheckoutRule.values().toList(),
+                                        selected = checkoutRule,
+                                        onSelect = { checkoutRule = it },
+                                        label = { it.name.lowercase().replaceFirstChar { c -> c.uppercaseChar() } }
+                                    )
+                                    Spacer(modifier = Modifier.height(16.dp))
+                                }
+
+                                // Legs to win (both game types)
                                 SectionLabel(stringResource(R.string.game_legs_to_win))
                                 SegmentedRow(
                                     options = listOf(1, 3, 5, 7, 9),
@@ -343,6 +397,7 @@ fun GameSetupScreen(
                                 )
                             }
                         }
+
                         Box(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -398,8 +453,10 @@ fun GameSetupScreen(
                     )
                 }
 
-                item {
-                    AddPlayerButton(onClick = { showPlayerPicker = true })
+                if (canAddMorePlayers) {
+                    item {
+                        AddPlayerButton(onClick = { showPlayerPicker = true })
+                    }
                 }
             } else {
                 // ---- Teams mode ----
@@ -415,8 +472,10 @@ fun GameSetupScreen(
                     )
                 }
 
-                item {
-                    AddPlayerButton(onClick = { showPlayerPicker = true })
+                if (canAddMorePlayers) {
+                    item {
+                        AddPlayerButton(onClick = { showPlayerPicker = true })
+                    }
                 }
             }
         }
@@ -446,7 +505,8 @@ fun GameSetupScreen(
                             legsToWin = rankedLegsToWin,
                             isSolo = false,
                             playerIds = orderedPlayers.map { it.id },
-                            isRanked = true
+                            isRanked = true,
+                            gameType = GameType.X01
                         )
                         gameViewModel.startGame(config)
                     } else if (gameMode == GameMode.TEAMS) {
@@ -459,9 +519,14 @@ fun GameSetupScreen(
                             isSolo = false,
                             playerIds = interleaved.map { it.id },
                             isTeamGame = true,
-                            teamAssignments = assignments
+                            teamAssignments = assignments,
+                            gameType = gameType
                         )
-                        gameViewModel.startGame(config)
+                        if (gameType == GameType.CRICKET) {
+                            gameViewModel.startCricketGame(config)
+                        } else {
+                            gameViewModel.startGame(config)
+                        }
                     } else {
                         val orderedPlayers = if (randomOrder) selectedPlayers.shuffled() else selectedPlayers
                         val config = GameConfig(
@@ -469,9 +534,14 @@ fun GameSetupScreen(
                             checkoutRule = checkoutRule,
                             legsToWin = legsToWin,
                             isSolo = orderedPlayers.size == 1,
-                            playerIds = orderedPlayers.map { it.id }
+                            playerIds = orderedPlayers.map { it.id },
+                            gameType = gameType
                         )
-                        gameViewModel.startGame(config)
+                        if (gameType == GameType.CRICKET) {
+                            gameViewModel.startCricketGame(config)
+                        } else {
+                            gameViewModel.startGame(config)
+                        }
                     }
                     onStartGame()
                 },
@@ -509,7 +579,7 @@ fun GameSetupScreen(
                     }
                 } else if (gameMode == GameMode.TEAMS) {
                     val allIds = teamAPlayers.map { it.id } + teamBPlayers.map { it.id }
-                    if (player.id !in allIds) {
+                    if (player.id !in allIds && allIds.size < maxPlayers) {
                         if (teamAPlayers.size <= teamBPlayers.size) {
                             setTeamPlayers(teamAPlayers + player, teamBPlayers)
                         } else {
@@ -517,7 +587,7 @@ fun GameSetupScreen(
                         }
                     }
                 } else {
-                    if (player.id !in selectedPlayers.map { it.id }) {
+                    if (player.id !in selectedPlayers.map { it.id } && selectedPlayers.size < maxPlayers) {
                         setSelectedPlayers(selectedPlayers + player)
                     }
                 }

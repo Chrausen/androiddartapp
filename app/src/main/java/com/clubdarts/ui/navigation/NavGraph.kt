@@ -11,7 +11,10 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.*
 import androidx.navigation.compose.*
 import com.clubdarts.data.repository.SettingsRepository
+import com.clubdarts.ui.game.CricketGameScreen
+import com.clubdarts.ui.game.CricketResultScreen
 import com.clubdarts.ui.game.GameResultScreen
+import com.clubdarts.ui.game.GameScreen
 import com.clubdarts.ui.game.GameSetupScreen
 import com.clubdarts.ui.game.GameViewModel
 import com.clubdarts.ui.game.LiveGameScreen
@@ -90,41 +93,54 @@ fun ClubDartsNavHost(
                 )
             }
             composable("game/live") {
-                val gameViewModel: GameViewModel =
+                val gvm: GameViewModel =
                     hiltViewModel(LocalContext.current as ComponentActivity)
-                LiveGameScreen(
-                    onGameFinished = {
-                        navController.navigate("game/result") {
-                            launchSingleTop = true
-                        }
-                    },
-                    onBack = {
-                        navController.navigate("game") {
-                            popUpTo("game") { inclusive = true }
-                            launchSingleTop = true
-                        }
-                    },
-                    viewModel = gameViewModel
-                )
+                val liveUiState by gvm.uiState.collectAsStateWithLifecycle()
+                val toResult: () -> Unit = {
+                    navController.navigate("game/result") { launchSingleTop = true }
+                }
+                val toSetup: () -> Unit = {
+                    navController.navigate("game") {
+                        popUpTo("game") { inclusive = true }
+                        launchSingleTop = true
+                    }
+                }
+                if (liveUiState.screen == GameScreen.CRICKET_LIVE) {
+                    CricketGameScreen(
+                        onGameFinished = toResult,
+                        viewModel = gvm
+                    )
+                } else {
+                    LiveGameScreen(
+                        onGameFinished = toResult,
+                        onBack = toSetup,
+                        viewModel = gvm
+                    )
+                }
             }
             composable("game/result") {
-                val gameViewModel: GameViewModel =
+                val gvm: GameViewModel =
                     hiltViewModel(LocalContext.current as ComponentActivity)
-                GameResultScreen(
-                    onNewGame = {
-                        navController.navigate("game") {
-                            popUpTo("game") { inclusive = true }
-                            launchSingleTop = true
-                        }
-                    },
-                    onDone = {
-                        navController.navigate("game") {
-                            popUpTo("game") { inclusive = true }
-                            launchSingleTop = true
-                        }
-                    },
-                    viewModel = gameViewModel
-                )
+                val resultUiState by gvm.uiState.collectAsStateWithLifecycle()
+                val toSetup: () -> Unit = {
+                    navController.navigate("game") {
+                        popUpTo("game") { inclusive = true }
+                        launchSingleTop = true
+                    }
+                }
+                if (resultUiState.screen == GameScreen.CRICKET_RESULT) {
+                    CricketResultScreen(
+                        onNewGame = toSetup,
+                        onDone = toSetup,
+                        viewModel = gvm
+                    )
+                } else {
+                    GameResultScreen(
+                        onNewGame = toSetup,
+                        onDone = toSetup,
+                        viewModel = gvm
+                    )
+                }
             }
 
             composable("stats") {

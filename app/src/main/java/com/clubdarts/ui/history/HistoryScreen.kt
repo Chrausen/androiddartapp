@@ -20,6 +20,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.clubdarts.R
 import com.clubdarts.data.model.Game
+import com.clubdarts.data.model.GameType
 import com.clubdarts.data.model.Player
 import com.clubdarts.ui.game.components.PlayerAvatar
 import com.clubdarts.ui.theme.*
@@ -41,18 +42,41 @@ fun HistoryScreen(
     ) {
         Spacer(modifier = Modifier.height(16.dp))
         Text(stringResource(R.string.history_title), style = MaterialTheme.typography.headlineMedium, color = TextPrimary)
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(12.dp))
+
+        // Game type filter tabs
+        val filterOptions = GameTypeFilter.values().toList()
+        val filterLabels = mapOf(
+            GameTypeFilter.ALL to stringResource(R.string.history_filter_all),
+            GameTypeFilter.X01 to stringResource(R.string.history_filter_x01),
+            GameTypeFilter.CRICKET to stringResource(R.string.history_filter_cricket)
+        )
+        HistoryFilterRow(
+            options = filterOptions,
+            selected = uiState.gameTypeFilter,
+            onSelect = { viewModel.setGameTypeFilter(it) },
+            label = { filterLabels[it] ?: it.name }
+        )
+        Spacer(modifier = Modifier.height(12.dp))
+
+        val filteredSummaries = uiState.gameSummaries.filter { summary ->
+            when (uiState.gameTypeFilter) {
+                GameTypeFilter.ALL     -> true
+                GameTypeFilter.X01     -> summary.game.gameType == GameType.X01
+                GameTypeFilter.CRICKET -> summary.game.gameType == GameType.CRICKET
+            }
+        }
 
         if (uiState.isLoading) {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 CircularProgressIndicator(color = Accent, strokeWidth = 2.dp)
             }
-        } else if (uiState.gameSummaries.isEmpty()) {
+        } else if (filteredSummaries.isEmpty()) {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 Text(stringResource(R.string.history_empty), style = MaterialTheme.typography.bodyMedium, color = TextTertiary)
             }
         } else {
-            val grouped = uiState.gameSummaries.groupBy { it.dateGroup }
+            val grouped = filteredSummaries.groupBy { it.dateGroup }
             LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 grouped.forEach { (group, items) ->
                     item {
@@ -71,6 +95,43 @@ fun HistoryScreen(
                     }
                 }
                 item { Spacer(modifier = Modifier.height(16.dp)) }
+            }
+        }
+    }
+}
+
+@Composable
+private fun <T> HistoryFilterRow(
+    options: List<T>,
+    selected: T,
+    onSelect: (T) -> Unit,
+    label: (T) -> String
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(Surface2, androidx.compose.foundation.shape.RoundedCornerShape(10.dp)),
+        horizontalArrangement = Arrangement.spacedBy(2.dp)
+    ) {
+        options.forEach { option ->
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(2.dp)
+                    .background(
+                        color = if (option == selected) Accent else androidx.compose.ui.graphics.Color.Transparent,
+                        shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp)
+                    )
+                    .clickable { onSelect(option) }
+                    .padding(vertical = 8.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = label(option),
+                    style = MaterialTheme.typography.labelMedium,
+                    fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold,
+                    color = if (option == selected) Background else TextSecondary
+                )
             }
         }
     }
@@ -113,8 +174,14 @@ private fun GameCard(summary: GameSummary, onClick: () -> Unit) {
             Spacer(modifier = Modifier.height(4.dp))
 
             // Format line
+            val isCricketGame = summary.game.gameType == GameType.CRICKET
+            val formatText = if (isCricketGame) {
+                "Cricket · Best of ${summary.game.legsToWin * 2 - 1} · $dateTimeStr"
+            } else {
+                "${summary.game.startScore} · ${summary.game.checkoutRule.name.lowercase().replaceFirstChar { it.uppercaseChar() }} out · Best of ${summary.game.legsToWin * 2 - 1} · $dateTimeStr"
+            }
             Text(
-                text = "${summary.game.startScore} · ${summary.game.checkoutRule.name.lowercase().replaceFirstChar { it.uppercaseChar() }} out · Best of ${summary.game.legsToWin * 2 - 1} · $dateTimeStr",
+                text = formatText,
                 style = MaterialTheme.typography.labelSmall,
                 fontFamily = DmMono,
                 color = TextTertiary

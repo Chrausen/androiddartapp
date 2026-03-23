@@ -104,6 +104,12 @@
     <string name="history_ranked">Gewertet</string>
     <string name="history_solo">Solo</string>
     <string name="history_teams">Teams</string>
+    <string name="history_filter_all">Alle</string>
+    <string name="history_filter_x01">X01</string>
+    <string name="history_filter_cricket">Cricket</string>
+
+    <!-- Cricket game -->
+    <string name="cricket_points">Pkt</string>
 
     <!-- Match detail screen -->
     <string name="match_detail_title">Spieldetail</string>
@@ -168,6 +174,9 @@
     <!-- Game setup additional -->
     <string name="game_add_player">Spieler hinzufügen</string>
     <string name="game_move_to_other_team">In anderes Team wechseln</string>
+    <string name="game_type_label">Spielmodus</string>
+    <string name="game_type_x01">X01</string>
+    <string name="game_type_cricket">Cricket</string>
 
     <!-- Rankings screen -->
     <string name="rankings_title">Rangliste</string>
