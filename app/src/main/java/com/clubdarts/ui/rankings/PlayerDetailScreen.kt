@@ -188,28 +188,18 @@ private fun EloGraph(points: List<EloPoint>) {
                 fun xOf(i: Int) = if (n == 1) w / 2f else i * w / (n - 1).toFloat()
                 fun yOf(elo: Double) = h - ((elo - displayMin) / displayRange * h).toFloat()
 
-                // Grid lines at top, baseline (1000), bottom
-                val gridElos = listOf(displayMax, baselineElo, displayMin)
-                gridElos.forEach { elo ->
-                    val y = yOf(elo)
-                    if (elo == baselineElo) {
-                        drawLine(
-                            color = borderColor.copy(alpha = 0.5f),
-                            start = Offset(0f, y),
-                            end = Offset(w, y),
-                            strokeWidth = 1.dp.toPx(),
-                            pathEffect = PathEffect.dashPathEffect(
-                                floatArrayOf(8.dp.toPx(), 4.dp.toPx())
-                            )
-                        )
-                    } else {
-                        drawLine(
-                            color = borderColor,
-                            start = Offset(0f, y),
-                            end = Offset(w, y),
-                            strokeWidth = 1.dp.toPx()
-                        )
-                    }
+                // Grid lines at top, bottom, and baseline (1000) if in range
+                drawLine(color = borderColor, start = Offset(0f, yOf(displayMax)), end = Offset(w, yOf(displayMax)), strokeWidth = 1.dp.toPx())
+                drawLine(color = borderColor, start = Offset(0f, yOf(displayMin)), end = Offset(w, yOf(displayMin)), strokeWidth = 1.dp.toPx())
+                if (baselineElo in displayMin..displayMax) {
+                    val y = yOf(baselineElo)
+                    drawLine(
+                        color = borderColor.copy(alpha = 0.5f),
+                        start = Offset(0f, y),
+                        end = Offset(w, y),
+                        strokeWidth = 1.dp.toPx(),
+                        pathEffect = PathEffect.dashPathEffect(floatArrayOf(8.dp.toPx(), 4.dp.toPx()))
+                    )
                 }
 
                 // Line path

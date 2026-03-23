@@ -8,6 +8,7 @@ import com.clubdarts.data.model.Game
 import com.clubdarts.data.model.GamePlayer
 import com.clubdarts.data.model.Leg
 import com.clubdarts.data.model.Player
+import com.clubdarts.data.model.Throw
 import com.clubdarts.data.model.SettingsKeys
 import com.clubdarts.data.repository.EloRepository
 import com.clubdarts.data.repository.GameRepository
@@ -107,7 +108,7 @@ class SettingsViewModel @Inject constructor(
                             GamePlayer(gameId = gameId, playerId = pid, throwOrder = i, teamIndex = -1)
                         }
                     )
-                    gameRepository.insertLeg(
+                    val legId = gameRepository.insertLeg(
                         Leg(
                             gameId = gameId,
                             legNumber = 1,
@@ -116,6 +117,47 @@ class SettingsViewModel @Inject constructor(
                             winnerId = winnerId
                         )
                     )
+
+                    // Insert throws for each participant
+                    val startScore = 501
+                    participantIds.forEach { pid ->
+                        var remaining = startScore
+                        var visitNum = 1
+                        while (remaining > 0) {
+                            val dartsUsed = Random.nextInt(1, 4)
+                            val maxScore = minOf(remaining, 180)
+                            val visitTotal = if (remaining <= 40 && pid == winnerId) {
+                                // Simulate a checkout for the winner
+                                remaining
+                            } else {
+                                Random.nextInt(0, minOf(maxScore + 1, 141))
+                            }
+                            val isBust = visitTotal > remaining
+                            val effective = if (isBust) 0 else visitTotal
+                            // Split visitTotal across up to dartsUsed darts
+                            val d1 = if (dartsUsed == 1) effective else Random.nextInt(0, effective + 1)
+                            val d2 = if (dartsUsed <= 1) 0 else if (dartsUsed == 2) effective - d1 else Random.nextInt(0, effective - d1 + 1)
+                            val d3 = if (dartsUsed <= 2) 0 else effective - d1 - d2
+                            gameRepository.insertThrow(
+                                Throw(
+                                    legId = legId,
+                                    playerId = pid,
+                                    visitNumber = visitNum,
+                                    dart1Score = d1, dart1Mult = 1,
+                                    dart2Score = d2, dart2Mult = if (dartsUsed >= 2) 1 else 0,
+                                    dart3Score = d3, dart3Mult = if (dartsUsed >= 3) 1 else 0,
+                                    dartsUsed = dartsUsed,
+                                    visitTotal = effective,
+                                    isBust = isBust,
+                                    isCheckoutAttempt = remaining <= 170,
+                                    createdAt = timestamp + visitNum * 5_000L
+                                )
+                            )
+                            remaining -= effective
+                            if (remaining <= 0 || (pid != winnerId && visitNum >= Random.nextInt(8, 20))) break
+                            visitNum++
+                        }
+                    }
 
                     if (isRanked) {
                         val players = playerDao.getPlayersByIds(participantIds)
