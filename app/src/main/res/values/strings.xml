@@ -1,4 +1,172 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Club Darts</string>
+
+    <!-- Navigation -->
+    <string name="nav_game">Game</string>
+    <string name="nav_stats">Stats</string>
+    <string name="nav_history">History</string>
+    <string name="nav_rankings">Rankings</string>
+    <string name="nav_players">Players</string>
+    <string name="nav_settings">Settings</string>
+
+    <!-- Settings main screen -->
+    <string name="settings_title">Settings</string>
+    <string name="settings_general">General</string>
+    <string name="settings_general_subtitle">Language and general preferences</string>
+    <string name="settings_ranking_system">Ranking System</string>
+    <string name="settings_ranking_subtitle">Elo ratings, leaderboard and ranked matches</string>
+    <string name="settings_tts_phrases">TTS Score Phrases</string>
+    <string name="settings_tts_subtitle">Custom announcements after each visit</string>
+    <string name="settings_delete_all">Delete all data</string>
+    <string name="settings_delete_all_subtitle">Remove all players, games and history</string>
+    <string name="dialog_delete_all_title">Delete all data?</string>
+    <string name="dialog_delete_all_message">This will permanently delete all players, games, and history. TTS phrases and preferences will be kept. This cannot be undone.</string>
+
+    <!-- General settings screen -->
+    <string name="general_title">General</string>
+    <string name="general_language_label">Language</string>
+    <string name="language_english">English</string>
+    <string name="language_german">German</string>
+
+    <!-- Common buttons / actions -->
+    <string name="btn_delete">Delete</string>
+    <string name="btn_cancel">Cancel</string>
+    <string name="btn_save">Save</string>
+    <string name="btn_reset">Reset</string>
+    <string name="btn_abort">Abort</string>
+    <string name="btn_done">Done</string>
+    <string name="btn_back">Back</string>
+
+    <!-- Players screen -->
+    <string name="players_title">Players</string>
+    <string name="players_empty">No players yet. Add one!</string>
+    <string name="players_add_title">Add player</string>
+    <string name="players_edit_title">Edit player</string>
+    <string name="players_delete_title">Delete player</string>
+    <string name="players_delete_message">Delete %1$s? Their game history will be preserved.</string>
+    <string name="player_name_label">Player name</string>
+
+    <!-- Game setup screen -->
+    <string name="game_new_game">New game</string>
+    <string name="game_mode_label">Game mode</string>
+    <string name="game_match_type">Match type</string>
+    <string name="game_casual">Casual</string>
+    <string name="game_ranked">Ranked</string>
+    <string name="game_mode_single">Single</string>
+    <string name="game_mode_teams">Teams</string>
+    <string name="game_starting_score">Starting score</string>
+    <string name="game_checkout_rule">Checkout rule</string>
+    <string name="game_legs_to_win">Legs to win</string>
+    <string name="game_mode_display">Mode</string>
+    <string name="game_players_section">Players</string>
+    <string name="game_teams_section">Teams</string>
+    <string name="game_random_order">Random order</string>
+    <string name="game_start">Start game</string>
+    <string name="game_start_ranked">Start ranked game</string>
+    <string name="game_ranked_min_players">Ranked matches require at least 2 players</string>
+    <string name="game_selected_count">%1$d selected</string>
+
+    <!-- Live game screen -->
+    <string name="live_abort">Abort</string>
+    <string name="live_mute_tts">Mute TTS</string>
+    <string name="live_unmute_tts">Unmute TTS</string>
+    <string name="live_hide_history">Hide history</string>
+    <string name="live_show_history">Show history</string>
+    <string name="live_expand_settings">Expand settings</string>
+    <string name="live_collapse_settings">Collapse settings</string>
+    <string name="dialog_abort_game_title">Abort game?</string>
+    <string name="dialog_abort_game_message">The current game will be abandoned.</string>
+
+    <!-- Game result screen -->
+    <string name="result_winner">Winner!</string>
+    <string name="result_wins">Wins!</string>
+    <string name="result_winner_label">Winner</string>
+    <string name="result_winners_label">Winners</string>
+    <string name="result_save">Save to history</string>
+    <string name="result_saved">Saved to history</string>
+    <string name="result_new_game">New game</string>
+    <string name="result_done">Done</string>
+    <string name="result_legs">Legs: %1$d</string>
+    <string name="result_team_a">Team A</string>
+    <string name="result_team_b">Team B</string>
+    <string name="result_team_score">Team A: %1$d  —  Team B: %2$d</string>
+
+    <!-- History screen -->
+    <string name="history_title">Match history</string>
+    <string name="history_empty">No matches yet</string>
+    <string name="history_casual">Casual</string>
+    <string name="history_solo">Solo</string>
+    <string name="history_teams">Teams</string>
+
+    <!-- Match detail screen -->
+    <string name="match_detail_title">Match detail</string>
+    <string name="match_detail_leg_breakdown">Leg breakdown</string>
+    <string name="match_detail_visit_log">Visit log</string>
+    <string name="match_detail_leg">Leg %1$d</string>
+    <string name="match_detail_visits">%1$d visits</string>
+    <string name="match_detail_won_visits">Won · %1$d visits</string>
+    <string name="match_detail_left">left: %1$d · %2$d visits</string>
+    <string name="match_detail_player">Player</string>
+    <string name="match_detail_legs_won">%1$d legs</string>
+
+    <!-- Stats screen -->
+    <string name="stats_title">Club stats</string>
+    <string name="stats_games">Games</string>
+    <string name="stats_players">Players</string>
+    <string name="stats_club_180s">Club 180s</string>
+    <string name="stats_best_finish">Best finish</string>
+    <string name="stats_top_averages">Top averages</string>
+    <string name="stats_avg">Avg</string>
+    <string name="stats_best">Best</string>
+    <string name="stats_checkout_pct">Checkout%</string>
+    <string name="stats_180s">180s</string>
+    <string name="stats_100plus">100+</string>
+    <string name="stats_top_scores">Top scores</string>
+    <string name="stats_buckets">Buckets</string>
+    <string name="stats_most_thrown">Most thrown visit scores</string>
+    <string name="stats_score_buckets">Score buckets</string>
+    <string name="stats_busts">Busts</string>
+
+    <!-- Ranking settings screen -->
+    <string name="ranking_title">Ranking System</string>
+    <string name="ranking_enable">Enable Ranking System</string>
+    <string name="ranking_enable_subtitle">Track player Elo ratings and show leaderboard</string>
+    <string name="ranking_k_factor_label">Rating Aggressiveness (K-Factor)</string>
+    <string name="ranking_k_factor_standard">Standard (32) — slower, more stable ratings</string>
+    <string name="ranking_k_factor_aggressive">Aggressive (64) — faster, more volatile ratings</string>
+    <string name="ranking_game_mode">Game Mode for Ranked Matches</string>
+    <string name="ranking_starting_score">Starting score</string>
+    <string name="ranking_checkout_rule">Checkout rule</string>
+    <string name="ranking_legs_to_win">Legs to win</string>
+    <string name="ranking_reset">Reset all rating data</string>
+    <string name="ranking_reset_subtitle">Reset all players to 1000 Elo and delete match history</string>
+    <string name="dialog_reset_ranking_title">Reset all rating data?</string>
+    <string name="dialog_reset_ranking_message">This will reset all players to 1000 Elo and delete all ranked match history. This cannot be undone.</string>
+
+    <!-- TTS settings screen -->
+    <string name="tts_title">TTS Score Phrases</string>
+    <string name="tts_subtitle">Custom phrases announced after each visit</string>
+    <string name="tts_empty">No custom scores yet. Tap + to add one.</string>
+    <string name="tts_add_title">Add TTS Score</string>
+    <string name="tts_edit_title">Edit TTS Score</string>
+    <string name="tts_score_label">Score</string>
+    <string name="tts_phrases_label">Phrases</string>
+    <string name="tts_no_phrases">(no phrases)</string>
+    <string name="tts_add_phrase">Add phrase</string>
+    <string name="tts_before_placeholder">Before</string>
+    <string name="tts_after_placeholder">After</string>
+    <string name="tts_add_score">Add score</string>
+    <string name="tts_remove_phrase">Remove phrase</string>
+
+    <!-- Game setup additional -->
+    <string name="game_add_player">Add player</string>
+    <string name="game_move_to_other_team">Move to other team</string>
+
+    <!-- Rankings screen -->
+    <string name="rankings_title">Rankings</string>
+    <string name="rankings_subtitle">Players with %1$d+ ranked matches</string>
+    <string name="rankings_empty_title">No rankings yet</string>
+    <string name="rankings_empty_message">Players appear here after completing\n%1$d ranked matches</string>
+    <string name="rankings_disclaimer">Players with fewer than %1$d ranked matches have a provisional rating and are not shown here.</string>
 </resources>

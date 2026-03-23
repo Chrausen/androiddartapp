@@ -19,6 +19,7 @@ import com.clubdarts.ui.history.HistoryScreen
 import com.clubdarts.ui.history.MatchDetailScreen
 import com.clubdarts.ui.players.PlayersScreen
 import com.clubdarts.ui.rankings.RankingsScreen
+import com.clubdarts.ui.settings.GeneralSettingsScreen
 import com.clubdarts.ui.settings.RankingSettingsScreen
 import com.clubdarts.ui.settings.SettingsScreen
 import com.clubdarts.ui.settings.TtsSettingsScreen
@@ -146,7 +147,15 @@ fun ClubDartsNavHost(
                     },
                     onNavigateToRankingSettings = {
                         navController.navigate("settings/ranking")
+                    },
+                    onNavigateToGeneralSettings = {
+                        navController.navigate("settings/general")
                     }
+                )
+            }
+            composable("settings/general") {
+                GeneralSettingsScreen(
+                    onBack = { navController.popBackStack() }
                 )
             }
             composable("settings/tts") {

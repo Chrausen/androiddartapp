@@ -12,12 +12,14 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.clubdarts.R
 import com.clubdarts.data.model.Throw
 import com.clubdarts.ui.game.DartInput
 import com.clubdarts.ui.game.components.PlayerAvatar
@@ -52,9 +54,9 @@ fun MatchDetailScreen(
             verticalAlignment = Alignment.CenterVertically
         ) {
             IconButton(onClick = onBack) {
-                Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = TextPrimary)
+                Icon(Icons.Default.ArrowBack, contentDescription = stringResource(R.string.btn_back), tint = TextPrimary)
             }
-            Text("Match detail", style = MaterialTheme.typography.titleLarge, color = TextPrimary)
+            Text(stringResource(R.string.match_detail_title), style = MaterialTheme.typography.titleLarge, color = TextPrimary)
         }
 
         if (uiState.isLoading) {
@@ -122,7 +124,7 @@ fun MatchDetailScreen(
                                     PlayerAvatar(name = player.name, size = 32.dp)
                                     Spacer(modifier = Modifier.width(8.dp))
                                     Text(player.name, style = MaterialTheme.typography.bodyMedium, color = TextPrimary, modifier = Modifier.weight(1f))
-                                    Text("$legsWon legs", style = MaterialTheme.typography.labelMedium, fontFamily = DmMono, color = TextSecondary)
+                                    Text(stringResource(R.string.match_detail_legs_won, legsWon), style = MaterialTheme.typography.labelMedium, fontFamily = DmMono, color = TextSecondary)
                                 }
                                 Spacer(modifier = Modifier.height(4.dp))
                             }
@@ -133,7 +135,7 @@ fun MatchDetailScreen(
 
             // Leg by leg
             item {
-                Text("Leg breakdown", style = MaterialTheme.typography.titleMedium, color = TextPrimary)
+                Text(stringResource(R.string.match_detail_leg_breakdown), style = MaterialTheme.typography.titleMedium, color = TextPrimary)
             }
             items(detail.legs) { legDetail ->
                 val leg = legDetail.leg
@@ -144,8 +146,8 @@ fun MatchDetailScreen(
                 ) {
                     Column(modifier = Modifier.padding(12.dp)) {
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                            Text("Leg ${leg.legNumber}", style = MaterialTheme.typography.titleSmall, color = TextPrimary)
-                            Text("$totalVisits visits", style = MaterialTheme.typography.labelSmall, color = TextTertiary)
+                            Text(stringResource(R.string.match_detail_leg, leg.legNumber), style = MaterialTheme.typography.titleSmall, color = TextPrimary)
+                            Text(stringResource(R.string.match_detail_visits, totalVisits), style = MaterialTheme.typography.labelSmall, color = TextTertiary)
                         }
                         Spacer(modifier = Modifier.height(8.dp))
                         players.forEach { player ->
@@ -164,10 +166,10 @@ fun MatchDetailScreen(
                                     Column {
                                         Text(player.name, style = MaterialTheme.typography.labelMedium, color = if (isWinner) Green else TextSecondary)
                                         if (isWinner) {
-                                            Text("Won · ${playerThrows.size} visits", style = MaterialTheme.typography.labelSmall, color = Green)
+                                            Text(stringResource(R.string.match_detail_won_visits, playerThrows.size), style = MaterialTheme.typography.labelSmall, color = Green)
                                         } else {
                                             val remaining = game.startScore - playerThrows.sumOf { it.visitTotal }
-                                            Text("left: $remaining · ${playerThrows.size} visits", style = MaterialTheme.typography.labelSmall, color = TextTertiary)
+                                            Text(stringResource(R.string.match_detail_left, remaining, playerThrows.size), style = MaterialTheme.typography.labelSmall, color = TextTertiary)
                                         }
                                     }
                                 }
@@ -180,7 +182,7 @@ fun MatchDetailScreen(
 
             // Full visit log
             item {
-                Text("Visit log", style = MaterialTheme.typography.titleMedium, color = TextPrimary)
+                Text(stringResource(R.string.match_detail_visit_log), style = MaterialTheme.typography.titleMedium, color = TextPrimary)
             }
 
             // Leg selector
@@ -198,7 +200,7 @@ fun MatchDetailScreen(
                                 .padding(horizontal = 12.dp, vertical = 6.dp)
                         ) {
                             Text(
-                                "Leg ${i + 1}",
+                                stringResource(R.string.match_detail_leg, i + 1),
                                 style = MaterialTheme.typography.labelMedium,
                                 color = if (isSelected) Background else TextSecondary
                             )
@@ -212,7 +214,7 @@ fun MatchDetailScreen(
                 // Table header
                 item {
                     Row(modifier = Modifier.fillMaxWidth()) {
-                        Text("Player", style = MaterialTheme.typography.labelSmall, color = TextTertiary, modifier = Modifier.weight(2f))
+                        Text(stringResource(R.string.match_detail_player), style = MaterialTheme.typography.labelSmall, color = TextTertiary, modifier = Modifier.weight(2f))
                         Text("D1", style = MaterialTheme.typography.labelSmall, color = TextTertiary, modifier = Modifier.weight(1f), textAlign = TextAlign.Center)
                         Text("D2", style = MaterialTheme.typography.labelSmall, color = TextTertiary, modifier = Modifier.weight(1f), textAlign = TextAlign.Center)
                         Text("D3", style = MaterialTheme.typography.labelSmall, color = TextTertiary, modifier = Modifier.weight(1f), textAlign = TextAlign.Center)

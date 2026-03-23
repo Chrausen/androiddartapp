@@ -9,11 +9,13 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.clubdarts.R
 import com.clubdarts.data.model.Player
 import com.clubdarts.data.repository.EloRepository
 import com.clubdarts.ui.game.components.PlayerAvatar
@@ -39,13 +41,13 @@ fun RankingsScreen(
         ) {
             item {
                 Text(
-                    text = "Rankings",
+                    text = stringResource(R.string.rankings_title),
                     style = MaterialTheme.typography.headlineMedium,
                     color = TextPrimary
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    text = "Players with ${EloRepository.LEADERBOARD_MIN_MATCHES}+ ranked matches",
+                    text = stringResource(R.string.rankings_subtitle, EloRepository.LEADERBOARD_MIN_MATCHES),
                     style = MaterialTheme.typography.bodySmall,
                     color = TextSecondary
                 )
@@ -62,13 +64,13 @@ fun RankingsScreen(
                     ) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
                             Text(
-                                text = "No rankings yet",
+                                text = stringResource(R.string.rankings_empty_title),
                                 style = MaterialTheme.typography.titleMedium,
                                 color = TextSecondary
                             )
                             Spacer(modifier = Modifier.height(8.dp))
                             Text(
-                                text = "Players appear here after completing\n${EloRepository.LEADERBOARD_MIN_MATCHES} ranked matches",
+                                text = stringResource(R.string.rankings_empty_message, EloRepository.LEADERBOARD_MIN_MATCHES),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = TextTertiary,
                                 textAlign = androidx.compose.ui.text.style.TextAlign.Center
@@ -85,7 +87,7 @@ fun RankingsScreen(
             item {
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
-                    text = "Players with fewer than ${EloRepository.LEADERBOARD_MIN_MATCHES} ranked matches have a provisional rating and are not shown here.",
+                    text = stringResource(R.string.rankings_disclaimer, EloRepository.LEADERBOARD_MIN_MATCHES),
                     style = MaterialTheme.typography.bodySmall,
                     color = TextTertiary
                 )

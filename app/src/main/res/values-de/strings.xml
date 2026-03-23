@@ -1,0 +1,172 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Club Darts</string>
+
+    <!-- Navigation -->
+    <string name="nav_game">Spiel</string>
+    <string name="nav_stats">Statistik</string>
+    <string name="nav_history">Verlauf</string>
+    <string name="nav_rankings">Rangliste</string>
+    <string name="nav_players">Spieler</string>
+    <string name="nav_settings">Einstellungen</string>
+
+    <!-- Settings main screen -->
+    <string name="settings_title">Einstellungen</string>
+    <string name="settings_general">Allgemein</string>
+    <string name="settings_general_subtitle">Sprache und allgemeine Einstellungen</string>
+    <string name="settings_ranking_system">Rangsystem</string>
+    <string name="settings_ranking_subtitle">Elo-Bewertungen, Rangliste und gewertete Partien</string>
+    <string name="settings_tts_phrases">TTS Score Phrases</string>
+    <string name="settings_tts_subtitle">Eigene Ansagen nach jedem Visit</string>
+    <string name="settings_delete_all">Alle Daten löschen</string>
+    <string name="settings_delete_all_subtitle">Alle Spieler, Spiele und Verlauf entfernen</string>
+    <string name="dialog_delete_all_title">Alle Daten löschen?</string>
+    <string name="dialog_delete_all_message">Dies löscht dauerhaft alle Spieler, Spiele und den Verlauf. TTS-Phrasen und Einstellungen bleiben erhalten. Dieser Vorgang kann nicht rückgängig gemacht werden.</string>
+
+    <!-- General settings screen -->
+    <string name="general_title">Allgemein</string>
+    <string name="general_language_label">Sprache</string>
+    <string name="language_english">Englisch</string>
+    <string name="language_german">Deutsch</string>
+
+    <!-- Common buttons / actions -->
+    <string name="btn_delete">Löschen</string>
+    <string name="btn_cancel">Abbrechen</string>
+    <string name="btn_save">Speichern</string>
+    <string name="btn_reset">Zurücksetzen</string>
+    <string name="btn_abort">Abbrechen</string>
+    <string name="btn_done">Fertig</string>
+    <string name="btn_back">Zurück</string>
+
+    <!-- Players screen -->
+    <string name="players_title">Spieler</string>
+    <string name="players_empty">Noch keine Spieler. Füge einen hinzu!</string>
+    <string name="players_add_title">Spieler hinzufügen</string>
+    <string name="players_edit_title">Spieler bearbeiten</string>
+    <string name="players_delete_title">Spieler löschen</string>
+    <string name="players_delete_message">%1$s löschen? Der Spielverlauf bleibt erhalten.</string>
+    <string name="player_name_label">Spielername</string>
+
+    <!-- Game setup screen -->
+    <string name="game_new_game">Neues Spiel</string>
+    <string name="game_mode_label">Spielmodus</string>
+    <string name="game_match_type">Spieltyp</string>
+    <string name="game_casual">Casual</string>
+    <string name="game_ranked">Ranked</string>
+    <string name="game_mode_single">Einzel</string>
+    <string name="game_mode_teams">Teams</string>
+    <string name="game_starting_score">Startwert</string>
+    <string name="game_checkout_rule">Checkout-Regel</string>
+    <string name="game_legs_to_win">Legs gewinnen</string>
+    <string name="game_mode_display">Modus</string>
+    <string name="game_players_section">Spieler</string>
+    <string name="game_teams_section">Teams</string>
+    <string name="game_random_order">Zufällige Reihenfolge</string>
+    <string name="game_start">Spiel starten</string>
+    <string name="game_start_ranked">Gewertetes Spiel starten</string>
+    <string name="game_ranked_min_players">Gewertete Spiele benötigen mindestens 2 Spieler</string>
+    <string name="game_selected_count">%1$d ausgewählt</string>
+
+    <!-- Live game screen -->
+    <string name="live_abort">Abbrechen</string>
+    <string name="live_mute_tts">TTS stumm schalten</string>
+    <string name="live_unmute_tts">TTS aktivieren</string>
+    <string name="live_hide_history">Verlauf ausblenden</string>
+    <string name="live_show_history">Verlauf einblenden</string>
+    <string name="live_expand_settings">Einstellungen ausklappen</string>
+    <string name="live_collapse_settings">Einstellungen einklappen</string>
+    <string name="dialog_abort_game_title">Spiel abbrechen?</string>
+    <string name="dialog_abort_game_message">Das aktuelle Spiel wird abgebrochen.</string>
+
+    <!-- Game result screen -->
+    <string name="result_winner">Gewinner!</string>
+    <string name="result_wins">Gewinnt!</string>
+    <string name="result_winner_label">Gewinner</string>
+    <string name="result_winners_label">Gewinner</string>
+    <string name="result_save">Im Verlauf speichern</string>
+    <string name="result_saved">Im Verlauf gespeichert</string>
+    <string name="result_new_game">Neues Spiel</string>
+    <string name="result_done">Fertig</string>
+    <string name="result_legs">Legs: %1$d</string>
+    <string name="result_team_a">Team A</string>
+    <string name="result_team_b">Team B</string>
+    <string name="result_team_score">Team A: %1$d  —  Team B: %2$d</string>
+
+    <!-- History screen -->
+    <string name="history_title">Spielverlauf</string>
+    <string name="history_empty">Noch keine Spiele</string>
+    <string name="history_casual">Casual</string>
+    <string name="history_solo">Solo</string>
+    <string name="history_teams">Teams</string>
+
+    <!-- Match detail screen -->
+    <string name="match_detail_title">Spieldetail</string>
+    <string name="match_detail_leg_breakdown">Leg-Übersicht</string>
+    <string name="match_detail_visit_log">Visit-Protokoll</string>
+    <string name="match_detail_leg">Leg %1$d</string>
+    <string name="match_detail_visits">%1$d Visits</string>
+    <string name="match_detail_won_visits">Gewonnen · %1$d Visits</string>
+    <string name="match_detail_left">übrig: %1$d · %2$d Visits</string>
+    <string name="match_detail_player">Spieler</string>
+    <string name="match_detail_legs_won">%1$d Legs</string>
+
+    <!-- Stats screen -->
+    <string name="stats_title">Club-Statistiken</string>
+    <string name="stats_games">Spiele</string>
+    <string name="stats_players">Spieler</string>
+    <string name="stats_club_180s">Club 180s</string>
+    <string name="stats_best_finish">Bestes Finish</string>
+    <string name="stats_top_averages">Top-Durchschnitte</string>
+    <string name="stats_avg">Schnitt</string>
+    <string name="stats_best">Bestes</string>
+    <string name="stats_checkout_pct">Checkout%</string>
+    <string name="stats_180s">180s</string>
+    <string name="stats_100plus">100+</string>
+    <string name="stats_top_scores">Top Scores</string>
+    <string name="stats_buckets">Gruppen</string>
+    <string name="stats_most_thrown">Meistgeworfene Punktzahlen</string>
+    <string name="stats_score_buckets">Punktegruppen</string>
+    <string name="stats_busts">Busts</string>
+
+    <!-- Ranking settings screen -->
+    <string name="ranking_title">Rangsystem</string>
+    <string name="ranking_enable">Rangsystem aktivieren</string>
+    <string name="ranking_enable_subtitle">Elo-Bewertungen verfolgen und Rangliste anzeigen</string>
+    <string name="ranking_k_factor_label">Bewertungsaggressivität (K-Factor)</string>
+    <string name="ranking_k_factor_standard">Standard (32) — langsamere, stabilere Bewertungen</string>
+    <string name="ranking_k_factor_aggressive">Aggressiv (64) — schnellere, volatilere Bewertungen</string>
+    <string name="ranking_game_mode">Spielmodus für gewertete Partien</string>
+    <string name="ranking_starting_score">Startwert</string>
+    <string name="ranking_checkout_rule">Checkout-Regel</string>
+    <string name="ranking_legs_to_win">Legs gewinnen</string>
+    <string name="ranking_reset">Alle Bewertungsdaten zurücksetzen</string>
+    <string name="ranking_reset_subtitle">Alle Spieler auf 1000 Elo zurücksetzen und Spielverlauf löschen</string>
+    <string name="dialog_reset_ranking_title">Alle Bewertungsdaten zurücksetzen?</string>
+    <string name="dialog_reset_ranking_message">Dies setzt alle Spieler auf 1000 Elo zurück und löscht den gesamten Verlauf gewerteter Partien. Dieser Vorgang kann nicht rückgängig gemacht werden.</string>
+
+    <!-- TTS settings screen -->
+    <string name="tts_title">TTS Score Phrases</string>
+    <string name="tts_subtitle">Eigene Phrasen nach jedem Visit</string>
+    <string name="tts_empty">Noch keine Einträge. Tippe + zum Hinzufügen.</string>
+    <string name="tts_add_title">TTS Score hinzufügen</string>
+    <string name="tts_edit_title">TTS Score bearbeiten</string>
+    <string name="tts_score_label">Score</string>
+    <string name="tts_phrases_label">Phrasen</string>
+    <string name="tts_no_phrases">(keine Phrasen)</string>
+    <string name="tts_add_phrase">Phrase hinzufügen</string>
+    <string name="tts_before_placeholder">Davor</string>
+    <string name="tts_after_placeholder">Danach</string>
+    <string name="tts_add_score">Score hinzufügen</string>
+    <string name="tts_remove_phrase">Phrase entfernen</string>
+
+    <!-- Game setup additional -->
+    <string name="game_add_player">Spieler hinzufügen</string>
+    <string name="game_move_to_other_team">In anderes Team wechseln</string>
+
+    <!-- Rankings screen -->
+    <string name="rankings_title">Rangliste</string>
+    <string name="rankings_subtitle">Spieler mit %1$d+ gewerteten Spielen</string>
+    <string name="rankings_empty_title">Noch keine Rangliste</string>
+    <string name="rankings_empty_message">Spieler erscheinen hier nach %1$d gewerteten Spielen</string>
+    <string name="rankings_disclaimer">Spieler mit weniger als %1$d gewerteten Spielen haben eine vorläufige Bewertung und werden hier nicht angezeigt.</string>
+</resources>

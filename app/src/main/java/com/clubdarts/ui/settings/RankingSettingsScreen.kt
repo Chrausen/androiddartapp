@@ -18,10 +18,12 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.clubdarts.R
 import com.clubdarts.data.model.CheckoutRule
 import com.clubdarts.ui.theme.*
 
@@ -40,10 +42,10 @@ fun RankingSettingsScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Ranking System", color = TextPrimary) },
+                title = { Text(stringResource(R.string.ranking_title), color = TextPrimary) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = TextPrimary)
+                        Icon(Icons.Default.ArrowBack, contentDescription = stringResource(R.string.btn_back), tint = TextPrimary)
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = Background)
@@ -71,12 +73,12 @@ fun RankingSettingsScreen(
             ) {
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        "Enable Ranking System",
+                        stringResource(R.string.ranking_enable),
                         style = MaterialTheme.typography.bodyMedium,
                         color = TextPrimary
                     )
                     Text(
-                        "Track player Elo ratings and show leaderboard",
+                        stringResource(R.string.ranking_enable_subtitle),
                         style = MaterialTheme.typography.bodySmall,
                         color = TextSecondary
                     )
@@ -101,12 +103,12 @@ fun RankingSettingsScreen(
 
                     // K-Factor
                     Column {
-                        RankingSectionLabel("Rating Aggressiveness (K-Factor)")
+                        RankingSectionLabel(stringResource(R.string.ranking_k_factor_label))
                         Text(
                             text = if (uiState.kFactor == 32)
-                                "Standard (32) — slower, more stable ratings"
+                                stringResource(R.string.ranking_k_factor_standard)
                             else
-                                "Aggressive (64) — faster, more volatile ratings",
+                                stringResource(R.string.ranking_k_factor_aggressive),
                             style = MaterialTheme.typography.bodySmall,
                             color = TextSecondary,
                             modifier = Modifier.padding(bottom = 8.dp)
@@ -121,10 +123,10 @@ fun RankingSettingsScreen(
 
                     // Game Mode
                     Column {
-                        RankingSectionLabel("Game Mode for Ranked Matches")
+                        RankingSectionLabel(stringResource(R.string.ranking_game_mode))
 
                         Spacer(modifier = Modifier.height(8.dp))
-                        RankingSectionLabel("Starting score")
+                        RankingSectionLabel(stringResource(R.string.ranking_starting_score))
                         RankingSegmentedRow(
                             options = listOf(201, 301, 401, 501, 701),
                             selected = uiState.startScore,
@@ -133,7 +135,7 @@ fun RankingSettingsScreen(
                         )
 
                         Spacer(modifier = Modifier.height(12.dp))
-                        RankingSectionLabel("Checkout rule")
+                        RankingSectionLabel(stringResource(R.string.ranking_checkout_rule))
                         RankingSegmentedRow(
                             options = CheckoutRule.values().toList(),
                             selected = uiState.checkoutRule,
@@ -142,7 +144,7 @@ fun RankingSettingsScreen(
                         )
 
                         Spacer(modifier = Modifier.height(12.dp))
-                        RankingSectionLabel("Legs to win")
+                        RankingSectionLabel(stringResource(R.string.ranking_legs_to_win))
                         RankingSegmentedRow(
                             options = listOf(1, 3, 5, 7, 9),
                             selected = uiState.legsToWin,
@@ -169,12 +171,12 @@ fun RankingSettingsScreen(
                         Spacer(modifier = Modifier.width(12.dp))
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
-                                "Reset all rating data",
+                                stringResource(R.string.ranking_reset),
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = Red
                             )
                             Text(
-                                "Reset all players to 1000 Elo and delete match history",
+                                stringResource(R.string.ranking_reset_subtitle),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = TextSecondary
                             )
@@ -190,21 +192,21 @@ fun RankingSettingsScreen(
     if (uiState.showResetConfirm) {
         AlertDialog(
             onDismissRequest = { viewModel.dismissReset() },
-            title = { Text("Reset all rating data?", color = TextPrimary) },
+            title = { Text(stringResource(R.string.dialog_reset_ranking_title), color = TextPrimary) },
             text = {
                 Text(
-                    "This will reset all players to 1000 Elo and delete all ranked match history. This cannot be undone.",
+                    stringResource(R.string.dialog_reset_ranking_message),
                     color = TextSecondary
                 )
             },
             confirmButton = {
                 TextButton(onClick = { viewModel.confirmReset() }) {
-                    Text("Reset", color = Red, fontWeight = FontWeight.Bold)
+                    Text(stringResource(R.string.btn_reset), color = Red, fontWeight = FontWeight.Bold)
                 }
             },
             dismissButton = {
                 TextButton(onClick = { viewModel.dismissReset() }) {
-                    Text("Cancel", color = TextSecondary)
+                    Text(stringResource(R.string.btn_cancel), color = TextSecondary)
                 }
             },
             containerColor = Surface2

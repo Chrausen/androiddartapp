@@ -1,5 +1,6 @@
 package com.clubdarts.ui.navigation
 
+import androidx.annotation.StringRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
@@ -11,22 +12,24 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.clubdarts.R
 import com.clubdarts.ui.theme.Accent
 import com.clubdarts.ui.theme.Surface
 import com.clubdarts.ui.theme.TextTertiary
 
 sealed class BottomNavItem(
     val route: String,
-    val label: String,
+    @StringRes val labelRes: Int,
     val icon: ImageVector
 ) {
-    object Game     : BottomNavItem("game",     "Game",     Icons.Default.RadioButtonUnchecked)
-    object Stats    : BottomNavItem("stats",    "Stats",    Icons.Default.BarChart)
-    object History  : BottomNavItem("history",  "History",  Icons.Default.History)
-    object Rankings : BottomNavItem("rankings", "Rankings", Icons.Default.EmojiEvents)
-    object Players  : BottomNavItem("players",  "Players",  Icons.Default.Group)
-    object Settings : BottomNavItem("settings", "Settings", Icons.Default.Settings)
+    object Game     : BottomNavItem("game",     R.string.nav_game,     Icons.Default.RadioButtonUnchecked)
+    object Stats    : BottomNavItem("stats",    R.string.nav_stats,    Icons.Default.BarChart)
+    object History  : BottomNavItem("history",  R.string.nav_history,  Icons.Default.History)
+    object Rankings : BottomNavItem("rankings", R.string.nav_rankings, Icons.Default.EmojiEvents)
+    object Players  : BottomNavItem("players",  R.string.nav_players,  Icons.Default.Group)
+    object Settings : BottomNavItem("settings", R.string.nav_settings, Icons.Default.Settings)
 }
 
 val baseBottomNavItems = listOf(
@@ -69,7 +72,7 @@ fun ClubDartsBottomNav(
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Icon(
                             imageVector = item.icon,
-                            contentDescription = item.label
+                            contentDescription = stringResource(item.labelRes)
                         )
                         if (isActive) {
                             Spacer(modifier = Modifier.height(2.dp))
@@ -82,7 +85,7 @@ fun ClubDartsBottomNav(
                         }
                     }
                 },
-                label = { Text(item.label) },
+                label = { Text(stringResource(item.labelRes)) },
                 colors = NavigationBarItemDefaults.colors(
                     selectedIconColor = Accent,
                     selectedTextColor = Accent,

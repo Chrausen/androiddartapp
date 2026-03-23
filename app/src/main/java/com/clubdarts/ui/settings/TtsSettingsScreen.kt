@@ -12,11 +12,13 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.clubdarts.R
 import com.clubdarts.data.model.TtsPhrase
 import com.clubdarts.data.model.TtsScoreSetting
 import com.clubdarts.ui.theme.*
@@ -36,21 +38,21 @@ fun TtsSettingsScreen(
                     IconButton(onClick = onBack, modifier = Modifier.size(36.dp)) {
                         Icon(
                             Icons.Default.ArrowBack,
-                            contentDescription = "Back",
+                            contentDescription = stringResource(R.string.btn_back),
                             tint = TextPrimary
                         )
                     }
                     Spacer(modifier = Modifier.width(4.dp))
                 }
                 Text(
-                    "TTS Score Phrases",
+                    stringResource(R.string.tts_title),
                     style = MaterialTheme.typography.headlineMedium,
                     color = TextPrimary
                 )
             }
             Spacer(modifier = Modifier.height(4.dp))
             Text(
-                "Custom phrases announced after each visit",
+                stringResource(R.string.tts_subtitle),
                 style = MaterialTheme.typography.bodySmall,
                 color = TextSecondary
             )
@@ -59,7 +61,7 @@ fun TtsSettingsScreen(
             if (uiState.scoreSettings.isEmpty()) {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     Text(
-                        "No custom scores yet. Tap + to add one.",
+                        stringResource(R.string.tts_empty),
                         style = MaterialTheme.typography.bodyMedium,
                         color = TextTertiary
                     )
@@ -86,13 +88,13 @@ fun TtsSettingsScreen(
             containerColor = Accent,
             contentColor = Background
         ) {
-            Icon(Icons.Default.Add, contentDescription = "Add score")
+            Icon(Icons.Default.Add, contentDescription = stringResource(R.string.tts_add_score))
         }
     }
 
     when (val dialog = uiState.dialogState) {
         is TtsDialogState.Add -> ScoreDialog(
-            title = "Add TTS Score",
+            title = stringResource(R.string.tts_add_title),
             score = dialog.score,
             phrases = dialog.phrases,
             scoreError = dialog.scoreError,
@@ -104,7 +106,7 @@ fun TtsSettingsScreen(
             onDismiss = { viewModel.dismissDialog() }
         )
         is TtsDialogState.Edit -> ScoreDialog(
-            title = "Edit TTS Score",
+            title = stringResource(R.string.tts_edit_title),
             score = dialog.score,
             phrases = dialog.phrases,
             scoreError = dialog.scoreError,
@@ -145,7 +147,7 @@ private fun ScoreCard(
             }
             if (setting.phrases.isEmpty()) {
                 Text(
-                    "(no phrases)",
+                    stringResource(R.string.tts_no_phrases),
                     style = MaterialTheme.typography.bodySmall,
                     color = TextTertiary
                 )
@@ -154,7 +156,7 @@ private fun ScoreCard(
         IconButton(onClick = onEdit) {
             Icon(
                 Icons.Default.Edit,
-                contentDescription = "Edit",
+                contentDescription = stringResource(R.string.players_edit_title),
                 tint = TextSecondary,
                 modifier = Modifier.size(20.dp)
             )
@@ -162,7 +164,7 @@ private fun ScoreCard(
         IconButton(onClick = onDelete) {
             Icon(
                 Icons.Default.Delete,
-                contentDescription = "Delete",
+                contentDescription = stringResource(R.string.btn_delete),
                 tint = Red.copy(alpha = 0.7f),
                 modifier = Modifier.size(20.dp)
             )
@@ -220,7 +222,7 @@ private fun ScoreDialog(
                 OutlinedTextField(
                     value = score,
                     onValueChange = onScoreChange,
-                    label = { Text("Score", color = TextTertiary) },
+                    label = { Text(stringResource(R.string.tts_score_label), color = TextTertiary) },
                     isError = scoreError != null,
                     supportingText = scoreError?.let { { Text(it, color = Red) } },
                     singleLine = true,
@@ -235,7 +237,7 @@ private fun ScoreDialog(
                 )
                 Spacer(modifier = Modifier.height(12.dp))
                 Text(
-                    "Phrases",
+                    stringResource(R.string.tts_phrases_label),
                     style = MaterialTheme.typography.labelMedium,
                     color = TextSecondary
                 )
@@ -267,18 +269,18 @@ private fun ScoreDialog(
                         modifier = Modifier.size(16.dp)
                     )
                     Spacer(modifier = Modifier.width(4.dp))
-                    Text("Add phrase", color = Accent, style = MaterialTheme.typography.labelMedium)
+                    Text(stringResource(R.string.tts_add_phrase), color = Accent, style = MaterialTheme.typography.labelMedium)
                 }
             }
         },
         confirmButton = {
             TextButton(onClick = onConfirm) {
-                Text("Save", color = Accent, fontWeight = FontWeight.Bold)
+                Text(stringResource(R.string.btn_save), color = Accent, fontWeight = FontWeight.Bold)
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Cancel", color = TextSecondary)
+                Text(stringResource(R.string.btn_cancel), color = TextSecondary)
             }
         },
         containerColor = Surface2
@@ -300,7 +302,7 @@ private fun PhraseInputRow(
         OutlinedTextField(
             value = phrase.before,
             onValueChange = { onPhraseChange(it, phrase.after) },
-            placeholder = { Text("Before", color = TextTertiary, style = MaterialTheme.typography.bodySmall) },
+            placeholder = { Text(stringResource(R.string.tts_before_placeholder), color = TextTertiary, style = MaterialTheme.typography.bodySmall) },
             singleLine = true,
             modifier = Modifier.weight(1f),
             colors = OutlinedTextFieldDefaults.colors(
@@ -321,7 +323,7 @@ private fun PhraseInputRow(
         OutlinedTextField(
             value = phrase.after,
             onValueChange = { onPhraseChange(phrase.before, it) },
-            placeholder = { Text("After", color = TextTertiary, style = MaterialTheme.typography.bodySmall) },
+            placeholder = { Text(stringResource(R.string.tts_after_placeholder), color = TextTertiary, style = MaterialTheme.typography.bodySmall) },
             singleLine = true,
             modifier = Modifier.weight(1f),
             colors = OutlinedTextFieldDefaults.colors(
@@ -336,7 +338,7 @@ private fun PhraseInputRow(
             IconButton(onClick = onRemove, modifier = Modifier.size(36.dp)) {
                 Icon(
                     Icons.Default.Close,
-                    contentDescription = "Remove phrase",
+                    contentDescription = stringResource(R.string.tts_remove_phrase),
                     tint = TextTertiary,
                     modifier = Modifier.size(16.dp)
                 )
