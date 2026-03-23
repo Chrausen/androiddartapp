@@ -43,12 +43,13 @@ fun ClubDartsNavHost(
                 currentRoute = currentRoute,
                 rankingEnabled = rankingEnabled,
                 onNavigate = { route ->
+                    val keepState = route == "game" || route == "rankings"
                     navController.navigate(route) {
                         popUpTo("game") {
-                            saveState = true
+                            saveState = keepState
                         }
                         launchSingleTop = true
-                        restoreState = true
+                        restoreState = keepState
                     }
                 }
             )
