@@ -24,7 +24,6 @@ import javax.inject.Inject
 data class SettingsUiState(
     val showDeleteConfirm: Boolean = false,
     val deleteSuccess: Boolean = false,
-    val hasActiveGame: Boolean = false,
     val isGeneratingDebugData: Boolean = false
 )
 
@@ -38,14 +37,6 @@ class SettingsViewModel @Inject constructor(
 
     private val _uiState = MutableStateFlow(SettingsUiState())
     val uiState: StateFlow<SettingsUiState> = _uiState.asStateFlow()
-
-    init {
-        viewModelScope.launch {
-            gameRepository.observeActiveGame().collect { game ->
-                _uiState.update { it.copy(hasActiveGame = game != null) }
-            }
-        }
-    }
 
     fun requestDeleteAll() {
         _uiState.update { it.copy(showDeleteConfirm = true) }

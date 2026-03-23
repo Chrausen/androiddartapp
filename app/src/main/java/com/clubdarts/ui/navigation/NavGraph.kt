@@ -168,6 +168,8 @@ fun ClubDartsNavHost(
                 PlayersScreen()
             }
             composable("settings") {
+                val gameViewModel: GameViewModel =
+                    hiltViewModel(LocalContext.current as ComponentActivity)
                 SettingsScreen(
                     onNavigateToTtsScores = {
                         navController.navigate("settings/tts")
@@ -177,7 +179,8 @@ fun ClubDartsNavHost(
                     },
                     onNavigateToGeneralSettings = {
                         navController.navigate("settings/general")
-                    }
+                    },
+                    onDataDeleted = { gameViewModel.resetToSetup() }
                 )
             }
             composable("settings/general") {

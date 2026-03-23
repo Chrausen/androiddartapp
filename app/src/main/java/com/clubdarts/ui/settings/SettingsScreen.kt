@@ -31,12 +31,16 @@ fun SettingsScreen(
     onNavigateToTtsScores: () -> Unit,
     onNavigateToRankingSettings: () -> Unit,
     onNavigateToGeneralSettings: () -> Unit,
+    onDataDeleted: () -> Unit = {},
     viewModel: SettingsViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     if (uiState.deleteSuccess) {
-        LaunchedEffect(Unit) { viewModel.clearDeleteSuccess() }
+        LaunchedEffect(Unit) {
+            onDataDeleted()
+            viewModel.clearDeleteSuccess()
+        }
     }
 
     Box(
@@ -85,14 +89,10 @@ fun SettingsScreen(
 
             SettingsRow(
                 icon = Icons.Default.DeleteForever,
-                iconTint = if (uiState.hasActiveGame) TextTertiary else Red,
+                iconTint = Red,
                 title = stringResource(R.string.settings_delete_all),
-                subtitle = if (uiState.hasActiveGame)
-                    stringResource(R.string.settings_delete_all_active_game)
-                else
-                    stringResource(R.string.settings_delete_all_subtitle),
-                titleColor = if (uiState.hasActiveGame) TextTertiary else Red,
-                enabled = !uiState.hasActiveGame,
+                subtitle = stringResource(R.string.settings_delete_all_subtitle),
+                titleColor = Red,
                 onClick = { viewModel.requestDeleteAll() }
             )
 
