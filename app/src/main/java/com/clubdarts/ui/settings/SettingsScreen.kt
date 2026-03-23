@@ -131,8 +131,8 @@ fun SettingsScreen(
                             color = if (uiState.isGeneratingDebugData) TextTertiary else TextPrimary
                         )
                         Text(
-                            if (uiState.isGeneratingDebugData) "Creating 20 players and 100 games…"
-                            else "20 players · 100 games · ~50% ranked",
+                            if (uiState.isGeneratingDebugData) "Creating 20 players and 500 games…"
+                            else "20 players · 500 games",
                             style = MaterialTheme.typography.bodySmall,
                             color = TextSecondary
                         )

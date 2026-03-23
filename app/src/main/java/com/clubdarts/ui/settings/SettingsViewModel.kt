@@ -90,7 +90,7 @@ class SettingsViewModel @Inject constructor(
                 val monthAgo = now - 30L * 24 * 60 * 60 * 1000
 
                 // Generate sorted timestamps so ELO history is chronological
-                val timestamps = (0 until 100)
+                val timestamps = (0 until 500)
                     .map { monthAgo + Random.nextLong(now - monthAgo) }
                     .sorted()
 
