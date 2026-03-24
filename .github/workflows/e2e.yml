@@ -1,10 +1,8 @@
 name: E2E Tests
 
-# unit-test-coverage runs on every push / PR (no emulator needed).
+# unit-test-coverage runs on every PR (no emulator needed).
 # e2e runs on manual dispatch only.
 on:
-  push:
-    branches: [ "**" ]
   pull_request:
     branches: [ "**" ]
   workflow_dispatch:
