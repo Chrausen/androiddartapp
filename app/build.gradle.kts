@@ -24,11 +24,21 @@ android {
         testInstrumentationRunner = "com.clubdarts.HiltTestRunner"
     }
 
+    signingConfigs {
+        create("release") {
+            storeFile = System.getenv("SIGNING_STORE_FILE")?.let { file(it) }
+            storePassword = System.getenv("SIGNING_STORE_PASSWORD")
+            keyAlias = System.getenv("SIGNING_KEY_ALIAS")
+            keyPassword = System.getenv("SIGNING_KEY_PASSWORD")
+        }
+    }
+
     buildTypes {
         debug {
             enableUnitTestCoverage = true
         }
         release {
+            signingConfig = signingConfigs.getByName("release")
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(
