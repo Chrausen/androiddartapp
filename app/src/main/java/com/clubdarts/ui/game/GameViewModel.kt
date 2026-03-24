@@ -10,6 +10,7 @@ import com.clubdarts.data.repository.GameRepository
 import com.clubdarts.data.repository.PlayerRepository
 import com.clubdarts.data.repository.SettingsRepository
 import com.clubdarts.util.CheckoutCalculator
+import com.clubdarts.util.ScoringEngine
 import com.clubdarts.util.TtsManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -237,8 +238,7 @@ class GameViewModel @Inject constructor(
         val rule = currentState.config?.checkoutRule ?: CheckoutRule.DOUBLE
 
         when {
-            soFar > remaining -> resolveVisit()  // definitive bust
-            remaining - soFar == 1 && (rule == CheckoutRule.DOUBLE || rule == CheckoutRule.TRIPLE) -> resolveVisit()  // can't finish on 1
+            ScoringEngine.isImmediateBust(remaining, soFar, rule) -> resolveVisit()
             remaining - soFar == 0 -> resolveVisit()  // checkout
             currentState.currentDarts.size >= 3 -> resolveVisit()  // all 3 darts thrown
             else -> updateCheckoutHint()
@@ -280,36 +280,17 @@ class GameViewModel @Inject constructor(
         val visitTotal = darts.sumOf { it.value }
         val isCheckoutAttempt = CheckoutCalculator.isCheckoutPossible(remaining, config.checkoutRule)
 
-        // Determine bust
-        val afterVisit = remaining - visitTotal
-        val isBust: Boolean
-        val effectiveTotal: Int
-
-        if (afterVisit < 0) {
-            isBust = true
-            effectiveTotal = 0
-        } else if (afterVisit == 1 && (config.checkoutRule == CheckoutRule.DOUBLE || config.checkoutRule == CheckoutRule.TRIPLE)) {
-            isBust = true
-            effectiveTotal = 0
-        } else if (afterVisit == 0) {
-            val lastDart = darts.last()
-            val validCheckout = CheckoutCalculator.isValidCheckout(
-                lastDartScore = lastDart.score,
-                lastDartMult = lastDart.multiplier,
-                remainingAfter = 0,
-                rule = config.checkoutRule
-            )
-            if (!validCheckout) {
-                isBust = true
-                effectiveTotal = 0
-            } else {
-                isBust = false
-                effectiveTotal = visitTotal
-            }
-        } else {
-            isBust = false
-            effectiveTotal = visitTotal
-        }
+        // Determine bust via ScoringEngine
+        val lastDart = darts.last()
+        val visitResult = ScoringEngine.resolveVisit(
+            remaining = remaining,
+            visitTotal = visitTotal,
+            lastDartScore = lastDart.score,
+            lastDartMult = lastDart.multiplier,
+            rule = config.checkoutRule
+        )
+        val isBust = visitResult.isBust
+        val effectiveTotal = visitResult.effectiveScore
 
         val newScore = if (isBust) remaining else remaining - effectiveTotal
 
