@@ -1,3 +1,6 @@
+import org.gradle.testing.jacoco.tasks.JacocoReport
+import org.gradle.testing.jacoco.tasks.JacocoCoverageVerification
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
