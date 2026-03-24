@@ -179,7 +179,7 @@ object CheckoutCalculator {
         if (score < 1) return false
         return when (rule) {
             CheckoutRule.STRAIGHT -> score <= 60  // single 20 or bull in 1 dart; up to 180 in 3 darts
-            CheckoutRule.DOUBLE -> score <= 170 && score != 169 && score != 168 && score != 166 &&
+            CheckoutRule.DOUBLE -> score >= 2 && score <= 170 && score != 169 && score != 168 && score != 166 &&
                     score != 165 && score != 163 && score != 162 && score != 159
             CheckoutRule.TRIPLE -> score <= 180
         }

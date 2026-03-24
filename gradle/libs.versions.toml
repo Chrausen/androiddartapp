@@ -13,6 +13,7 @@ coroutines              = "1.8.1"
 lifecycle               = "2.8.2"
 junit                   = "4.13.2"
 mockk                   = "1.13.12"
+orgJson                 = "20240303"
 androidxTestExtJunit    = "1.2.1"
 espresso                = "3.6.1"
 androidxTestRunner      = "1.6.2"
@@ -40,6 +41,7 @@ kotlinx-coroutines-android          = { group = "org.jetbrains.kotlinx",     nam
 kotlinx-coroutines-test             = { group = "org.jetbrains.kotlinx",     name = "kotlinx-coroutines-test",          version.ref = "coroutines" }
 junit                               = { group = "junit",                      name = "junit",                            version.ref = "junit" }
 mockk                               = { group = "io.mockk",                    name = "mockk",                            version.ref = "mockk" }
+org-json                            = { group = "org.json",                    name = "json",                             version.ref = "orgJson" }
 androidx-test-ext-junit             = { group = "androidx.test.ext",          name = "junit",                            version.ref = "androidxTestExtJunit" }
 androidx-test-espresso-core         = { group = "androidx.test.espresso",     name = "espresso-core",                    version.ref = "espresso" }
 androidx-test-runner                = { group = "androidx.test",              name = "runner",                           version.ref = "androidxTestRunner" }
