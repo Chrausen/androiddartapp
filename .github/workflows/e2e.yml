@@ -32,11 +32,25 @@ jobs:
           distribution: temurin
           java-version: 17
 
-      - name: Setup Gradle (handles wrapper bootstrap + caching)
-        uses: gradle/actions/setup-gradle@v4
+      - name: Cache Gradle packages
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/libs.versions.toml') }}
+          restore-keys: ${{ runner.os }}-gradle-
+
+      - name: Verify environment
+        run: |
+          java -version
+          echo "ANDROID_HOME=$ANDROID_HOME"
+          echo "ANDROID_SDK_ROOT=$ANDROID_SDK_ROOT"
+          ls gradle/wrapper/
+          chmod +x gradlew
 
       - name: Run unit tests with coverage (fails if < 80 %)
-        run: ./gradlew jacocoUnitTestCoverageVerification --no-daemon --info
+        run: ./gradlew jacocoUnitTestCoverageVerification --no-daemon
 
       - name: Upload JaCoCo HTML report
         if: always()
