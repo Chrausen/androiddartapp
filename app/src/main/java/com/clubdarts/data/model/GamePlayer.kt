@@ -2,6 +2,7 @@ package com.clubdarts.data.model
 
 import androidx.room.Entity
 import androidx.room.ForeignKey
+import androidx.room.Index
 
 @Entity(
     tableName = "game_players",
@@ -9,7 +10,8 @@ import androidx.room.ForeignKey
     foreignKeys = [
         ForeignKey(Game::class,   ["id"], ["gameId"],   onDelete = ForeignKey.CASCADE),
         ForeignKey(Player::class, ["id"], ["playerId"], onDelete = ForeignKey.CASCADE)
-    ]
+    ],
+    indices = [Index("playerId")]
 )
 data class GamePlayer(
     val gameId: Long,

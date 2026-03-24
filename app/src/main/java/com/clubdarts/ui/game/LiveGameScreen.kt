@@ -6,9 +6,9 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Undo
+import androidx.compose.material.icons.automirrored.filled.VolumeUp
 import androidx.compose.material.icons.filled.History
-import androidx.compose.material.icons.filled.Undo
-import androidx.compose.material.icons.filled.VolumeUp
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -126,7 +126,7 @@ fun LiveGameScreen(
                     modifier = Modifier.padding(horizontal = 4.dp)
                 ) {
                     Icon(
-                        imageVector = Icons.Default.Undo,
+                        imageVector = Icons.AutoMirrored.Filled.Undo,
                         contentDescription = stringResource(R.string.live_abort),
                         tint = Amber,
                         modifier = Modifier.size(18.dp)
@@ -249,7 +249,7 @@ private fun GameStatusBar(
             verticalAlignment = Alignment.CenterVertically
         ) {
             SlashedIconButton(
-                icon = Icons.Default.VolumeUp,
+                icon = Icons.AutoMirrored.Filled.VolumeUp,
                 slashed = isTtsMuted,
                 contentDescription = if (isTtsMuted) stringResource(R.string.live_unmute_tts) else stringResource(R.string.live_mute_tts),
                 onClick = onToggleMute
