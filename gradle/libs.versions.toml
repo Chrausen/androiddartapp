@@ -11,6 +11,12 @@ hilt                    = "2.51.1"
 hiltNavigationCompose   = "1.2.0"
 coroutines              = "1.8.1"
 lifecycle               = "2.8.2"
+junit                   = "4.13.2"
+mockk                   = "1.13.12"
+orgJson                 = "20240303"
+androidxTestExtJunit    = "1.2.1"
+espresso                = "3.6.1"
+androidxTestRunner      = "1.6.2"
 
 [libraries]
 androidx-core-ktx                   = { group = "androidx.core",             name = "core-ktx",                         version.ref = "coreKtx" }
@@ -32,6 +38,16 @@ hilt-android                        = { group = "com.google.dagger",          na
 hilt-compiler                       = { group = "com.google.dagger",          name = "hilt-android-compiler",            version.ref = "hilt" }
 hilt-navigation-compose             = { group = "androidx.hilt",              name = "hilt-navigation-compose",          version.ref = "hiltNavigationCompose" }
 kotlinx-coroutines-android          = { group = "org.jetbrains.kotlinx",     name = "kotlinx-coroutines-android",       version.ref = "coroutines" }
+kotlinx-coroutines-test             = { group = "org.jetbrains.kotlinx",     name = "kotlinx-coroutines-test",          version.ref = "coroutines" }
+junit                               = { group = "junit",                      name = "junit",                            version.ref = "junit" }
+mockk                               = { group = "io.mockk",                    name = "mockk",                            version.ref = "mockk" }
+org-json                            = { group = "org.json",                    name = "json",                             version.ref = "orgJson" }
+androidx-test-ext-junit             = { group = "androidx.test.ext",          name = "junit",                            version.ref = "androidxTestExtJunit" }
+androidx-test-espresso-core         = { group = "androidx.test.espresso",     name = "espresso-core",                    version.ref = "espresso" }
+androidx-test-runner                = { group = "androidx.test",              name = "runner",                           version.ref = "androidxTestRunner" }
+androidx-compose-ui-test-junit4     = { group = "androidx.compose.ui",        name = "ui-test-junit4" }
+androidx-compose-ui-test-manifest   = { group = "androidx.compose.ui",        name = "ui-test-manifest" }
+hilt-android-testing                = { group = "com.google.dagger",          name = "hilt-android-testing",             version.ref = "hilt" }
 
 [plugins]
 android-application = { id = "com.android.application",             version.ref = "agp" }
