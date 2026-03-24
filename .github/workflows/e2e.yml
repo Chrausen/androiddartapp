@@ -32,17 +32,11 @@ jobs:
           distribution: temurin
           java-version: 17
 
-      - name: Cache Gradle packages
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.gradle/caches
-            ~/.gradle/wrapper
-          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/libs.versions.toml') }}
-          restore-keys: ${{ runner.os }}-gradle-
+      - name: Setup Gradle (handles wrapper bootstrap + caching)
+        uses: gradle/actions/setup-gradle@v4
 
       - name: Run unit tests with coverage (fails if < 80 %)
-        run: ./gradlew jacocoUnitTestCoverageVerification --no-daemon
+        run: ./gradlew jacocoUnitTestCoverageVerification --no-daemon --info
 
       - name: Upload JaCoCo HTML report
         if: always()
