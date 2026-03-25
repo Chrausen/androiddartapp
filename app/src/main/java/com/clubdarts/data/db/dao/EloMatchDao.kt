@@ -14,6 +14,12 @@ interface EloMatchDao {
     @Query("SELECT * FROM elo_matches WHERE id IN (:ids)")
     suspend fun getMatchesByIds(ids: List<Long>): List<EloMatch>
 
+    @Query("SELECT * FROM elo_matches WHERE id = :id")
+    suspend fun getById(id: Long): EloMatch?
+
+    @Query("DELETE FROM elo_matches WHERE id = :id")
+    suspend fun deleteById(id: Long)
+
     @Query("DELETE FROM elo_matches")
     suspend fun deleteAll()
 }

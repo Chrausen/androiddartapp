@@ -95,7 +95,9 @@ data class GameUiState(
     val rankedCheckoutRule: CheckoutRule = CheckoutRule.DOUBLE,
     val rankedLegsToWin: Int = 1,
     // playerId -> signed elo change (positive = gain, negative = loss)
-    val eloResults: Map<Long, Double>? = null
+    val eloResults: Map<Long, Double>? = null,
+    // ID of the EloMatch record created when a ranked game ended (used for undo)
+    val eloMatchId: Long? = null
 )
 
 @HiltViewModel
@@ -436,6 +438,99 @@ class GameViewModel @Inject constructor(
         }
     }
 
+    /**
+     * Undo the checkout throw that ended the game.
+     * Reverts DB state (throw, leg finish, game finish, ELO if ranked) and
+     * returns to the LIVE screen with the player's score restored.
+     */
+    fun undoLastThrowOnResult() {
+        viewModelScope.launch {
+            try {
+                val state = _uiState.value
+                val legId = state.legId ?: return@launch
+                val gameId = state.gameId ?: return@launch
+
+                val lastThrow = gameRepository.getLastThrowInLeg(legId) ?: return@launch
+
+                // The checkout player advanced currentPlayerIndex by 1 in resolveVisit().
+                // Reverse that to recover the index of the player who checked out.
+                val checkerOutIndex = (state.currentPlayerIndex - 1 + state.players.size) % state.players.size
+
+                // Reconstruct the darts of the finishing visit, then drop the last dart —
+                // matching the behaviour of undoLastDart on the live screen.
+                val allDarts = buildList {
+                    if (lastThrow.dartsUsed >= 1) add(DartInput(lastThrow.dart1Score, lastThrow.dart1Mult))
+                    if (lastThrow.dartsUsed >= 2) add(DartInput(lastThrow.dart2Score, lastThrow.dart2Mult))
+                    if (lastThrow.dartsUsed >= 3) add(DartInput(lastThrow.dart3Score, lastThrow.dart3Mult))
+                }
+                // Darts to restore as "already entered" (all but the accidental last dart)
+                val restoredDarts = allDarts.dropLast(1)
+                // Score displayed = remaining before the entire visit (same as undoLastDart)
+                val restoredScore = lastThrow.visitTotal
+
+                // Revert DB: delete throw, unfinish leg, unfinish game
+                gameRepository.deleteThrow(lastThrow)
+                gameRepository.unfinishLeg(legId)
+                gameRepository.unfinishGame(gameId)
+
+                // Revert ELO if this was a ranked game that was auto-saved
+                val eloMatchId = state.eloMatchId
+                if (state.isRanked && eloMatchId != null) {
+                    eloRepository.revertMatch(eloMatchId)
+                }
+
+                // Drop the checkout visit from history
+                val newHistory = state.visitHistory.drop(1)
+
+                // Restore in-memory game state and go back to LIVE
+                if (state.isTeamGame) {
+                    val teamIdx = state.winningTeamIndex ?: 0
+                    val newTeamLegWins = state.teamLegWins.toMutableMap()
+                    newTeamLegWins[teamIdx] = ((newTeamLegWins[teamIdx] ?: 1) - 1).coerceAtLeast(0)
+                    val newTeamScores = state.teamScores.toMutableMap().also { it[teamIdx] = restoredScore }
+                    _uiState.update { it.copy(
+                        screen = GameScreen.LIVE,
+                        teamLegWins = newTeamLegWins,
+                        teamScores = newTeamScores,
+                        winningTeamIndex = null,
+                        currentPlayerIndex = checkerOutIndex,
+                        currentDarts = restoredDarts,
+                        pendingMultiplier = 1,
+                        visitHistory = newHistory,
+                        winnerId = null,
+                        eloResults = null,
+                        eloMatchId = null,
+                        gameSaved = false
+                    )}
+                } else {
+                    val winnerId = state.winnerId
+                    val newLegWins = state.legWins.toMutableMap()
+                    if (winnerId != null) {
+                        newLegWins[winnerId] = ((newLegWins[winnerId] ?: 1) - 1).coerceAtLeast(0)
+                    }
+                    val newScores = state.scores.toMutableMap()
+                    if (winnerId != null) newScores[winnerId] = restoredScore
+                    _uiState.update { it.copy(
+                        screen = GameScreen.LIVE,
+                        legWins = newLegWins,
+                        scores = newScores,
+                        winnerId = null,
+                        currentPlayerIndex = checkerOutIndex,
+                        currentDarts = restoredDarts,
+                        pendingMultiplier = 1,
+                        visitHistory = newHistory,
+                        eloResults = null,
+                        eloMatchId = null,
+                        gameSaved = false
+                    )}
+                }
+                updateCheckoutHint()
+            } catch (e: Exception) {
+                _uiState.update { it.copy(errorMessage = e.message) }
+            }
+        }
+    }
+
     fun startGame(config: GameConfig) {
         viewModelScope.launch {
             try {
@@ -558,7 +653,7 @@ class GameViewModel @Inject constructor(
                     val legsWon = newLegWins[winnerId] ?: 0
                     if (legsWon >= config.legsToWin) {
                         // Record Elo for ranked games (2+ players)
-                        val eloResults = if (state.isRanked && state.players.size >= 2) {
+                        val eloMatchResult = if (state.isRanked && state.players.size >= 2) {
                             try {
                                 eloRepository.recordMatch(state.players, winnerId)
                             } catch (e: Exception) {
@@ -577,7 +672,8 @@ class GameViewModel @Inject constructor(
                             screen = GameScreen.RESULT,
                             legWins = newLegWins,
                             winnerId = winnerId,
-                            eloResults = eloResults,
+                            eloResults = eloMatchResult?.changes,
+                            eloMatchId = eloMatchResult?.matchId,
                             gameSaved = autoSaved
                         )}
                     } else {
@@ -700,7 +796,8 @@ class GameViewModel @Inject constructor(
             checkoutHint = null,
             gameSaved = false,
             isRanked = false,
-            eloResults = null
+            eloResults = null,
+            eloMatchId = null
         )}
         loadSetupDefaults()
     }

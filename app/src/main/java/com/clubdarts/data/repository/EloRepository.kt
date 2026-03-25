@@ -26,15 +26,17 @@ class EloRepository @Inject constructor(
         const val LEADERBOARD_MIN_MATCHES = 5
     }
 
+    data class EloMatchResult(val matchId: Long, val changes: Map<Long, Double>)
+
     /**
      * Record a ranked match for 2+ players and update their Elo ratings atomically.
-     * Returns a map of playerId → signed Elo change (positive = gain, negative = loss).
+     * Returns an EloMatchResult with the match ID and per-player signed Elo changes.
      */
     suspend fun recordMatch(
         players: List<Player>,
         winnerId: Long,
         playedAt: Long = System.currentTimeMillis()
-    ): Map<Long, Double> {
+    ): EloMatchResult {
         require(players.size >= 2) { "Need at least 2 players" }
         require(players.map { it.id }.distinct().size == players.size) { "Duplicate players" }
         require(players.any { it.id == winnerId }) { "Winner not in player list" }
@@ -70,7 +72,34 @@ class EloRepository @Inject constructor(
             }
             playerDao.updateAll(updatedPlayers)
 
-            changes
+            EloMatchResult(matchId = matchId, changes = changes)
+        }
+    }
+
+    /**
+     * Revert a previously recorded ranked match: restore player Elo/stats to pre-match values
+     * and delete the EloMatch + EloMatchEntry records.
+     */
+    suspend fun revertMatch(matchId: Long) {
+        db.withTransaction {
+            val entries = eloMatchEntryDao.getEntriesForMatch(matchId)
+            val playerIds = entries.map { it.playerId }
+            val freshPlayers = playerDao.getPlayersByIds(playerIds)
+            val playerMap = freshPlayers.associateBy { it.id }
+
+            val revertedPlayers = entries.mapNotNull { entry ->
+                val player = playerMap[entry.playerId] ?: return@mapNotNull null
+                val wasWinner = entry.eloChange > 0
+                player.copy(
+                    elo = entry.eloBefore,
+                    matchesPlayed = (player.matchesPlayed - 1).coerceAtLeast(0),
+                    wins = if (wasWinner) (player.wins - 1).coerceAtLeast(0) else player.wins,
+                    losses = if (!wasWinner) (player.losses - 1).coerceAtLeast(0) else player.losses
+                )
+            }
+            playerDao.updateAll(revertedPlayers)
+            eloMatchEntryDao.deleteByMatchId(matchId)
+            eloMatchDao.deleteById(matchId)
         }
     }
 
