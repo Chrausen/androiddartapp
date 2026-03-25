@@ -16,6 +16,9 @@ object SettingsKeys {
     const val SHOW_HISTORY       = "show_history"
     const val LAST_GAME_MODE     = "last_game_mode"   // "SINGLE" | "TEAMS"
 
+    // Sound effects
+    const val SOUND_EFFECTS_MUTED = "sound_effects_muted"
+
     // Ranking system
     const val RANKING_ENABLED       = "ranking_enabled"
     const val RANKING_K_FACTOR      = "ranking_k_factor"       // "32" | "64"
@@ -32,6 +35,9 @@ object SettingsDefaults {
     const val RECENT_IDS    = ""
     const val SHOW_HISTORY  = "false"
     const val GAME_MODE     = "SINGLE"
+
+    // Sound effects
+    const val SOUND_EFFECTS_MUTED = "false"
 
     // Ranking system
     const val RANKING_ENABLED       = "false"

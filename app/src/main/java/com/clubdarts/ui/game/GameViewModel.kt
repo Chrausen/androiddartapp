@@ -10,7 +10,9 @@ import com.clubdarts.data.repository.GameRepository
 import com.clubdarts.data.repository.PlayerRepository
 import com.clubdarts.data.repository.SettingsRepository
 import com.clubdarts.util.CheckoutCalculator
+import com.clubdarts.util.DartSound
 import com.clubdarts.util.ScoringEngine
+import com.clubdarts.util.SoundEffectsService
 import com.clubdarts.util.TtsManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -81,6 +83,7 @@ data class GameUiState(
     val snackbarMessage: String? = null,
     val gameSaved: Boolean = false,
     val isTtsMuted: Boolean = false,
+    val isSoundEffectsMuted: Boolean = false,
     val showHistory: Boolean = false,
     // Setup persistence across tab switches
     val setupSelectedPlayerIds: List<Long> = emptyList(),
@@ -111,10 +114,12 @@ class GameViewModel @Inject constructor(
     val uiState: StateFlow<GameUiState> = _uiState.asStateFlow()
 
     private val ttsManager = TtsManager(application)
+    private val soundEffectsService = SoundEffectsService(application)
     private var ttsScoreSettings: List<TtsScoreSetting> = emptyList()
 
     init {
         ttsManager.init()
+        soundEffectsService.init()
         loadSetupDefaults()
         viewModelScope.launch {
             settingsRepository.observeTtsScoreSettings().collect { settings ->
@@ -150,9 +155,16 @@ class GameViewModel @Inject constructor(
     override fun onCleared() {
         super.onCleared()
         ttsManager.shutdown()
+        soundEffectsService.shutdown()
     }
 
     fun toggleTtsMute() { _uiState.update { it.copy(isTtsMuted = !it.isTtsMuted) } }
+
+    fun toggleSoundEffectsMute() {
+        val newValue = !_uiState.value.isSoundEffectsMuted
+        _uiState.update { it.copy(isSoundEffectsMuted = newValue) }
+        viewModelScope.launch { settingsRepository.setSoundEffectsMuted(newValue) }
+    }
 
     fun toggleHistory() {
         val newValue = !_uiState.value.showHistory
@@ -185,12 +197,14 @@ class GameViewModel @Inject constructor(
                 val randomOrder = settingsRepository.getLastRandomOrder()
                 val recentIds = settingsRepository.getRecentPlayerIds()
                 val showHistory = settingsRepository.getShowHistory()
+                val soundEffectsMuted = settingsRepository.getSoundEffectsMuted()
                 val gameMode = try { GameMode.valueOf(settingsRepository.getLastGameMode()) } catch (e: Exception) { GameMode.SINGLE }
                 val rankedStartScore = settingsRepository.getRankingStartScore()
                 val rankedCheckoutRule = settingsRepository.getRankingCheckoutRule()
                 val rankedLegsToWin = settingsRepository.getRankingLegsToWin()
                 _uiState.update { it.copy(
                     showHistory = showHistory,
+                    isSoundEffectsMuted = soundEffectsMuted,
                     setupGameMode = gameMode,
                     rankedStartScore = rankedStartScore,
                     rankedCheckoutRule = rankedCheckoutRule,
@@ -357,6 +371,15 @@ class GameViewModel @Inject constructor(
                 isCheckout = isCheckout,
                 customPhrases = customPhrases
             )
+        }
+
+        if (!_uiState.value.isSoundEffectsMuted) {
+            val sound = when {
+                isCheckout -> DartSound.CHECKOUT
+                isBust     -> DartSound.BUST
+                else       -> DartSound.DART_HIT
+            }
+            soundEffectsService.playSound(sound)
         }
 
         val nextPlayerIndex = (state.currentPlayerIndex + 1) % state.players.size

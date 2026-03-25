@@ -127,6 +127,14 @@ class SettingsRepository @Inject constructor(
             }
         }
 
+    // ---- Sound effects settings ----
+
+    suspend fun getSoundEffectsMuted(): Boolean =
+        get(SettingsKeys.SOUND_EFFECTS_MUTED, SettingsDefaults.SOUND_EFFECTS_MUTED).toBoolean()
+
+    suspend fun setSoundEffectsMuted(value: Boolean) =
+        set(SettingsKeys.SOUND_EFFECTS_MUTED, value.toString())
+
     // ---- Ranking system settings ----
 
     fun observeRankingEnabled(): Flow<Boolean> =
