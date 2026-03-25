@@ -456,7 +456,16 @@ class GameViewModel @Inject constructor(
                 // Reverse that to recover the index of the player who checked out.
                 val checkerOutIndex = (state.currentPlayerIndex - 1 + state.players.size) % state.players.size
 
-                // Score before checkout = the visit total (remaining score before the throw)
+                // Reconstruct the darts of the finishing visit, then drop the last dart —
+                // matching the behaviour of undoLastDart on the live screen.
+                val allDarts = buildList {
+                    if (lastThrow.dartsUsed >= 1) add(DartInput(lastThrow.dart1Score, lastThrow.dart1Mult))
+                    if (lastThrow.dartsUsed >= 2) add(DartInput(lastThrow.dart2Score, lastThrow.dart2Mult))
+                    if (lastThrow.dartsUsed >= 3) add(DartInput(lastThrow.dart3Score, lastThrow.dart3Mult))
+                }
+                // Darts to restore as "already entered" (all but the accidental last dart)
+                val restoredDarts = allDarts.dropLast(1)
+                // Score displayed = remaining before the entire visit (same as undoLastDart)
                 val restoredScore = lastThrow.visitTotal
 
                 // Revert DB: delete throw, unfinish leg, unfinish game
@@ -485,7 +494,7 @@ class GameViewModel @Inject constructor(
                         teamScores = newTeamScores,
                         winningTeamIndex = null,
                         currentPlayerIndex = checkerOutIndex,
-                        currentDarts = emptyList(),
+                        currentDarts = restoredDarts,
                         pendingMultiplier = 1,
                         visitHistory = newHistory,
                         winnerId = null,
@@ -507,7 +516,7 @@ class GameViewModel @Inject constructor(
                         scores = newScores,
                         winnerId = null,
                         currentPlayerIndex = checkerOutIndex,
-                        currentDarts = emptyList(),
+                        currentDarts = restoredDarts,
                         pendingMultiplier = 1,
                         visitHistory = newHistory,
                         eloResults = null,
