@@ -30,6 +30,7 @@ data class GeneralSettingsUiState(
     val shouldRecreate: Boolean = false,
     val animationsEnabled: Boolean = true,
     val soundEffectsMuted: Boolean = false,
+    val soundEffectsVolume: Float = 1f,
     val showDeleteConfirm: Boolean = false,
     val deleteSuccess: Boolean = false,
     val isGeneratingDebugData: Boolean = false
@@ -58,7 +59,9 @@ class GeneralSettingsViewModel @Inject constructor(
     init {
         viewModelScope.launch {
             val muted = settingsRepository.getSoundEffectsMuted()
-            _uiState.update { it.copy(soundEffectsMuted = muted) }
+            val volume = settingsRepository.getSoundEffectsVolume()
+            soundEffectsService.setVolume(volume)
+            _uiState.update { it.copy(soundEffectsMuted = muted, soundEffectsVolume = volume) }
         }
     }
 
@@ -81,6 +84,12 @@ class GeneralSettingsViewModel @Inject constructor(
         soundEffectsService.setMuted(muted)
         _uiState.update { it.copy(soundEffectsMuted = muted) }
         viewModelScope.launch { settingsRepository.setSoundEffectsMuted(muted) }
+    }
+
+    fun setSoundEffectsVolume(volume: Float) {
+        soundEffectsService.setVolume(volume)
+        _uiState.update { it.copy(soundEffectsVolume = volume) }
+        viewModelScope.launch { settingsRepository.setSoundEffectsVolume(volume) }
     }
 
     fun requestDeleteAll() {

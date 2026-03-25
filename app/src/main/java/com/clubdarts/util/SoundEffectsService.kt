@@ -15,6 +15,7 @@ class SoundEffectsService @Inject constructor(
     private val soundIds = mutableMapOf<String, Int>()   // filename -> SoundPool stream ID
     private var throwFileNames: List<String> = emptyList()
     private var isMuted = false
+    private var volume = 1f
 
     companion object {
         private const val CLICK    = "click.wav"
@@ -69,11 +70,13 @@ class SoundEffectsService @Inject constructor(
         if (isMuted) return
         val id = soundIds[fileName] ?: return
         if (id == 0) return
-        soundPool?.play(id, 1f, 1f, 1, 0, 1.0f)
+        soundPool?.play(id, volume, volume, 1, 0, 1.0f)
     }
 
     fun setMuted(muted: Boolean) { isMuted = muted }
     fun isMuted(): Boolean = isMuted
+    fun setVolume(v: Float) { volume = v.coerceIn(0f, 1f) }
+    fun getVolume(): Float = volume
 
     fun shutdown() {
         soundPool?.release()

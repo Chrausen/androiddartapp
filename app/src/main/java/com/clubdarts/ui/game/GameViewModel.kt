@@ -205,6 +205,8 @@ class GameViewModel @Inject constructor(
                 val recentIds = settingsRepository.getRecentPlayerIds()
                 val showHistory = settingsRepository.getShowHistory()
                 val soundEffectsMuted = settingsRepository.getSoundEffectsMuted()
+                val soundEffectsVolume = settingsRepository.getSoundEffectsVolume()
+                soundEffectsService.setVolume(soundEffectsVolume)
                 val gameMode = try { GameMode.valueOf(settingsRepository.getLastGameMode()) } catch (e: Exception) { GameMode.SINGLE }
                 val rankedStartScore = settingsRepository.getRankingStartScore()
                 val rankedCheckoutRule = settingsRepository.getRankingCheckoutRule()

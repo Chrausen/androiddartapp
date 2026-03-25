@@ -33,6 +33,7 @@
     <string name="general_animations_subtitle">Spielerleisten-Animation bei Spielerwechsel</string>
     <string name="general_sound_effects_label">Soundeffekte</string>
     <string name="general_sound_effects_subtitle">Töne bei Dartwürfen und Schaltflächen</string>
+    <string name="general_sound_effects_volume_label">Lautstärke</string>
 
     <!-- Common buttons / actions -->
     <string name="btn_delete">Löschen</string>

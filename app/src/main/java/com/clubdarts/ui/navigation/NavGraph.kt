@@ -12,6 +12,7 @@ import androidx.navigation.*
 import androidx.navigation.compose.*
 import com.clubdarts.data.repository.SettingsRepository
 import com.clubdarts.ui.game.GameResultScreen
+import com.clubdarts.ui.game.GameScreen
 import com.clubdarts.ui.game.GameSetupScreen
 import com.clubdarts.ui.game.GameViewModel
 import com.clubdarts.ui.game.LiveGameScreen
@@ -31,12 +32,16 @@ import javax.inject.Inject
 fun ClubDartsNavHost(
     settingsRepository: SettingsRepository
 ) {
+    val context = LocalContext.current
     val navController = rememberNavController()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route ?: "game"
 
     val rankingEnabled by settingsRepository.observeRankingEnabled()
         .collectAsStateWithLifecycle(initialValue = false)
+
+    // Activity-scoped GameViewModel — needed to discard unsaved games on nav-away.
+    val gameViewModel: GameViewModel = hiltViewModel(context as ComponentActivity)
 
     // Track the last active game sub-route so the Game tab restores to it.
     // Only game/live is remembered — setup and result always go back to setup.
@@ -55,6 +60,12 @@ fun ClubDartsNavHost(
                 currentRoute = currentRoute,
                 rankingEnabled = rankingEnabled,
                 onNavigate = { route ->
+                    // If the user navigates away from the result screen without explicitly
+                    // saving or starting a new game, discard the unsaved game.
+                    if (currentRoute == "game/result" &&
+                        gameViewModel.uiState.value.screen == GameScreen.RESULT) {
+                        gameViewModel.discardGame()
+                    }
                     if (route == "game") {
                         // Navigate directly to the last game sub-route (live game or setup)
                         navController.navigate(lastGameRoute) {

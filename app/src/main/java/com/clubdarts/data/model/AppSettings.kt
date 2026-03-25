@@ -17,7 +17,8 @@ object SettingsKeys {
     const val LAST_GAME_MODE     = "last_game_mode"   // "SINGLE" | "TEAMS"
 
     // Sound effects
-    const val SOUND_EFFECTS_MUTED = "sound_effects_muted"
+    const val SOUND_EFFECTS_MUTED  = "sound_effects_muted"
+    const val SOUND_EFFECTS_VOLUME = "sound_effects_volume"
 
     // Ranking system
     const val RANKING_ENABLED       = "ranking_enabled"
@@ -37,7 +38,8 @@ object SettingsDefaults {
     const val GAME_MODE     = "SINGLE"
 
     // Sound effects
-    const val SOUND_EFFECTS_MUTED = "false"
+    const val SOUND_EFFECTS_MUTED  = "false"
+    const val SOUND_EFFECTS_VOLUME = "1.0"
 
     // Ranking system
     const val RANKING_ENABLED       = "false"
