@@ -15,9 +15,9 @@ on every dart thrown.
 
 | Example filenames                              |
 |------------------------------------------------|
-| `throw_1.wav`                                  |
-| `throw_2.wav`                                  |
-| `throw_3.wav`                                  |
+| `throw-1.wav`                                  |
+| `throw-2.wav`                                  |
+| `throw-3.wav`                                  |
 | … (add as many as you like)                    |
 
 ## Outcome sounds
