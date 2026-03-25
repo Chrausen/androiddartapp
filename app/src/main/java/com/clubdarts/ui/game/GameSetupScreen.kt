@@ -43,6 +43,7 @@ import com.clubdarts.R
 import com.clubdarts.data.model.CheckoutRule
 import com.clubdarts.data.model.Player
 import com.clubdarts.data.repository.GameConfig
+import com.clubdarts.ui.LocalSoundEffectsService
 import com.clubdarts.ui.game.components.PlayerAvatar
 import com.clubdarts.ui.game.components.PlayerPickerSheet
 import com.clubdarts.ui.players.PlayersViewModel
@@ -58,6 +59,7 @@ fun GameSetupScreen(
 ) {
     val uiState by gameViewModel.uiState.collectAsStateWithLifecycle()
     val playersState by playersViewModel.uiState.collectAsStateWithLifecycle()
+    val sounds = LocalSoundEffectsService.current
 
     // Ranked config is locked to ranking settings (from ViewModel/Settings)
     val rankedStartScore = uiState.rankedStartScore
@@ -473,6 +475,7 @@ fun GameSetupScreen(
                         )
                         gameViewModel.startGame(config)
                     }
+                    sounds?.playClick()
                     onStartGame()
                 },
                 enabled = hasPlayers,

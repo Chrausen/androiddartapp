@@ -1,13 +1,29 @@
 # Sound Effects
 
-Place `.wav` files here. Each file must match the filename defined in the
-`DartSound` enum inside `SoundEffectsService.kt`.
+Place `.wav` files here. Each file must match the naming conventions below.
 
-Expected files:
+## Click sound
+
+| File         | Triggered when                              |
+|--------------|---------------------------------------------|
+| `click.wav`  | Any button press outside the live game      |
+
+## Throw sounds (random selection)
+
+Name any number of throw files with the prefix `throw` — one is chosen at random
+on every dart thrown.
+
+| Example filenames                              |
+|------------------------------------------------|
+| `throw_1.wav`                                  |
+| `throw_2.wav`                                  |
+| `throw_3.wav`                                  |
+| … (add as many as you like)                    |
+
+## Outcome sounds
 
 | File            | Triggered when                  |
 |-----------------|---------------------------------|
-| `dart_hit.wav`  | A dart scores (normal visit)    |
 | `bust.wav`      | Score goes over (bust)          |
 | `checkout.wav`  | Player wins the leg (game shot) |
 

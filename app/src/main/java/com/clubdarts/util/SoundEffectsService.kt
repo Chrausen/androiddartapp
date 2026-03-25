@@ -3,61 +3,82 @@ package com.clubdarts.util
 import android.content.Context
 import android.media.AudioAttributes
 import android.media.SoundPool
+import dagger.hilt.android.qualifiers.ApplicationContext
+import javax.inject.Inject
+import javax.inject.Singleton
 
-enum class DartSound(val fileName: String) {
-    DART_HIT("dart_hit.wav"),
-    BUST("bust.wav"),
-    CHECKOUT("checkout.wav")
-}
-
-class SoundEffectsService(private val context: Context) {
-
+@Singleton
+class SoundEffectsService @Inject constructor(
+    @ApplicationContext private val context: Context
+) {
     private var soundPool: SoundPool? = null
-    private val soundIds = mutableMapOf<DartSound, Int>()
-    private var loadedCount = 0
+    private val soundIds = mutableMapOf<String, Int>()   // filename -> SoundPool stream ID
+    private var throwFileNames: List<String> = emptyList()
     private var isMuted = false
 
-    fun init() {
-        val attributes = AudioAttributes.Builder()
-            .setUsage(AudioAttributes.USAGE_GAME)
-            .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
-            .build()
-
-        val pool = SoundPool.Builder()
-            .setMaxStreams(3)
-            .setAudioAttributes(attributes)
-            .build()
-
-        pool.setOnLoadCompleteListener { _, _, status ->
-            if (status == 0) loadedCount++
-        }
-
-        DartSound.entries.forEach { sound ->
-            try {
-                context.assets.openFd("sounds/${sound.fileName}").use { fd ->
-                    soundIds[sound] = pool.load(fd, 1)
-                }
-            } catch (_: Exception) {
-                soundIds[sound] = 0  // file not yet present — skip silently
-            }
-        }
-
-        soundPool = pool
+    companion object {
+        private const val CLICK    = "click.wav"
+        private const val BUST     = "bust.wav"
+        private const val CHECKOUT = "checkout.wav"
     }
 
-    fun playSound(sound: DartSound) {
+    fun init() {
+        if (soundPool != null) return   // already initialised (singleton guard)
+
+        val pool = SoundPool.Builder()
+            .setMaxStreams(4)
+            .setAudioAttributes(
+                AudioAttributes.Builder()
+                    .setUsage(AudioAttributes.USAGE_GAME)
+                    .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                    .build()
+            ).build()
+
+        soundPool = pool
+
+        // Load named single sounds
+        listOf(CLICK, BUST, CHECKOUT).forEach { load(pool, it) }
+
+        // Dynamically load every throw_*.wav found in assets/sounds/
+        val throws = context.assets.list("sounds")
+            ?.filter { it.startsWith("throw") && it.endsWith(".wav") }
+            ?: emptyList()
+        throws.forEach { load(pool, it) }
+        throwFileNames = throws
+    }
+
+    private fun load(pool: SoundPool, fileName: String) {
+        try {
+            context.assets.openFd("sounds/$fileName").use { fd ->
+                soundIds[fileName] = pool.load(fd, 1)
+            }
+        } catch (_: Exception) {
+            soundIds[fileName] = 0   // file absent — silent no-op at play time
+        }
+    }
+
+    fun playClick()       = play(CLICK)
+    fun playBust()        = play(BUST)
+    fun playCheckout()    = play(CHECKOUT)
+    fun playRandomThrow() {
+        if (throwFileNames.isEmpty()) return
+        play(throwFileNames.random())
+    }
+
+    private fun play(fileName: String) {
         if (isMuted) return
-        val id = soundIds[sound] ?: return
+        val id = soundIds[fileName] ?: return
         if (id == 0) return
         soundPool?.play(id, 1f, 1f, 1, 0, 1.0f)
     }
 
     fun setMuted(muted: Boolean) { isMuted = muted }
+    fun isMuted(): Boolean = isMuted
 
     fun shutdown() {
         soundPool?.release()
         soundPool = null
         soundIds.clear()
-        loadedCount = 0
+        throwFileNames = emptyList()
     }
 }
