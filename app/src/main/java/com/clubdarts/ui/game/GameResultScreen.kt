@@ -26,11 +26,41 @@ import com.clubdarts.ui.theme.*
 fun GameResultScreen(
     onNewGame: () -> Unit,
     onDone: () -> Unit,
+    onUndoToLive: () -> Unit = {},
     viewModel: GameViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val gameSaved = uiState.gameSaved
     val sounds = LocalSoundEffectsService.current
+    var showUndoDialog by remember { mutableStateOf(false) }
+
+    // Navigate back to the live screen when undo reverts the game state
+    LaunchedEffect(uiState.screen) {
+        if (uiState.screen == GameScreen.LIVE) {
+            onUndoToLive()
+        }
+    }
+
+    if (showUndoDialog) {
+        AlertDialog(
+            onDismissRequest = { showUndoDialog = false },
+            title = { Text(stringResource(R.string.dialog_undo_throw_title)) },
+            text = { Text(stringResource(R.string.dialog_undo_throw_message)) },
+            confirmButton = {
+                TextButton(onClick = {
+                    showUndoDialog = false
+                    viewModel.undoLastThrowOnResult()
+                }) {
+                    Text(stringResource(R.string.result_undo_last_throw))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showUndoDialog = false }) {
+                    Text(stringResource(R.string.btn_cancel))
+                }
+            }
+        )
+    }
 
     // Back-press discards unsaved game and exits to setup
     BackHandler {
@@ -53,7 +83,8 @@ fun GameResultScreen(
                 sounds?.playClick()
                 viewModel.discardGame()
                 onDone()
-            }
+            },
+            onUndoLastThrow = { showUndoDialog = true }
         )
     } else {
         SingleResultScreen(
@@ -69,7 +100,8 @@ fun GameResultScreen(
                 sounds?.playClick()
                 viewModel.discardGame()
                 onDone()
-            }
+            },
+            onUndoLastThrow = { showUndoDialog = true }
         )
     }
 }
@@ -80,7 +112,8 @@ private fun SingleResultScreen(
     gameSaved: Boolean,
     onSave: () -> Unit,
     onNewGame: () -> Unit,
-    onDone: () -> Unit
+    onDone: () -> Unit,
+    onUndoLastThrow: () -> Unit
 ) {
     val winner = uiState.players.firstOrNull { it.id == uiState.winnerId }
     val isRanked = uiState.isRanked && uiState.eloResults != null
@@ -217,7 +250,7 @@ private fun SingleResultScreen(
             }
         }
 
-        item { ResultActions(gameSaved, uiState.isRanked, onSave, onNewGame, onDone) }
+        item { ResultActions(gameSaved, uiState.isRanked, onSave, onNewGame, onDone, onUndoLastThrow) }
     }
 }
 
@@ -227,7 +260,8 @@ private fun TeamResultScreen(
     gameSaved: Boolean,
     onSave: () -> Unit,
     onNewGame: () -> Unit,
-    onDone: () -> Unit
+    onDone: () -> Unit,
+    onUndoLastThrow: () -> Unit
 ) {
     val winTeamIdx = uiState.winningTeamIndex
     val winTeamColor = if (winTeamIdx == 0) Red else Blue
@@ -319,7 +353,7 @@ private fun TeamResultScreen(
             )
         }
 
-        item { ResultActions(gameSaved, false, onSave, onNewGame, onDone) }
+        item { ResultActions(gameSaved, false, onSave, onNewGame, onDone, onUndoLastThrow) }
     }
 }
 
@@ -396,7 +430,8 @@ private fun ResultActions(
     isRanked: Boolean,
     onSave: () -> Unit,
     onNewGame: () -> Unit,
-    onDone: () -> Unit
+    onDone: () -> Unit,
+    onUndoLastThrow: () -> Unit
 ) {
     Spacer(modifier = Modifier.height(8.dp))
 
@@ -434,5 +469,13 @@ private fun ResultActions(
         shape = RoundedCornerShape(10.dp)
     ) {
         Text(stringResource(R.string.result_done), color = TextSecondary)
+    }
+    Spacer(modifier = Modifier.height(8.dp))
+    OutlinedButton(
+        onClick = onUndoLastThrow,
+        modifier = Modifier.fillMaxWidth().height(52.dp),
+        shape = RoundedCornerShape(10.dp)
+    ) {
+        Text(stringResource(R.string.result_undo_last_throw), color = TextSecondary)
     }
 }

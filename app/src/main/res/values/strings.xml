@@ -96,6 +96,9 @@
     <string name="result_team_a">Team A</string>
     <string name="result_team_b">Team B</string>
     <string name="result_team_score">Team A: %1$d  —  Team B: %2$d</string>
+    <string name="result_undo_last_throw">Undo last throw</string>
+    <string name="dialog_undo_throw_title">Undo last throw?</string>
+    <string name="dialog_undo_throw_message">This will revert the finishing throw, remove the game from history and undo any Elo changes.</string>
 
     <!-- History screen -->
     <string name="history_title">Match history</string>

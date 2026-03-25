@@ -79,7 +79,7 @@ val MIGRATION_5_6 = object : Migration(5, 6) {
     entities = [Player::class, Game::class, GamePlayer::class,
                 Leg::class, Throw::class, AppSettings::class,
                 EloMatch::class, EloMatchEntry::class],
-    version = 6,
+    version = 8,
     exportSchema = false
 )
 @TypeConverters(Converters::class)

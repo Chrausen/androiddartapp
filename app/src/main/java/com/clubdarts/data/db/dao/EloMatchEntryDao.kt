@@ -14,6 +14,9 @@ interface EloMatchEntryDao {
     @Query("SELECT * FROM elo_match_entries WHERE playerId = :playerId ORDER BY rowid DESC")
     suspend fun getEntriesForPlayer(playerId: Long): List<EloMatchEntry>
 
+    @Query("DELETE FROM elo_match_entries WHERE matchId = :matchId")
+    suspend fun deleteByMatchId(matchId: Long)
+
     @Query("DELETE FROM elo_match_entries")
     suspend fun deleteAll()
 }
