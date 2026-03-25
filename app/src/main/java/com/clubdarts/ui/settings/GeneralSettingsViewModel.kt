@@ -14,6 +14,7 @@ import com.clubdarts.data.model.Throw
 import com.clubdarts.data.repository.EloRepository
 import com.clubdarts.data.repository.GameRepository
 import com.clubdarts.data.repository.SettingsRepository
+import com.clubdarts.util.SoundEffectsService
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlin.random.Random
@@ -28,6 +29,7 @@ data class GeneralSettingsUiState(
     val currentLanguage: String = "en",
     val shouldRecreate: Boolean = false,
     val animationsEnabled: Boolean = true,
+    val soundEffectsMuted: Boolean = false,
     val showDeleteConfirm: Boolean = false,
     val deleteSuccess: Boolean = false,
     val isGeneratingDebugData: Boolean = false
@@ -39,7 +41,8 @@ class GeneralSettingsViewModel @Inject constructor(
     private val playerDao: PlayerDao,
     private val gameRepository: GameRepository,
     private val settingsRepository: SettingsRepository,
-    private val eloRepository: EloRepository
+    private val eloRepository: EloRepository,
+    private val soundEffectsService: SoundEffectsService
 ) : ViewModel() {
 
     private val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
@@ -51,6 +54,13 @@ class GeneralSettingsViewModel @Inject constructor(
         )
     )
     val uiState: StateFlow<GeneralSettingsUiState> = _uiState.asStateFlow()
+
+    init {
+        viewModelScope.launch {
+            val muted = settingsRepository.getSoundEffectsMuted()
+            _uiState.update { it.copy(soundEffectsMuted = muted) }
+        }
+    }
 
     fun setLanguage(lang: String) {
         if (lang == _uiState.value.currentLanguage) return
@@ -65,6 +75,12 @@ class GeneralSettingsViewModel @Inject constructor(
     fun setAnimationsEnabled(enabled: Boolean) {
         prefs.edit().putBoolean(KEY_ANIMATIONS, enabled).apply()
         _uiState.update { it.copy(animationsEnabled = enabled) }
+    }
+
+    fun setSoundEffectsMuted(muted: Boolean) {
+        soundEffectsService.setMuted(muted)
+        _uiState.update { it.copy(soundEffectsMuted = muted) }
+        viewModelScope.launch { settingsRepository.setSoundEffectsMuted(muted) }
     }
 
     fun requestDeleteAll() {

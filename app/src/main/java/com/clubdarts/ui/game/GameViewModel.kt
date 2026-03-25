@@ -253,6 +253,8 @@ class GameViewModel @Inject constructor(
         val newDarts = state.currentDarts + dart
         _uiState.update { it.copy(currentDarts = newDarts, pendingMultiplier = 1) }
 
+        if (!_uiState.value.isSoundEffectsMuted) soundEffectsService.playRandomThrow()
+
         val currentState = _uiState.value
         val currentPlayer = currentState.players.getOrNull(currentState.currentPlayerIndex) ?: return
         val remaining = currentState.remainingFor(currentPlayer.id)
@@ -272,6 +274,7 @@ class GameViewModel @Inject constructor(
         val state = _uiState.value
         val newDarts = state.currentDarts + dart
         _uiState.update { it.copy(currentDarts = newDarts, pendingMultiplier = 1) }
+        if (!_uiState.value.isSoundEffectsMuted) soundEffectsService.playRandomThrow()
         if (_uiState.value.currentDarts.size >= 3) {
             resolveVisit()
         } else {
@@ -385,7 +388,7 @@ class GameViewModel @Inject constructor(
             when {
                 isCheckout -> soundEffectsService.playCheckout()
                 isBust     -> soundEffectsService.playBust()
-                else       -> soundEffectsService.playRandomThrow()
+                else       -> Unit
             }
         }
 

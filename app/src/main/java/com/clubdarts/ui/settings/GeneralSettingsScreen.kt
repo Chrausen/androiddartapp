@@ -157,6 +157,40 @@ fun GeneralSettingsScreen(
                 )
             }
 
+            Text(
+                text = stringResource(R.string.general_sound_effects_label),
+                style = MaterialTheme.typography.labelMedium,
+                color = TextSecondary,
+                modifier = Modifier.padding(bottom = 4.dp)
+            )
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(Surface, RoundedCornerShape(10.dp))
+                    .padding(horizontal = 16.dp, vertical = 10.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = stringResource(R.string.general_sound_effects_label),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = TextPrimary
+                    )
+                    Text(
+                        text = stringResource(R.string.general_sound_effects_subtitle),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = TextSecondary
+                    )
+                }
+                Switch(
+                    checked = !uiState.soundEffectsMuted,
+                    onCheckedChange = { viewModel.setSoundEffectsMuted(!it) },
+                    colors = SwitchDefaults.colors(checkedThumbColor = Background, checkedTrackColor = Accent)
+                )
+            }
+
             // Delete all data
             Row(
                 modifier = Modifier
