@@ -5,4 +5,17 @@
         <item name="android:statusBarColor">#0E0F11</item>
         <item name="android:navigationBarColor">#16181C</item>
     </style>
+
+    <!--
+      Splash screen theme — shown during app cold start.
+      Uses the AndroidX SplashScreen API (core-splashscreen).
+      windowSplashScreenBackground : matches app background (#0E0F11)
+      windowSplashScreenAnimatedIcon : the launcher foreground drawable
+      postSplashScreenTheme : transitions to the main app theme
+    -->
+    <style name="Theme.ClubDarts.Splash" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">#0E0F11</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_launcher_foreground</item>
+        <item name="postSplashScreenTheme">@style/Theme.ClubDarts</item>
+    </style>
 </resources>

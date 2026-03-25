@@ -4,6 +4,7 @@ import android.app.Activity
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.material3.Slider
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -155,6 +156,74 @@ fun GeneralSettingsScreen(
                     onCheckedChange = { viewModel.setAnimationsEnabled(it) },
                     colors = SwitchDefaults.colors(checkedThumbColor = Background, checkedTrackColor = Accent)
                 )
+            }
+
+            Text(
+                text = stringResource(R.string.general_sound_effects_label),
+                style = MaterialTheme.typography.labelMedium,
+                color = TextSecondary,
+                modifier = Modifier.padding(bottom = 4.dp)
+            )
+
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(Surface, RoundedCornerShape(10.dp))
+                    .padding(horizontal = 16.dp, vertical = 10.dp)
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = stringResource(R.string.general_sound_effects_label),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = TextPrimary
+                        )
+                        Text(
+                            text = stringResource(R.string.general_sound_effects_subtitle),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = TextSecondary
+                        )
+                    }
+                    Switch(
+                        checked = !uiState.soundEffectsMuted,
+                        onCheckedChange = { viewModel.setSoundEffectsMuted(!it) },
+                        colors = SwitchDefaults.colors(checkedThumbColor = Background, checkedTrackColor = Accent)
+                    )
+                }
+                if (!uiState.soundEffectsMuted) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = stringResource(R.string.general_sound_effects_volume_label),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = TextSecondary,
+                            modifier = Modifier.width(60.dp)
+                        )
+                        Slider(
+                            value = uiState.soundEffectsVolume,
+                            onValueChange = { viewModel.setSoundEffectsVolume(it) },
+                            valueRange = 0f..1f,
+                            modifier = Modifier.weight(1f),
+                            colors = SliderDefaults.colors(
+                                thumbColor = Accent,
+                                activeTrackColor = Accent,
+                                inactiveTrackColor = Surface3
+                            )
+                        )
+                        Text(
+                            text = "${(uiState.soundEffectsVolume * 100).toInt()}%",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = TextSecondary,
+                            modifier = Modifier.width(36.dp)
+                        )
+                    }
+                }
             }
 
             // Delete all data

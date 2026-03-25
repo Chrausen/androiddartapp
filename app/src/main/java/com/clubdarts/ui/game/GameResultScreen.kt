@@ -18,6 +18,7 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.clubdarts.R
+import com.clubdarts.ui.LocalSoundEffectsService
 import com.clubdarts.ui.game.components.PlayerAvatar
 import com.clubdarts.ui.theme.*
 
@@ -30,6 +31,7 @@ fun GameResultScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val gameSaved = uiState.gameSaved
+    val sounds = LocalSoundEffectsService.current
     var showUndoDialog by remember { mutableStateOf(false) }
 
     // Navigate back to the live screen when undo reverts the game state
@@ -62,6 +64,7 @@ fun GameResultScreen(
 
     // Back-press discards unsaved game and exits to setup
     BackHandler {
+        sounds?.playClick()
         viewModel.discardGame()
         onDone()
     }
@@ -70,12 +73,14 @@ fun GameResultScreen(
         TeamResultScreen(
             uiState = uiState,
             gameSaved = gameSaved,
-            onSave = { viewModel.saveGame() },
+            onSave = { sounds?.playClick(); viewModel.saveGame() },
             onNewGame = {
+                sounds?.playClick()
                 viewModel.repeatGame()
                 onNewGame()
             },
             onDone = {
+                sounds?.playClick()
                 viewModel.discardGame()
                 onDone()
             },
@@ -85,12 +90,14 @@ fun GameResultScreen(
         SingleResultScreen(
             uiState = uiState,
             gameSaved = gameSaved,
-            onSave = { viewModel.saveGame() },
+            onSave = { sounds?.playClick(); viewModel.saveGame() },
             onNewGame = {
+                sounds?.playClick()
                 viewModel.repeatGame()
                 onNewGame()
             },
             onDone = {
+                sounds?.playClick()
                 viewModel.discardGame()
                 onDone()
             },

@@ -31,6 +31,9 @@
     <string name="language_german">German</string>
     <string name="general_animations_label">Animations</string>
     <string name="general_animations_subtitle">Player strip slide animation on turn change</string>
+    <string name="general_sound_effects_label">Sound Effects</string>
+    <string name="general_sound_effects_subtitle">Play sounds on dart throws and button presses</string>
+    <string name="general_sound_effects_volume_label">Volume</string>
 
     <!-- Common buttons / actions -->
     <string name="btn_delete">Delete</string>

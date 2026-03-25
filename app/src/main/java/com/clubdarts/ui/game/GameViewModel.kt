@@ -11,6 +11,7 @@ import com.clubdarts.data.repository.PlayerRepository
 import com.clubdarts.data.repository.SettingsRepository
 import com.clubdarts.util.CheckoutCalculator
 import com.clubdarts.util.ScoringEngine
+import com.clubdarts.util.SoundEffectsService
 import com.clubdarts.util.TtsManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -81,6 +82,7 @@ data class GameUiState(
     val snackbarMessage: String? = null,
     val gameSaved: Boolean = false,
     val isTtsMuted: Boolean = false,
+    val isSoundEffectsMuted: Boolean = false,
     val showHistory: Boolean = false,
     // Setup persistence across tab switches
     val setupSelectedPlayerIds: List<Long> = emptyList(),
@@ -106,7 +108,8 @@ class GameViewModel @Inject constructor(
     private val gameRepository: GameRepository,
     private val settingsRepository: SettingsRepository,
     private val playerRepository: PlayerRepository,
-    private val eloRepository: EloRepository
+    private val eloRepository: EloRepository,
+    private val soundEffectsService: SoundEffectsService
 ) : AndroidViewModel(application) {
 
     private val _uiState = MutableStateFlow(GameUiState())
@@ -156,6 +159,20 @@ class GameViewModel @Inject constructor(
 
     fun toggleTtsMute() { _uiState.update { it.copy(isTtsMuted = !it.isTtsMuted) } }
 
+    fun toggleSoundEffectsMute() {
+        val newValue = !_uiState.value.isSoundEffectsMuted
+        _uiState.update { it.copy(isSoundEffectsMuted = newValue) }
+        soundEffectsService.setMuted(newValue)
+        viewModelScope.launch { settingsRepository.setSoundEffectsMuted(newValue) }
+    }
+
+    /** Play a UI click sound — silenced when the live game is active. */
+    fun playUiClick() {
+        if (_uiState.value.screen != GameScreen.LIVE) {
+            soundEffectsService.playClick()
+        }
+    }
+
     fun toggleHistory() {
         val newValue = !_uiState.value.showHistory
         _uiState.update { it.copy(showHistory = newValue) }
@@ -187,12 +204,17 @@ class GameViewModel @Inject constructor(
                 val randomOrder = settingsRepository.getLastRandomOrder()
                 val recentIds = settingsRepository.getRecentPlayerIds()
                 val showHistory = settingsRepository.getShowHistory()
+                val soundEffectsMuted = settingsRepository.getSoundEffectsMuted()
+                val soundEffectsVolume = settingsRepository.getSoundEffectsVolume()
+                soundEffectsService.setVolume(soundEffectsVolume)
                 val gameMode = try { GameMode.valueOf(settingsRepository.getLastGameMode()) } catch (e: Exception) { GameMode.SINGLE }
                 val rankedStartScore = settingsRepository.getRankingStartScore()
                 val rankedCheckoutRule = settingsRepository.getRankingCheckoutRule()
                 val rankedLegsToWin = settingsRepository.getRankingLegsToWin()
+                soundEffectsService.setMuted(soundEffectsMuted)
                 _uiState.update { it.copy(
                     showHistory = showHistory,
+                    isSoundEffectsMuted = soundEffectsMuted,
                     setupGameMode = gameMode,
                     rankedStartScore = rankedStartScore,
                     rankedCheckoutRule = rankedCheckoutRule,
@@ -233,6 +255,8 @@ class GameViewModel @Inject constructor(
         val newDarts = state.currentDarts + dart
         _uiState.update { it.copy(currentDarts = newDarts, pendingMultiplier = 1) }
 
+        if (!_uiState.value.isSoundEffectsMuted) soundEffectsService.playRandomThrow()
+
         val currentState = _uiState.value
         val currentPlayer = currentState.players.getOrNull(currentState.currentPlayerIndex) ?: return
         val remaining = currentState.remainingFor(currentPlayer.id)
@@ -252,6 +276,7 @@ class GameViewModel @Inject constructor(
         val state = _uiState.value
         val newDarts = state.currentDarts + dart
         _uiState.update { it.copy(currentDarts = newDarts, pendingMultiplier = 1) }
+        if (!_uiState.value.isSoundEffectsMuted) soundEffectsService.playRandomThrow()
         if (_uiState.value.currentDarts.size >= 3) {
             resolveVisit()
         } else {
@@ -359,6 +384,14 @@ class GameViewModel @Inject constructor(
                 isCheckout = isCheckout,
                 customPhrases = customPhrases
             )
+        }
+
+        if (!_uiState.value.isSoundEffectsMuted) {
+            when {
+                isCheckout -> soundEffectsService.playCheckout()
+                isBust     -> soundEffectsService.playBust()
+                else       -> Unit
+            }
         }
 
         val nextPlayerIndex = (state.currentPlayerIndex + 1) % state.players.size

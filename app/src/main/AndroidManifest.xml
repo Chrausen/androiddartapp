@@ -4,6 +4,8 @@
     <application
         android:name="com.clubdarts.ClubDartsApp"
         android:label="@string/app_name"
+        android:icon="@mipmap/ic_launcher"
+        android:roundIcon="@mipmap/ic_launcher_round"
         android:allowBackup="true"
         android:supportsRtl="true"
         android:theme="@style/Theme.ClubDarts">
@@ -11,7 +13,8 @@
         <activity
             android:name="com.clubdarts.MainActivity"
             android:exported="true"
-            android:screenOrientation="portrait">
+            android:screenOrientation="portrait"
+            android:theme="@style/Theme.ClubDarts.Splash">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
