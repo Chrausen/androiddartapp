@@ -95,6 +95,11 @@ class GameRepository @Inject constructor(
         legDao.updateLeg(leg.copy(winnerId = winnerId, finishedAt = System.currentTimeMillis()))
     }
 
+    suspend fun unfinishLeg(legId: Long) {
+        val leg = legDao.getLegById(legId) ?: return
+        legDao.updateLeg(leg.copy(winnerId = null, finishedAt = null))
+    }
+
     suspend fun finishGame(gameId: Long, winnerId: Long?, winningTeamIndex: Int? = null) {
         val game = gameDao.getGameById(gameId) ?: return
         gameDao.updateGame(game.copy(
@@ -102,6 +107,11 @@ class GameRepository @Inject constructor(
             winningTeamIndex = winningTeamIndex,
             finishedAt = System.currentTimeMillis()
         ))
+    }
+
+    suspend fun unfinishGame(gameId: Long) {
+        val game = gameDao.getGameById(gameId) ?: return
+        gameDao.updateGame(game.copy(winnerId = null, winningTeamIndex = null, finishedAt = null))
     }
 
     suspend fun deleteGame(gameId: Long) {

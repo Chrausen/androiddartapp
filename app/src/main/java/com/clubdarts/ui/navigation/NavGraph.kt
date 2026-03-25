@@ -123,6 +123,12 @@ fun ClubDartsNavHost(
                             launchSingleTop = true
                         }
                     },
+                    onUndoToLive = {
+                        navController.navigate("game/live") {
+                            popUpTo("game/result") { inclusive = true }
+                            launchSingleTop = true
+                        }
+                    },
                     viewModel = gameViewModel
                 )
             }
