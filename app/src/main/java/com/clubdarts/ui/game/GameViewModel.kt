@@ -54,6 +54,19 @@ data class SetupDefaults(
     val gameMode: GameMode = GameMode.SINGLE
 )
 
+/**
+ * Immutable snapshot of everything the game screens need to render.
+ *
+ * Fields are grouped logically:
+ * - **Screen routing**: [screen]
+ * - **Single-player mode**: [scores], [legWins] — keyed by `playerId`
+ * - **Team mode**: [isTeamGame], [teamAssignments], [teamScores], [teamLegWins] — keyed by team index (0=A, 1=B)
+ * - **Current visit**: [currentDarts], [pendingMultiplier], [checkoutHint]
+ * - **Setup persistence**: `setup*` fields remember the UI selection across tab switches so the
+ *   player/team picker doesn't reset when the user navigates away and back.
+ * - **Ranked / Elo**: `ranked*` fields hold the *locked* config loaded from ranking settings;
+ *   [eloResults] and [eloMatchId] are populated after a ranked game ends and are cleared by undo.
+ */
 data class GameUiState(
     val screen: GameScreen = GameScreen.SETUP,
     val config: GameConfig? = null,
@@ -84,24 +97,46 @@ data class GameUiState(
     val isTtsMuted: Boolean = false,
     val isSoundEffectsMuted: Boolean = false,
     val showHistory: Boolean = false,
-    // Setup persistence across tab switches
+    // Setup persistence: remembered across tab switches so the picker doesn't reset on navigation
     val setupSelectedPlayerIds: List<Long> = emptyList(),
     val setupGameMode: GameMode = GameMode.SINGLE,
     val setupTeamAPlayerIds: List<Long> = emptyList(),
     val setupTeamBPlayerIds: List<Long> = emptyList(),
     // Ranking
-    val rankingEnabled: Boolean = false,
-    val isRanked: Boolean = false,
-    // Locked config for ranked matches (loaded from ranking settings)
+    val rankingEnabled: Boolean = false,  // mirrors the global ranking-enabled setting
+    val isRanked: Boolean = false,        // whether the user toggled ranked mode for THIS game
+    // Locked config for ranked matches (loaded once from ranking settings; cannot be changed mid-game)
     val rankedStartScore: Int = 501,
     val rankedCheckoutRule: CheckoutRule = CheckoutRule.DOUBLE,
     val rankedLegsToWin: Int = 1,
-    // playerId -> signed elo change (positive = gain, negative = loss)
+    // playerId → signed Elo change (positive = gain, negative = loss); null until game ends
     val eloResults: Map<Long, Double>? = null,
-    // ID of the EloMatch record created when a ranked game ended (used for undo)
+    // ID of the EloMatch record created when a ranked game ended (used for undo via EloRepository.revertMatch)
     val eloMatchId: Long? = null
 )
 
+/**
+ * Single ViewModel for the entire game flow (SETUP → LIVE → RESULT).
+ *
+ * All three screens — GameSetupScreen, LiveGameScreen, and GameResultScreen — share this
+ * ViewModel so that game state survives navigation between them without being serialised to
+ * SavedState or re-fetched from the database.
+ *
+ * ## State machine
+ * ```
+ *   SETUP ──startGame()──► LIVE ──onLegWon() (enough legs)──► RESULT
+ *     ▲                      │                                    │
+ *     └──abortGame()─────────┘   undoLastThrowOnResult() ───────►LIVE
+ *     └──discardGame() / repeatGame() ◄──────────────────────────┘
+ * ```
+ *
+ * ## Key design notes
+ * - Scoring / bust logic lives in ScoringEngine and CheckoutCalculator (pure Kotlin, unit-tested).
+ * - Both single-player mode (per-player [GameUiState.scores] map) and team mode
+ *   ([GameUiState.teamScores] map) are tracked in the same state; [GameUiState.isTeamGame] selects
+ *   which is active at runtime.
+ * - Ranked games auto-save and record Elo atomically inside [onLegWon] when the match is decided.
+ */
 @HiltViewModel
 class GameViewModel @Inject constructor(
     application: Application,
@@ -117,6 +152,8 @@ class GameViewModel @Inject constructor(
 
     private val ttsManager = TtsManager(application)
     private var ttsScoreSettings: List<TtsScoreSetting> = emptyList()
+
+    // ── Initialisation & lifecycle ────────────────────────────────────────────
 
     init {
         ttsManager.init()
@@ -157,6 +194,8 @@ class GameViewModel @Inject constructor(
         ttsManager.shutdown()
     }
 
+    // ── Audio helpers (available on all screens) ─────────────────────────────
+
     fun toggleTtsMute() { _uiState.update { it.copy(isTtsMuted = !it.isTtsMuted) } }
 
     fun toggleSoundEffectsMute() {
@@ -178,6 +217,8 @@ class GameViewModel @Inject constructor(
         _uiState.update { it.copy(showHistory = newValue) }
         viewModelScope.launch { settingsRepository.setShowHistory(newValue) }
     }
+
+    // ── Setup screen ──────────────────────────────────────────────────────────
 
     fun setRanked(v: Boolean) {
         _uiState.update { it.copy(isRanked = v) }
@@ -233,6 +274,8 @@ class GameViewModel @Inject constructor(
             }
         }
     }
+
+    // ── Live game: dart entry ─────────────────────────────────────────────────
 
     fun setMultiplier(mult: Int) {
         _uiState.update { it.copy(pendingMultiplier = mult) }
@@ -297,6 +340,8 @@ class GameViewModel @Inject constructor(
         } else null
         _uiState.update { it.copy(checkoutHint = hint) }
     }
+
+    // ── Live game: visit resolution ───────────────────────────────────────────
 
     private fun resolveVisit() {
         val state = _uiState.value
@@ -411,6 +456,8 @@ class GameViewModel @Inject constructor(
             onLegWon(currentPlayer.id)
         }
     }
+
+    // ── Live game: undo ───────────────────────────────────────────────────────
 
     fun undoLastDart() {
         val state = _uiState.value
@@ -563,6 +610,8 @@ class GameViewModel @Inject constructor(
             }
         }
     }
+
+    // ── Game start & leg/game completion ─────────────────────────────────────
 
     fun startGame(config: GameConfig) {
         viewModelScope.launch {
@@ -737,6 +786,8 @@ class GameViewModel @Inject constructor(
         }
     }
 
+    // ── Result screen ─────────────────────────────────────────────────────────
+
     fun repeatGame() {
         viewModelScope.launch {
             val state = _uiState.value
@@ -843,7 +894,9 @@ class GameViewModel @Inject constructor(
         _uiState.update { it.copy(errorMessage = null) }
     }
 
-    // Helper: get the remaining score for a player (team or individual)
+    // ── Helpers ───────────────────────────────────────────────────────────────
+
+    // Returns the remaining score for a player, routing through the team score map in team mode.
     private fun GameUiState.remainingFor(playerId: Long): Int {
         return if (isTeamGame) {
             val teamIdx = teamAssignments[playerId] ?: 0
