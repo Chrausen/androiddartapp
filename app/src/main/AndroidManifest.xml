@@ -15,6 +15,7 @@
         <activity
             android:name="com.clubdarts.MainActivity"
             android:exported="true"
+            android:resizeableActivity="true"
             android:screenOrientation="portrait"
             android:theme="@style/Theme.ClubDarts.Splash">
             <intent-filter>

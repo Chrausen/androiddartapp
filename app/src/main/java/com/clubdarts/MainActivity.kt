@@ -2,7 +2,7 @@ package com.clubdarts
 
 import android.content.Context
 import android.content.res.Configuration
-import android.os.Build
+import android.content.res.Resources
 import android.os.Bundle
 import android.os.LocaleList
 import androidx.activity.ComponentActivity
@@ -25,19 +25,26 @@ class MainActivity : ComponentActivity() {
     @Inject lateinit var settingsRepository: SettingsRepository
     @Inject lateinit var soundEffectsService: SoundEffectsService
 
+    // Resolved before super.attachBaseContext() so getResources() can use it.
+    private var localeOverride: Locale? = null
+
     override fun attachBaseContext(newBase: Context) {
         val prefs = newBase.getSharedPreferences(GeneralSettingsViewModel.PREFS_NAME, Context.MODE_PRIVATE)
         val lang = prefs.getString(GeneralSettingsViewModel.KEY_LANGUAGE, "en") ?: "en"
         val locale = Locale.forLanguageTag(lang)
         Locale.setDefault(locale)
-        val config = Configuration(newBase.resources.configuration)
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            config.setLocales(LocaleList(locale))
-        } else {
-            @Suppress("DEPRECATION")
-            config.locale = locale
-        }
-        super.attachBaseContext(newBase.createConfigurationContext(config))
+        localeOverride = locale
+        // Pass newBase unmodified so Hilt's context chain stays intact.
+        // On Android 13+, wrapping with createConfigurationContext() here breaks
+        // Hilt's applicationContext resolution and causes a crash at injection time.
+        super.attachBaseContext(newBase)
+    }
+
+    override fun getResources(): Resources {
+        val locale = localeOverride ?: return super.getResources()
+        val config = Configuration(super.getResources().configuration)
+        config.setLocales(LocaleList(locale))
+        return createConfigurationContext(config).resources
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
