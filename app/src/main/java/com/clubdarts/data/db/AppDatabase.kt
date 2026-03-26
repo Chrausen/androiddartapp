@@ -75,6 +75,14 @@ val MIGRATION_5_6 = object : Migration(5, 6) {
     }
 }
 
+val MIGRATION_6_7 = object : Migration(6, 7) {
+    override fun migrate(database: SupportSQLiteDatabase) { }
+}
+
+val MIGRATION_7_8 = object : Migration(7, 8) {
+    override fun migrate(database: SupportSQLiteDatabase) { }
+}
+
 @Database(
     entities = [Player::class, Game::class, GamePlayer::class,
                 Leg::class, Throw::class, AppSettings::class,

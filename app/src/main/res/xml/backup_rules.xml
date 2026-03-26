@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Legacy full-backup rules for Android < 12 (API < 31).
+  Mirrors the data-extraction-rules.xml exclusions for older devices.
+-->
+<full-backup-content>
+    <exclude domain="database" path="clubdarts.db"/>
+    <exclude domain="database" path="clubdarts.db-shm"/>
+    <exclude domain="database" path="clubdarts.db-wal"/>
+</full-backup-content>
