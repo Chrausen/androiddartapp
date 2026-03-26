@@ -2,6 +2,25 @@ package com.clubdarts.util
 
 import com.clubdarts.data.model.CheckoutRule
 
+/**
+ * Checkout hints and checkout-validity checks for x01 darts.
+ *
+ * ## Dart notation used in suggestion strings
+ * - `D14`  = double 14  (28 pts)
+ * - `T20`  = triple 20  (60 pts)
+ * - `Bull` = bullseye   (50 pts, i.e. double 25)
+ * - `·`    = separator between darts in a single visit  (e.g. `"T20 · D20"` = 2-dart finish)
+ *
+ * ## doubleOutTable
+ * A manually verified lookup of standard optimal checkout paths used in professional darts.
+ * Covers all achievable Double-Out finishes from 2 to 170.
+ *
+ * ### Impossible Double-Out scores
+ * The following scores have **no valid Double-Out path** and are therefore absent from the table:
+ * `159, 162, 163, 165, 166, 168, 169` (and anything above 170).
+ * They are impossible because no combination of at most 3 darts — ending on a double — can reach
+ * them exactly.
+ */
 object CheckoutCalculator {
 
     private val doubleOutTable: Map<Int, String> = mapOf(
@@ -175,6 +194,7 @@ object CheckoutCalculator {
         return raw
     }
 
+    // Impossible Double-Out scores: 159, 162, 163, 165, 166, 168, 169 (and >170)
     fun isCheckoutPossible(score: Int, rule: CheckoutRule): Boolean {
         if (score < 1) return false
         return when (rule) {

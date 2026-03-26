@@ -250,117 +250,23 @@ fun GameSetupScreen(
                 SectionLabel(stringResource(R.string.game_options_label))
                 Spacer(modifier = Modifier.height(6.dp))
                 if (isRanked) {
-                    // Locked game mode summary for ranked
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text(stringResource(R.string.game_starting_score), style = MaterialTheme.typography.labelSmall, color = TextSecondary)
-                            Text(rankedStartScore.toString(), style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, color = TextPrimary)
-                        }
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text("Checkout", style = MaterialTheme.typography.labelSmall, color = TextSecondary)
-                            Text(
-                                rankedCheckoutRule.name.lowercase().replaceFirstChar { c -> c.uppercaseChar() },
-                                style = MaterialTheme.typography.labelMedium,
-                                fontWeight = FontWeight.Bold,
-                                color = TextPrimary
-                            )
-                        }
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text(stringResource(R.string.game_legs_to_win), style = MaterialTheme.typography.labelSmall, color = TextSecondary)
-                            Text(rankedLegsToWin.toString(), style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, color = TextPrimary)
-                        }
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text(stringResource(R.string.game_mode_display), style = MaterialTheme.typography.labelSmall, color = TextSecondary)
-                            Text(stringResource(R.string.game_ranked), style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, color = Accent)
-                        }
-                    }
+                    RankedLockedConfigSummary(
+                        startScore = rankedStartScore,
+                        checkoutRule = rankedCheckoutRule,
+                        legsToWin = rankedLegsToWin
+                    )
                 } else {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable(
-                                indication = null,
-                                interactionSource = remember { MutableInteractionSource() }
-                            ) { settingsExpanded = !settingsExpanded }
-                    ) {
-                        AnimatedVisibility(
-                            visible = !settingsExpanded,
-                            enter = expandVertically() + fadeIn(),
-                            exit = shrinkVertically() + fadeOut()
-                        ) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween
-                            ) {
-                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                    Text(stringResource(R.string.game_starting_score), style = MaterialTheme.typography.labelSmall, color = TextSecondary)
-                                    Text(startScore.toString(), style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, color = TextPrimary)
-                                }
-                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                    Text("Checkout", style = MaterialTheme.typography.labelSmall, color = TextSecondary)
-                                    Text(
-                                        checkoutRule.name.lowercase().replaceFirstChar { c -> c.uppercaseChar() },
-                                        style = MaterialTheme.typography.labelMedium,
-                                        fontWeight = FontWeight.Bold,
-                                        color = TextPrimary
-                                    )
-                                }
-                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                    Text(stringResource(R.string.game_legs_to_win), style = MaterialTheme.typography.labelSmall, color = TextSecondary)
-                                    Text(legsToWin.toString(), style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, color = TextPrimary)
-                                }
-                            }
-                        }
-                        AnimatedVisibility(
-                            visible = settingsExpanded,
-                            enter = expandVertically() + fadeIn(),
-                            exit = shrinkVertically() + fadeOut()
-                        ) {
-                            Column {
-                                SectionLabel(stringResource(R.string.game_starting_score))
-                                SegmentedRow(
-                                    options = listOf(201, 301, 401, 501, 701),
-                                    selected = startScore,
-                                    onSelect = { startScore = it },
-                                    label = { it.toString() }
-                                )
-                                Spacer(modifier = Modifier.height(16.dp))
-                                SectionLabel("Checkout rule")
-                                SegmentedRow(
-                                    options = CheckoutRule.values().toList(),
-                                    selected = checkoutRule,
-                                    onSelect = { checkoutRule = it },
-                                    label = { it.name.lowercase().replaceFirstChar { c -> c.uppercaseChar() } }
-                                )
-                                Spacer(modifier = Modifier.height(16.dp))
-                                SectionLabel(stringResource(R.string.game_legs_to_win))
-                                SegmentedRow(
-                                    options = listOf(1, 3, 5, 7, 9),
-                                    selected = legsToWin,
-                                    onSelect = { legsToWin = it },
-                                    label = { it.toString() }
-                                )
-                            }
-                        }
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = 6.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.KeyboardArrowDown,
-                                contentDescription = if (settingsExpanded) stringResource(R.string.live_collapse_settings) else stringResource(R.string.live_expand_settings),
-                                tint = TextTertiary,
-                                modifier = Modifier
-                                    .size(28.dp)
-                                    .rotate(chevronRotation)
-                            )
-                        }
-                    }
+                    CasualConfigPanel(
+                        startScore = startScore,
+                        checkoutRule = checkoutRule,
+                        legsToWin = legsToWin,
+                        expanded = settingsExpanded,
+                        chevronRotation = chevronRotation,
+                        onExpandToggle = { settingsExpanded = !settingsExpanded },
+                        onStartScoreChange = { startScore = it },
+                        onCheckoutRuleChange = { checkoutRule = it },
+                        onLegsToWinChange = { legsToWin = it }
+                    )
                 }
             }
 
@@ -527,6 +433,145 @@ fun GameSetupScreen(
             },
             onDismiss = { showPlayerPicker = false }
         )
+    }
+}
+
+// ---- Game config panels ----
+
+/** Read-only summary of the locked config shown when ranked mode is active. */
+@Composable
+private fun RankedLockedConfigSummary(
+    startScore: Int,
+    checkoutRule: CheckoutRule,
+    legsToWin: Int
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Text(stringResource(R.string.game_starting_score), style = MaterialTheme.typography.labelSmall, color = TextSecondary)
+            Text(startScore.toString(), style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, color = TextPrimary)
+        }
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Text("Checkout", style = MaterialTheme.typography.labelSmall, color = TextSecondary)
+            Text(
+                checkoutRule.name.lowercase().replaceFirstChar { c -> c.uppercaseChar() },
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = FontWeight.Bold,
+                color = TextPrimary
+            )
+        }
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Text(stringResource(R.string.game_legs_to_win), style = MaterialTheme.typography.labelSmall, color = TextSecondary)
+            Text(legsToWin.toString(), style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, color = TextPrimary)
+        }
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Text(stringResource(R.string.game_mode_display), style = MaterialTheme.typography.labelSmall, color = TextSecondary)
+            Text(stringResource(R.string.game_ranked), style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, color = Accent)
+        }
+    }
+}
+
+/**
+ * Collapsible config panel for casual games.
+ * Collapsed: shows a 3-column summary row.
+ * Expanded: shows segmented pickers for start score, checkout rule, and legs-to-win.
+ */
+@Composable
+private fun CasualConfigPanel(
+    startScore: Int,
+    checkoutRule: CheckoutRule,
+    legsToWin: Int,
+    expanded: Boolean,
+    chevronRotation: Float,
+    onExpandToggle: () -> Unit,
+    onStartScoreChange: (Int) -> Unit,
+    onCheckoutRuleChange: (CheckoutRule) -> Unit,
+    onLegsToWinChange: (Int) -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(
+                indication = null,
+                interactionSource = remember { MutableInteractionSource() }
+            ) { onExpandToggle() }
+    ) {
+        AnimatedVisibility(
+            visible = !expanded,
+            enter = expandVertically() + fadeIn(),
+            exit = shrinkVertically() + fadeOut()
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(stringResource(R.string.game_starting_score), style = MaterialTheme.typography.labelSmall, color = TextSecondary)
+                    Text(startScore.toString(), style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, color = TextPrimary)
+                }
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text("Checkout", style = MaterialTheme.typography.labelSmall, color = TextSecondary)
+                    Text(
+                        checkoutRule.name.lowercase().replaceFirstChar { c -> c.uppercaseChar() },
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = TextPrimary
+                    )
+                }
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(stringResource(R.string.game_legs_to_win), style = MaterialTheme.typography.labelSmall, color = TextSecondary)
+                    Text(legsToWin.toString(), style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, color = TextPrimary)
+                }
+            }
+        }
+        AnimatedVisibility(
+            visible = expanded,
+            enter = expandVertically() + fadeIn(),
+            exit = shrinkVertically() + fadeOut()
+        ) {
+            Column {
+                SectionLabel(stringResource(R.string.game_starting_score))
+                SegmentedRow(
+                    options = listOf(201, 301, 401, 501, 701),
+                    selected = startScore,
+                    onSelect = onStartScoreChange,
+                    label = { it.toString() }
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+                SectionLabel("Checkout rule")
+                SegmentedRow(
+                    options = CheckoutRule.values().toList(),
+                    selected = checkoutRule,
+                    onSelect = onCheckoutRuleChange,
+                    label = { it.name.lowercase().replaceFirstChar { c -> c.uppercaseChar() } }
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+                SectionLabel(stringResource(R.string.game_legs_to_win))
+                SegmentedRow(
+                    options = listOf(1, 3, 5, 7, 9),
+                    selected = legsToWin,
+                    onSelect = onLegsToWinChange,
+                    label = { it.toString() }
+                )
+            }
+        }
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 6.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = Icons.Default.KeyboardArrowDown,
+                contentDescription = if (expanded) stringResource(R.string.live_collapse_settings) else stringResource(R.string.live_expand_settings),
+                tint = TextTertiary,
+                modifier = Modifier
+                    .size(28.dp)
+                    .rotate(chevronRotation)
+            )
+        }
     }
 }
 

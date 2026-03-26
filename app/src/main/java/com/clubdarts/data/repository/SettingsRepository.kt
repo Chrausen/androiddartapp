@@ -73,6 +73,29 @@ class SettingsRepository @Inject constructor(
         set(SettingsKeys.RECENT_PLAYER_IDS, trimmed.joinToString(","))
     }
 
+    /**
+     * Deserialises the TTS score-phrase customisations stored under [SettingsKeys.TTS_SCORE_PHRASES].
+     *
+     * Stored as a JSON array with the following schema:
+     * ```json
+     * [
+     *   {
+     *     "score": 100,
+     *     "phrases": [
+     *       { "before": "ton",  "after": "" },
+     *       { "before": "100!", "after": "nice" }
+     *     ]
+     *   }
+     * ]
+     * ```
+     * - `score`   — the visit total that triggers these phrases (e.g. 100, 180).
+     * - `phrases` — one or more [TtsPhrase] objects; a random one is chosen on each announcement.
+     * - `before`  — spoken *before* the score number; `after` — spoken *after* it.
+     *
+     * Returns an empty list on any parse failure so the game continues without announcements.
+     *
+     * @see saveTtsScoreSettings for the matching serialiser.
+     */
     suspend fun getTtsScoreSettings(): List<TtsScoreSetting> {
         val raw = get(SettingsKeys.TTS_SCORE_PHRASES, "[]")
         return try {
@@ -91,6 +114,7 @@ class SettingsRepository @Inject constructor(
         }
     }
 
+    /** Serialises TTS score-phrase customisations to JSON. See [getTtsScoreSettings] for the schema. */
     suspend fun saveTtsScoreSettings(settings: List<TtsScoreSetting>) {
         val arr = JSONArray()
         settings.forEach { setting ->
