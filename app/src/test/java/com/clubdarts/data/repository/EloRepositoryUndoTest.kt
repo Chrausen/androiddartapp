@@ -39,8 +39,9 @@ class EloRepositoryUndoTest {
 
         // Make withTransaction execute the block immediately (no real DB needed)
         mockkStatic("androidx.room.RoomDatabaseKt")
-        coEvery { db.withTransaction(any<suspend () -> Any?>()) } coAnswers {
-            firstArg<suspend () -> Any?>().invoke()
+        coEvery { db.withTransaction(any()) } coAnswers {
+            @Suppress("UNCHECKED_CAST")
+            (args.last() as suspend () -> Any?).invoke()
         }
 
         repo = EloRepository(db, playerDao, eloMatchDao, eloMatchEntryDao, settingsRepository)
