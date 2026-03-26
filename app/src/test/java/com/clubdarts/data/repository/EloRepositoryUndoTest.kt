@@ -1,6 +1,7 @@
 package com.clubdarts.data.repository
 
 import androidx.room.RoomDatabase
+import androidx.room.withTransaction
 import com.clubdarts.data.db.AppDatabase
 import com.clubdarts.data.db.dao.EloMatchDao
 import com.clubdarts.data.db.dao.EloMatchEntryDao
@@ -39,7 +40,7 @@ class EloRepositoryUndoTest {
         // Make withTransaction execute the block immediately (no real DB needed)
         mockkStatic("androidx.room.RoomDatabaseKt")
         coEvery { db.withTransaction(any<suspend () -> Any?>()) } coAnswers {
-            firstArg<suspend () -> Any?>().invoke()
+            secondArg<suspend () -> Any?>().invoke()
         }
 
         repo = EloRepository(db, playerDao, eloMatchDao, eloMatchEntryDao, settingsRepository)

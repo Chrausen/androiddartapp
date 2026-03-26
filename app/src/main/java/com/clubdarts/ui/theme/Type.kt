@@ -4,19 +4,20 @@ import androidx.compose.material3.Typography
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontLoadingStrategy
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 import com.clubdarts.R
 
 val DmSans = FontFamily(
-    Font(R.font.dm_sans_regular, FontWeight.Normal),
-    Font(R.font.dm_sans_medium, FontWeight.Medium),
-    Font(R.font.dm_sans_bold, FontWeight.Bold)
+    Font(R.font.dm_sans_regular, FontWeight.Normal, loadingStrategy = FontLoadingStrategy.Blocking),
+    Font(R.font.dm_sans_medium, FontWeight.Medium, loadingStrategy = FontLoadingStrategy.Blocking),
+    Font(R.font.dm_sans_bold, FontWeight.Bold, loadingStrategy = FontLoadingStrategy.Blocking)
 )
 
 val DmMono = FontFamily(
-    Font(R.font.dm_mono_regular, FontWeight.Normal),
-    Font(R.font.dm_mono_medium, FontWeight.Medium)
+    Font(R.font.dm_mono_regular, FontWeight.Normal, loadingStrategy = FontLoadingStrategy.Blocking),
+    Font(R.font.dm_mono_medium, FontWeight.Medium, loadingStrategy = FontLoadingStrategy.Blocking)
 )
 
 val Typography = Typography(

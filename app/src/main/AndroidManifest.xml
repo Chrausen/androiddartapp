@@ -7,12 +7,15 @@
         android:icon="@mipmap/ic_launcher"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:allowBackup="true"
+        android:dataExtractionRules="@xml/data_extraction_rules"
+        android:fullBackupContent="@xml/backup_rules"
         android:supportsRtl="true"
         android:theme="@style/Theme.ClubDarts">
 
         <activity
             android:name="com.clubdarts.MainActivity"
             android:exported="true"
+            android:resizeableActivity="true"
             android:screenOrientation="portrait"
             android:theme="@style/Theme.ClubDarts.Splash">
             <intent-filter>
