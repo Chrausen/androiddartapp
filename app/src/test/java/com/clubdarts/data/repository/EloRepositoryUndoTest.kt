@@ -39,7 +39,7 @@ class EloRepositoryUndoTest {
 
         // Make withTransaction execute the block immediately (no real DB needed)
         mockkStatic("androidx.room.RoomDatabaseKt")
-        coEvery { db.withTransaction(any()) } coAnswers {
+        coEvery { db.withTransaction(any<suspend () -> Any?>()) } coAnswers {
             @Suppress("UNCHECKED_CAST")
             (args.last() as suspend () -> Any?).invoke()
         }
