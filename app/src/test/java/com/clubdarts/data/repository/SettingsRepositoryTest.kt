@@ -9,8 +9,11 @@ import com.clubdarts.data.model.TtsPhrase
 import com.clubdarts.data.model.TtsScoreSetting
 import io.mockk.coEvery
 import io.mockk.coVerify
+import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -371,5 +374,202 @@ class SettingsRepositoryTest {
     fun `setShowHistory persists true`() = runTest {
         repo.setShowHistory(true)
         coVerify { dao.set(AppSettings(SettingsKeys.SHOW_HISTORY, "true")) }
+    }
+
+    // -----------------------------------------------------------------------
+    // observe
+    // -----------------------------------------------------------------------
+
+    @Test
+    fun `observe emits stored value`() = runTest {
+        every { dao.observe("key") } returns flowOf(AppSettings("key", "stored"))
+        assertEquals("stored", repo.observe("key", "default").first())
+    }
+
+    @Test
+    fun `observe emits default when dao emits null`() = runTest {
+        every { dao.observe("key") } returns flowOf(null)
+        assertEquals("default", repo.observe("key", "default").first())
+    }
+
+    // -----------------------------------------------------------------------
+    // getLastGameMode / setLastGameMode
+    // -----------------------------------------------------------------------
+
+    @Test
+    fun `getLastGameMode returns stored value`() = runTest {
+        stubKey(SettingsKeys.LAST_GAME_MODE, "TEAMS")
+        assertEquals("TEAMS", repo.getLastGameMode())
+    }
+
+    @Test
+    fun `getLastGameMode returns default when key absent`() = runTest {
+        stubKey(SettingsKeys.LAST_GAME_MODE, null)
+        assertEquals(SettingsDefaults.GAME_MODE, repo.getLastGameMode())
+    }
+
+    @Test
+    fun `setLastGameMode persists value`() = runTest {
+        repo.setLastGameMode("TEAMS")
+        coVerify { dao.set(AppSettings(SettingsKeys.LAST_GAME_MODE, "TEAMS")) }
+    }
+
+    // -----------------------------------------------------------------------
+    // getSoundEffectsMuted / setSoundEffectsMuted
+    // -----------------------------------------------------------------------
+
+    @Test
+    fun `getSoundEffectsMuted returns true when stored`() = runTest {
+        stubKey(SettingsKeys.SOUND_EFFECTS_MUTED, "true")
+        assertTrue(repo.getSoundEffectsMuted())
+    }
+
+    @Test
+    fun `getSoundEffectsMuted returns false by default`() = runTest {
+        stubKey(SettingsKeys.SOUND_EFFECTS_MUTED, null)
+        assertFalse(repo.getSoundEffectsMuted())
+    }
+
+    @Test
+    fun `setSoundEffectsMuted persists value`() = runTest {
+        repo.setSoundEffectsMuted(true)
+        coVerify { dao.set(AppSettings(SettingsKeys.SOUND_EFFECTS_MUTED, "true")) }
+    }
+
+    // -----------------------------------------------------------------------
+    // getSoundEffectsVolume / setSoundEffectsVolume
+    // -----------------------------------------------------------------------
+
+    @Test
+    fun `getSoundEffectsVolume returns stored value`() = runTest {
+        stubKey(SettingsKeys.SOUND_EFFECTS_VOLUME, "0.5")
+        assertEquals(0.5f, repo.getSoundEffectsVolume(), 0.001f)
+    }
+
+    @Test
+    fun `getSoundEffectsVolume defaults to 1f on bad value`() = runTest {
+        stubKey(SettingsKeys.SOUND_EFFECTS_VOLUME, "bad")
+        assertEquals(1f, repo.getSoundEffectsVolume(), 0.001f)
+    }
+
+    @Test
+    fun `getSoundEffectsVolume clamps above 1f to 1f`() = runTest {
+        stubKey(SettingsKeys.SOUND_EFFECTS_VOLUME, "2.0")
+        assertEquals(1f, repo.getSoundEffectsVolume(), 0.001f)
+    }
+
+    @Test
+    fun `setSoundEffectsVolume persists value`() = runTest {
+        repo.setSoundEffectsVolume(0.75f)
+        coVerify { dao.set(AppSettings(SettingsKeys.SOUND_EFFECTS_VOLUME, "0.75")) }
+    }
+
+    // -----------------------------------------------------------------------
+    // Ranking setters
+    // -----------------------------------------------------------------------
+
+    @Test
+    fun `setRankingEnabled persists value`() = runTest {
+        repo.setRankingEnabled(true)
+        coVerify { dao.set(AppSettings(SettingsKeys.RANKING_ENABLED, "true")) }
+    }
+
+    @Test
+    fun `setRankingKFactor persists value`() = runTest {
+        repo.setRankingKFactor(64)
+        coVerify { dao.set(AppSettings(SettingsKeys.RANKING_K_FACTOR, "64")) }
+    }
+
+    @Test
+    fun `setRankingStartScore persists value`() = runTest {
+        repo.setRankingStartScore(1001)
+        coVerify { dao.set(AppSettings(SettingsKeys.RANKING_START_SCORE, "1001")) }
+    }
+
+    @Test
+    fun `setRankingCheckoutRule persists value`() = runTest {
+        repo.setRankingCheckoutRule(CheckoutRule.STRAIGHT)
+        coVerify { dao.set(AppSettings(SettingsKeys.RANKING_CHECKOUT_RULE, "STRAIGHT")) }
+    }
+
+    @Test
+    fun `setRankingLegsToWin persists value`() = runTest {
+        repo.setRankingLegsToWin(5)
+        coVerify { dao.set(AppSettings(SettingsKeys.RANKING_LEGS_TO_WIN, "5")) }
+    }
+
+    // -----------------------------------------------------------------------
+    // observe Flow methods
+    // -----------------------------------------------------------------------
+
+    @Test
+    fun `observeRankingEnabled emits true when stored`() = runTest {
+        every { dao.observe(SettingsKeys.RANKING_ENABLED) } returns
+            flowOf(AppSettings(SettingsKeys.RANKING_ENABLED, "true"))
+        assertTrue(repo.observeRankingEnabled().first())
+    }
+
+    @Test
+    fun `observeRankingEnabled emits false by default`() = runTest {
+        every { dao.observe(SettingsKeys.RANKING_ENABLED) } returns flowOf(null)
+        assertFalse(repo.observeRankingEnabled().first())
+    }
+
+    @Test
+    fun `observeRankingStartScore emits parsed value`() = runTest {
+        every { dao.observe(SettingsKeys.RANKING_START_SCORE) } returns
+            flowOf(AppSettings(SettingsKeys.RANKING_START_SCORE, "701"))
+        assertEquals(701, repo.observeRankingStartScore().first())
+    }
+
+    @Test
+    fun `observeRankingStartScore emits 501 on bad value`() = runTest {
+        every { dao.observe(SettingsKeys.RANKING_START_SCORE) } returns flowOf(null)
+        assertEquals(501, repo.observeRankingStartScore().first())
+    }
+
+    @Test
+    fun `observeRankingCheckoutRule emits parsed rule`() = runTest {
+        every { dao.observe(SettingsKeys.RANKING_CHECKOUT_RULE) } returns
+            flowOf(AppSettings(SettingsKeys.RANKING_CHECKOUT_RULE, "STRAIGHT"))
+        assertEquals(CheckoutRule.STRAIGHT, repo.observeRankingCheckoutRule().first())
+    }
+
+    @Test
+    fun `observeRankingCheckoutRule emits DOUBLE on bad value`() = runTest {
+        every { dao.observe(SettingsKeys.RANKING_CHECKOUT_RULE) } returns
+            flowOf(AppSettings(SettingsKeys.RANKING_CHECKOUT_RULE, "BAD"))
+        assertEquals(CheckoutRule.DOUBLE, repo.observeRankingCheckoutRule().first())
+    }
+
+    @Test
+    fun `observeRankingLegsToWin emits parsed value`() = runTest {
+        every { dao.observe(SettingsKeys.RANKING_LEGS_TO_WIN) } returns
+            flowOf(AppSettings(SettingsKeys.RANKING_LEGS_TO_WIN, "3"))
+        assertEquals(3, repo.observeRankingLegsToWin().first())
+    }
+
+    @Test
+    fun `observeRankingLegsToWin emits 1 by default`() = runTest {
+        every { dao.observe(SettingsKeys.RANKING_LEGS_TO_WIN) } returns flowOf(null)
+        assertEquals(1, repo.observeRankingLegsToWin().first())
+    }
+
+    @Test
+    fun `observeTtsScoreSettings parses valid JSON`() = runTest {
+        val json = """[{"score":180,"phrases":[{"before":"Max","after":""}]}]"""
+        every { dao.observe(SettingsKeys.TTS_SCORE_PHRASES) } returns
+            flowOf(AppSettings(SettingsKeys.TTS_SCORE_PHRASES, json))
+        val result = repo.observeTtsScoreSettings().first()
+        assertEquals(1, result.size)
+        assertEquals(180, result[0].score)
+        assertEquals(TtsPhrase("Max", ""), result[0].phrases[0])
+    }
+
+    @Test
+    fun `observeTtsScoreSettings returns empty list on malformed JSON`() = runTest {
+        every { dao.observe(SettingsKeys.TTS_SCORE_PHRASES) } returns
+            flowOf(AppSettings(SettingsKeys.TTS_SCORE_PHRASES, "not-json"))
+        assertTrue(repo.observeTtsScoreSettings().first().isEmpty())
     }
 }

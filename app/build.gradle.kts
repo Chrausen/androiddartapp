@@ -126,6 +126,7 @@ val coverageExclusions = listOf(
     "**/ClubDartsApp*",
     "**/MainActivity*",
     "**/util/TtsManager*",
+    "**/util/SoundEffectsService*",
     "**/*\$*",
     "**/R.class",
     "**/R\$*.class",
