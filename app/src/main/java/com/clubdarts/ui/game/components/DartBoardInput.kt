@@ -43,7 +43,7 @@ private const val AUTO_CONFIRM_MS    = 1500
 private const val DAMP_MIN           = 0.1f
 private const val DAMP_MAX           = 1.0f
 private const val DAMP_DISTANCE_PX   = 60f
-private const val HIGHLIGHT_BASE_ALPHA = 0.38f
+private const val HIGHLIGHT_BASE_ALPHA = 0.55f
 private const val RING_RADIUS_MM     = 11f
 private const val RING_LINE_WIDTH_MM = 2.2f
 
@@ -405,8 +405,7 @@ fun DartBoardInput(
 
             // Field highlight (drawn below everything else on the overlay)
             if (score != null) {
-                val alpha = if (isDragging) HIGHLIGHT_BASE_ALPHA
-                            else (HIGHLIGHT_BASE_ALPHA * (1f - progress)).coerceAtLeast(0f)
+                val alpha = HIGHLIGHT_BASE_ALPHA
                 if (alpha > 0.01f) {
                     drawFieldHighlight(score, cx, cy, s, alpha)
                 }
@@ -493,8 +492,10 @@ private fun DrawScope.drawFieldHighlight(
 ) {
     if (score.score == 0) return   // miss – no highlight
 
-    val isOddSegSingle = score.segIdx >= 0 && score.segIdx % 2 != 0 && score.multiplier == 1
-    val highlightColor = if (isOddSegSingle) Color(0xFF1E1E1E).copy(alpha = alpha)
+    // Even-index single beds are cream (light background) → dark overlay for contrast.
+    // Odd-index singles are black, all rings and bull zones are coloured → white overlay.
+    val isEvenSegSingle = score.segIdx >= 0 && score.segIdx % 2 == 0 && score.multiplier == 1
+    val highlightColor = if (isEvenSegSingle) Color(0xFF1A1A1A).copy(alpha = alpha)
                          else Color.White.copy(alpha = alpha)
 
     when {
