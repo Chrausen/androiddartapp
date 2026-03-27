@@ -81,6 +81,8 @@
     <string name="live_unmute_tts">Unmute TTS</string>
     <string name="live_hide_history">Hide history</string>
     <string name="live_show_history">Show history</string>
+    <string name="live_show_board_input">Switch to board input</string>
+    <string name="live_hide_board_input">Switch to numpad</string>
     <string name="live_expand_settings">Expand settings</string>
     <string name="live_collapse_settings">Collapse settings</string>
     <string name="dialog_abort_game_title">Abort game?</string>

@@ -24,7 +24,13 @@ import javax.inject.Inject
 enum class GameScreen { SETUP, LIVE, RESULT }
 enum class GameMode { SINGLE, TEAMS }
 
-data class DartInput(val score: Int, val multiplier: Int) {
+data class DartInput(
+    val score: Int,
+    val multiplier: Int,
+    // Board mm coordinates from centre (null when thrown via numpad)
+    val boardX: Float? = null,
+    val boardY: Float? = null
+) {
     val value: Int get() = score * multiplier
     fun label(): String = when {
         score == 0      -> "Miss"
@@ -327,6 +333,26 @@ class GameViewModel @Inject constructor(
         }
     }
 
+    /** Record a dart thrown via the touch board. Coordinates are in board mm from centre. */
+    fun recordBoardDart(score: Int, multiplier: Int, boardX: Float, boardY: Float) {
+        val dart = DartInput(score = score, multiplier = multiplier, boardX = boardX, boardY = boardY)
+        val state = _uiState.value
+        val newDarts = state.currentDarts + dart
+        _uiState.update { it.copy(currentDarts = newDarts, pendingMultiplier = 1) }
+        if (!_uiState.value.isSoundEffectsMuted) soundEffectsService.playRandomThrow()
+        val currentState = _uiState.value
+        val currentPlayer = currentState.players.getOrNull(currentState.currentPlayerIndex) ?: return
+        val remaining = currentState.remainingFor(currentPlayer.id)
+        val soFar = currentState.currentDarts.sumOf { it.value }
+        val rule = currentState.config?.checkoutRule ?: CheckoutRule.DOUBLE
+        when {
+            ScoringEngine.isImmediateBust(remaining, soFar, rule) -> resolveVisit()
+            remaining - soFar == 0 -> resolveVisit()
+            currentState.currentDarts.size >= 3 -> resolveVisit()
+            else -> updateCheckoutHint()
+        }
+    }
+
     private fun updateCheckoutHint() {
         val state = _uiState.value
         val currentPlayer = state.players.getOrNull(state.currentPlayerIndex) ?: return
@@ -397,7 +423,10 @@ class GameViewModel @Inject constructor(
                     dartsUsed = darts.size,
                     visitTotal = if (isBust) 0 else effectiveTotal,
                     isBust = isBust,
-                    isCheckoutAttempt = isCheckoutAttempt
+                    isCheckoutAttempt = isCheckoutAttempt,
+                    dart1X = d1.boardX?.toDouble(), dart1Y = d1.boardY?.toDouble(),
+                    dart2X = d2.boardX?.toDouble(), dart2Y = d2.boardY?.toDouble(),
+                    dart3X = d3.boardX?.toDouble(), dart3Y = d3.boardY?.toDouble()
                 )
                 gameRepository.insertThrow(throw_)
             } catch (e: Exception) {

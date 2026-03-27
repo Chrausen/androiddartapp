@@ -28,5 +28,9 @@ data class Throw(
     val visitTotal: Int,
     val isBust: Boolean = false,
     val isCheckoutAttempt: Boolean = false,
+    // Board-input coordinates in mm from board centre (null when thrown via numpad)
+    val dart1X: Double? = null, val dart1Y: Double? = null,
+    val dart2X: Double? = null, val dart2Y: Double? = null,
+    val dart3X: Double? = null, val dart3Y: Double? = null,
     val createdAt: Long = System.currentTimeMillis()
 )

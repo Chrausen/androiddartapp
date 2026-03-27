@@ -8,6 +8,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Undo
 import androidx.compose.material.icons.automirrored.filled.VolumeUp
+import androidx.compose.material.icons.filled.Adjust
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -27,6 +28,7 @@ import com.clubdarts.R
 import com.clubdarts.ui.settings.GeneralSettingsViewModel
 import com.clubdarts.data.model.CheckoutRule
 import com.clubdarts.data.repository.GameConfig
+import com.clubdarts.ui.game.components.DartBoardInput
 import com.clubdarts.ui.game.components.DartNumpad
 import com.clubdarts.ui.game.components.PlayerStrip
 import com.clubdarts.ui.game.components.VisitHistory
@@ -48,6 +50,7 @@ fun LiveGameScreen(
 
     val snackbarHostState = remember { SnackbarHostState() }
     var showAbortDialog by remember { mutableStateOf(false) }
+    var showBoardInput  by remember { mutableStateOf(false) }
 
     BackHandler { showAbortDialog = true }
 
@@ -77,6 +80,8 @@ fun LiveGameScreen(
                     onToggleMute = { viewModel.toggleTtsMute() },
                     showHistory = uiState.showHistory,
                     onToggleHistory = { viewModel.toggleHistory() },
+                    showBoardInput = showBoardInput,
+                    onToggleBoardInput = { showBoardInput = !showBoardInput },
                     onAbort = { showAbortDialog = true }
                 )
             }
@@ -134,23 +139,35 @@ fun LiveGameScreen(
                 }
             }
 
-            // Numpad — fixed position, never moves
-            DartNumpad(
-                pendingMultiplier = uiState.pendingMultiplier,
-                onMultiplierChange = { viewModel.setMultiplier(it) },
-                onDart = { viewModel.recordDart(it) },
-                onMiss = { viewModel.recordMiss() },
-                modifier = Modifier.fillMaxWidth()
-            )
-
-            // Visit history — only shown when history is enabled
-            if (uiState.showHistory) {
-                VisitHistory(
-                    visits = uiState.visitHistory,
+            // Input area — numpad (default) or board input (when toggled)
+            if (showBoardInput) {
+                DartBoardInput(
+                    currentDarts = uiState.currentDarts,
+                    onDartConfirmed = { score, mult, bx, by ->
+                        viewModel.recordBoardDart(score, mult, bx, by)
+                    },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(bottom = 4.dp)
+                        .aspectRatio(1f)
                 )
+            } else {
+                DartNumpad(
+                    pendingMultiplier = uiState.pendingMultiplier,
+                    onMultiplierChange = { viewModel.setMultiplier(it) },
+                    onDart = { viewModel.recordDart(it) },
+                    onMiss = { viewModel.recordMiss() },
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                // Visit history — only shown when history is enabled and in numpad mode
+                if (uiState.showHistory) {
+                    VisitHistory(
+                        visits = uiState.visitHistory,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(bottom = 4.dp)
+                    )
+                }
             }
         }
     }
@@ -203,6 +220,8 @@ private fun GameStatusBar(
     onToggleMute: () -> Unit,
     showHistory: Boolean,
     onToggleHistory: () -> Unit,
+    showBoardInput: Boolean,
+    onToggleBoardInput: () -> Unit,
     onAbort: () -> Unit
 ) {
     Row(
@@ -253,6 +272,12 @@ private fun GameStatusBar(
                 slashed = isTtsMuted,
                 contentDescription = if (isTtsMuted) stringResource(R.string.live_unmute_tts) else stringResource(R.string.live_mute_tts),
                 onClick = onToggleMute
+            )
+            SlashedIconButton(
+                icon = Icons.Default.Adjust,
+                slashed = !showBoardInput,
+                contentDescription = if (showBoardInput) stringResource(R.string.live_hide_board_input) else stringResource(R.string.live_show_board_input),
+                onClick = onToggleBoardInput
             )
             SlashedIconButton(
                 icon = Icons.Default.History,

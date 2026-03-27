@@ -83,11 +83,22 @@ val MIGRATION_7_8 = object : Migration(7, 8) {
     override fun migrate(database: SupportSQLiteDatabase) { }
 }
 
+val MIGRATION_8_9 = object : Migration(8, 9) {
+    override fun migrate(database: SupportSQLiteDatabase) {
+        database.execSQL("ALTER TABLE throws ADD COLUMN dart1X REAL")
+        database.execSQL("ALTER TABLE throws ADD COLUMN dart1Y REAL")
+        database.execSQL("ALTER TABLE throws ADD COLUMN dart2X REAL")
+        database.execSQL("ALTER TABLE throws ADD COLUMN dart2Y REAL")
+        database.execSQL("ALTER TABLE throws ADD COLUMN dart3X REAL")
+        database.execSQL("ALTER TABLE throws ADD COLUMN dart3Y REAL")
+    }
+}
+
 @Database(
     entities = [Player::class, Game::class, GamePlayer::class,
                 Leg::class, Throw::class, AppSettings::class,
                 EloMatch::class, EloMatchEntry::class],
-    version = 8,
+    version = 9,
     exportSchema = false
 )
 @TypeConverters(Converters::class)
