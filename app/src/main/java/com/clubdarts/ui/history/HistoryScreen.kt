@@ -63,7 +63,7 @@ fun HistoryScreen(
                             modifier = Modifier.padding(vertical = 4.dp)
                         )
                     }
-                    items(items) { summary ->
+                    items(items, key = { it.game.id }) { summary ->
                         GameCard(
                             summary = summary,
                             onClick = { onNavigateToDetail(summary.game.id) }

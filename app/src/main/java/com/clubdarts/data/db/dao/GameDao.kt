@@ -38,6 +38,9 @@ interface GameDao {
     @Query("SELECT * FROM game_players WHERE gameId = :gameId ORDER BY throwOrder ASC")
     suspend fun getGamePlayers(gameId: Long): List<GamePlayer>
 
+    @Query("SELECT * FROM game_players WHERE gameId IN (:gameIds) ORDER BY throwOrder ASC")
+    suspend fun getGamePlayersByGameIds(gameIds: List<Long>): List<GamePlayer>
+
     @Query("DELETE FROM game_players WHERE gameId = :gameId")
     suspend fun deleteGamePlayers(gameId: Long)
 

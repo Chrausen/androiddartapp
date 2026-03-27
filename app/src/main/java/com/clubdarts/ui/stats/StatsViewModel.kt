@@ -62,9 +62,7 @@ class StatsViewModel @Inject constructor(
     private fun observePlayers() {
         viewModelScope.launch {
             playerRepository.getAllPlayers().collect { players ->
-                val averages = players.associate { p ->
-                    p.id to (throwDao.getAverageForPlayer(p.id) ?: 0.0)
-                }
+                val averages = throwDao.getAllPlayerAverages().associate { it.playerId to it.average }
                 _uiState.update { it.copy(players = players, averages = averages) }
             }
         }
