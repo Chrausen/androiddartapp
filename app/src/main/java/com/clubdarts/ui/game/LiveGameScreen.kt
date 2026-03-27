@@ -147,11 +147,8 @@ fun LiveGameScreen(
                         viewModel.recordBoardDart(score, mult, bx, by)
                     },
                     modifier = Modifier
-                        .align(Alignment.CenterHorizontally)
-                        .padding(horizontal = 8.dp, vertical = 4.dp)
-                        .widthIn(max = 280.dp)
                         .fillMaxWidth()
-                        .aspectRatio(1f)
+                        .weight(1f)
                 )
             } else {
                 DartNumpad(
