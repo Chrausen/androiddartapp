@@ -3,7 +3,6 @@ package com.clubdarts.ui.game.components
 import android.graphics.Paint
 import android.graphics.Typeface
 import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.waitForUpOrCancellation
 import androidx.compose.runtime.*
@@ -17,10 +16,12 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.input.pointer.pointerInput
 import com.clubdarts.ui.game.DartInput
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withTimeoutOrNull
 import kotlin.math.*
 
 // ── Dartboard geometry (all radii in mm from board centre) ──────────────────
@@ -211,36 +212,57 @@ fun DartBoardInput(
     Canvas(
         modifier = modifier
             .pointerInput(Unit) {
-                awaitEachGesture {
-                    val pointerScope = this
-                    val currentSize  = Size(size.width.toFloat(), size.height.toFloat())
+                // PointerInputScope is an unrestricted CoroutineScope, so we can use
+                // delay/coroutineScope/launch here. Only AwaitPointerEventScope (the
+                // lambda inside awaitPointerEventScope{}) is @RestrictsSuspension.
+                while (true) {
+                    val currentSize = Size(size.width.toFloat(), size.height.toFloat())
 
-                    val down     = awaitFirstDown(requireUnconsumed = false)
-                    val downPos  = down.position
+                    // Wait for the next finger-down event (unrestricted: uses awaitPointerEventScope internally)
+                    val down = awaitPointerEventScope { awaitFirstDown(requireUnconsumed = false) }
+                    val downPos = down.position
                     down.consume()
 
-                    // Determine whether this is a quick tap or a long press
-                    val upOrNull = withTimeoutOrNull(LONG_PRESS_MS) {
-                        pointerScope.waitForUpOrCancellation()
+                    // Race: delay-timer vs. finger-up.
+                    // If the finger lifts before LONG_PRESS_MS the up-event wins → quick tap.
+                    // If the delay fires first it cancels the coroutineScope → long press.
+                    var longPressOccurred = false
+                    try {
+                        coroutineScope {
+                            val scopeJob = coroutineContext[Job]!!
+                            val timerJob = launch {
+                                delay(LONG_PRESS_MS)
+                                longPressOccurred = true
+                                scopeJob.cancel()   // cancels the sibling awaitPointerEventScope
+                            }
+                            awaitPointerEventScope {
+                                val up = waitForUpOrCancellation()
+                                if (up != null) {
+                                    up.consume()
+                                    placeDart(downPos.x, downPos.y, currentSize)
+                                }
+                            }
+                            // Finger lifted before timeout: cancel only the timer, not the scope
+                            timerJob.cancel()
+                        }
+                    } catch (e: CancellationException) {
+                        // Only rethrow if something external cancelled us (not our own timer)
+                        if (!longPressOccurred) throw e
                     }
 
-                    if (upOrNull != null) {
-                        // ── Quick tap: place (or replace) pending dart ──────────
-                        upOrNull.consume()
-                        placeDart(downPos.x, downPos.y, currentSize)
-                    } else {
-                        // ── Long press: reposition pending dart via drag ─────────
-                        if (hasPending) {
-                            isDragging = true
-                            stopCountdown()
+                    // ── Long press: reposition pending dart via drag ──────────────
+                    if (longPressOccurred && hasPending) {
+                        isDragging = true
+                        stopCountdown()
 
-                            val fingerOriginX = downPos.x
-                            val fingerOriginY = downPos.y
-                            var lastFingerX   = fingerOriginX
-                            var lastFingerY   = fingerOriginY
-                            var dartPosX      = pendingX
-                            var dartPosY      = pendingY
+                        val fingerOriginX = downPos.x
+                        val fingerOriginY = downPos.y
+                        var lastFingerX   = fingerOriginX
+                        var lastFingerY   = fingerOriginY
+                        var dartPosX      = pendingX
+                        var dartPosY      = pendingY
 
+                        awaitPointerEventScope {
                             var pointerDown = true
                             while (pointerDown) {
                                 val event  = awaitPointerEvent()
@@ -248,23 +270,23 @@ fun DartBoardInput(
                                 if (change == null || !change.pressed) {
                                     pointerDown = false
                                 } else {
-                                    val currX    = change.position.x
-                                    val currY    = change.position.y
-                                    val frameDx  = currX - lastFingerX
-                                    val frameDy  = currY - lastFingerY
-                                    lastFingerX  = currX
-                                    lastFingerY  = currY
+                                    val currX   = change.position.x
+                                    val currY   = change.position.y
+                                    val frameDx = currX - lastFingerX
+                                    val frameDy = currY - lastFingerY
+                                    lastFingerX = currX
+                                    lastFingerY = currY
 
-                                    val totalDx  = currX - fingerOriginX
-                                    val totalDy  = currY - fingerOriginY
-                                    val distPx   = sqrt(totalDx * totalDx + totalDy * totalDy)
-                                    val damp     = DAMP_MIN + (DAMP_MAX - DAMP_MIN) *
+                                    val totalDx = currX - fingerOriginX
+                                    val totalDy = currY - fingerOriginY
+                                    val distPx  = sqrt(totalDx * totalDx + totalDy * totalDy)
+                                    val damp    = DAMP_MIN + (DAMP_MAX - DAMP_MIN) *
                                         (distPx / DAMP_DISTANCE_PX).coerceIn(0f, 1f)
 
-                                    dartPosX += frameDx * damp
-                                    dartPosY += frameDy * damp
-                                    pendingX  = dartPosX
-                                    pendingY  = dartPosY
+                                    dartPosX  += frameDx * damp
+                                    dartPosY  += frameDy * damp
+                                    pendingX   = dartPosX
+                                    pendingY   = dartPosY
 
                                     val (mmX, mmY) = canvasToMm(dartPosX, dartPosY, currentSize)
                                     pendingMmX   = mmX
@@ -273,10 +295,10 @@ fun DartBoardInput(
                                     change.consume()
                                 }
                             }
-
-                            isDragging = false
-                            startCountdown()
                         }
+
+                        isDragging = false
+                        startCountdown()
                     }
                 }
             }
