@@ -35,6 +35,7 @@ private const val TREBLE_OUTER_R = 107f
 private const val DOUBLE_INNER_R = 162f
 private const val DOUBLE_OUTER_R = 170f
 private const val NUM_RING_R    = 186f   // where segment numbers sit
+private const val SCALE_BOUNDARY_R = 200f   // virtual outer edge used for scaling; keeps number text inset from canvas edge
 
 // ── Interaction constants ───────────────────────────────────────────────────
 
@@ -130,7 +131,7 @@ fun DartBoardInput(
 
     // ── Geometry helpers ──────────────────────────────────────────────────────
     fun scale(size: Size) =
-        if (size.width > 0f && size.height > 0f) minOf(size.width, size.height) / 2f / NUM_RING_R else 1f
+        if (size.width > 0f && size.height > 0f) minOf(size.width, size.height) / 2f / SCALE_BOUNDARY_R else 1f
 
     fun mmToPx(mm: Float, size: Size) = mm * scale(size)
     fun boardCx(size: Size) = size.width  / 2f

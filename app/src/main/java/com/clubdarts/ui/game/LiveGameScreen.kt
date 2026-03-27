@@ -141,15 +141,22 @@ fun LiveGameScreen(
 
             // Input area — numpad (default) or board input (when toggled)
             if (showBoardInput) {
-                DartBoardInput(
-                    currentDarts = uiState.currentDarts,
-                    onDartConfirmed = { score, mult, bx, by ->
-                        viewModel.recordBoardDart(score, mult, bx, by)
-                    },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .weight(1f)
-                )
+                // BoxWithConstraints gives us the actual available px so we can make
+                // the board a perfect square that fills as much of the width as possible
+                // without overflowing the screen height.
+                BoxWithConstraints(
+                    modifier = Modifier.fillMaxWidth().weight(1f),
+                    contentAlignment = Alignment.Center
+                ) {
+                    val boardSize = minOf(maxWidth, maxHeight)
+                    DartBoardInput(
+                        currentDarts = uiState.currentDarts,
+                        onDartConfirmed = { score, mult, bx, by ->
+                            viewModel.recordBoardDart(score, mult, bx, by)
+                        },
+                        modifier = Modifier.size(boardSize)
+                    )
+                }
             } else {
                 DartNumpad(
                     pendingMultiplier = uiState.pendingMultiplier,
