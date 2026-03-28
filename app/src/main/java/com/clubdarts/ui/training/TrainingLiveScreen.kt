@@ -4,12 +4,10 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Undo
+import androidx.compose.material.icons.filled.Adjust
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -21,15 +19,20 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.clubdarts.R
-import com.clubdarts.data.model.TrainingDifficulty
 import com.clubdarts.data.model.TrainingMode
+import com.clubdarts.ui.game.DartInput
+import com.clubdarts.ui.game.components.DartBoardInput
+import com.clubdarts.ui.game.components.DartNumpad
 import com.clubdarts.ui.theme.*
 
 @Composable
 fun TrainingLiveScreen(
     uiState: TrainingUiState,
     onRecordDart: (String) -> Unit,
+    onRecordBoardDart: (Int, Int, Float, Float) -> Unit,
     onRecordScoringDart: (Int) -> Unit,
+    onSetMultiplier: (Int) -> Unit,
+    onToggleInputMode: () -> Unit,
     onUndo: () -> Unit,
     onAbort: () -> Unit
 ) {
@@ -57,6 +60,19 @@ fun TrainingLiveScreen(
                 color = TextPrimary
             )
             Spacer(Modifier.weight(1f))
+            // Board/Numpad toggle (only for TARGET_FIELD and AROUND_THE_CLOCK)
+            if (session !is LiveSessionState.ScoringRounds) {
+                IconButton(onClick = onToggleInputMode) {
+                    Icon(
+                        Icons.Default.Adjust,
+                        contentDescription = stringResource(
+                            if (uiState.showBoardInput) R.string.live_hide_board_input
+                            else R.string.live_show_board_input
+                        ),
+                        tint = if (uiState.showBoardInput) Accent else TextSecondary
+                    )
+                }
+            }
             IconButton(onClick = onUndo, enabled = canUndo(session)) {
                 Icon(
                     Icons.AutoMirrored.Filled.Undo,
@@ -70,8 +86,22 @@ fun TrainingLiveScreen(
 
         // Session-specific content
         when (session) {
-            is LiveSessionState.TargetField    -> TargetFieldContent(session, onRecordDart)
-            is LiveSessionState.AroundTheClock -> AroundTheClockContent(session, uiState.difficulty, onRecordDart)
+            is LiveSessionState.TargetField    -> TargetFieldContent(
+                session            = session,
+                pendingMultiplier  = uiState.pendingMultiplier,
+                showBoardInput     = uiState.showBoardInput,
+                onRecordDart       = onRecordDart,
+                onRecordBoardDart  = onRecordBoardDart,
+                onSetMultiplier    = onSetMultiplier
+            )
+            is LiveSessionState.AroundTheClock -> AroundTheClockContent(
+                session            = session,
+                pendingMultiplier  = uiState.pendingMultiplier,
+                showBoardInput     = uiState.showBoardInput,
+                onRecordDart       = onRecordDart,
+                onRecordBoardDart  = onRecordBoardDart,
+                onSetMultiplier    = onSetMultiplier
+            )
             is LiveSessionState.ScoringRounds  -> ScoringRoundsContent(session, onRecordScoringDart)
         }
     }
@@ -82,7 +112,11 @@ fun TrainingLiveScreen(
 @Composable
 private fun TargetFieldContent(
     session: LiveSessionState.TargetField,
-    onDart: (String) -> Unit
+    pendingMultiplier: Int,
+    showBoardInput: Boolean,
+    onRecordDart: (String) -> Unit,
+    onRecordBoardDart: (Int, Int, Float, Float) -> Unit,
+    onSetMultiplier: (Int) -> Unit
 ) {
     Column(
         modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp),
@@ -90,7 +124,6 @@ private fun TargetFieldContent(
     ) {
         Spacer(Modifier.height(16.dp))
 
-        // Progress
         LinearProgressIndicator(
             progress = { session.currentIdx / 10f },
             modifier = Modifier.fillMaxWidth().height(6.dp),
@@ -106,7 +139,6 @@ private fun TargetFieldContent(
 
         Spacer(Modifier.height(16.dp))
 
-        // Current target
         Text(
             text = stringResource(R.string.training_target),
             style = MaterialTheme.typography.labelMedium,
@@ -121,9 +153,7 @@ private fun TargetFieldContent(
             color = Accent
         )
 
-        // Misses on current target = throws at the end of the list targeting the current field
         val missCount = session.throws.takeLastWhile { it.targetField == session.currentTarget }.size
-
         if (missCount > 0) {
             Text(
                 text = stringResource(R.string.training_misses_on_target, missCount),
@@ -131,7 +161,6 @@ private fun TargetFieldContent(
                 color = TextTertiary
             )
         }
-
         Spacer(Modifier.height(8.dp))
         Text(
             text = stringResource(R.string.training_total_darts, session.totalDarts),
@@ -141,7 +170,19 @@ private fun TargetFieldContent(
 
         Spacer(Modifier.weight(1f))
 
-        DartInputPad(onDart = onDart)
+        // Darts at the current target — used by DartBoardInput to sync undo / target-change clears
+        val dartsAtCurrentTarget = remember(session.throws, session.currentTarget) {
+            session.throws.takeLastWhile { it.targetField == session.currentTarget }
+        }
+
+        TrainingDartInput(
+            showBoardInput    = showBoardInput,
+            pendingMultiplier = pendingMultiplier,
+            dartsAtTarget     = dartsAtCurrentTarget.size,
+            onRecordDart      = onRecordDart,
+            onRecordBoardDart = onRecordBoardDart,
+            onSetMultiplier   = onSetMultiplier
+        )
         Spacer(Modifier.height(16.dp))
     }
 }
@@ -151,8 +192,11 @@ private fun TargetFieldContent(
 @Composable
 private fun AroundTheClockContent(
     session: LiveSessionState.AroundTheClock,
-    difficulty: TrainingDifficulty,
-    onDart: (String) -> Unit
+    pendingMultiplier: Int,
+    showBoardInput: Boolean,
+    onRecordDart: (String) -> Unit,
+    onRecordBoardDart: (Int, Int, Float, Float) -> Unit,
+    onSetMultiplier: (Int) -> Unit
 ) {
     Column(
         modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp),
@@ -183,9 +227,9 @@ private fun AroundTheClockContent(
         Spacer(Modifier.height(4.dp))
 
         val needsDouble = session.requiresDouble(session.currentNumber)
-        val displayTarget = if (needsDouble) "D${session.currentNumber}" else "${session.currentNumber}"
+        val currentTargetField = if (needsDouble) "D${session.currentNumber}" else "S${session.currentNumber}"
         Text(
-            text = displayTarget,
+            text = if (needsDouble) "D${session.currentNumber}" else "${session.currentNumber}",
             fontSize = 48.sp,
             fontWeight = FontWeight.Bold,
             fontFamily = DmMono,
@@ -208,8 +252,62 @@ private fun AroundTheClockContent(
 
         Spacer(Modifier.weight(1f))
 
-        DartInputPad(onDart = onDart, atcNumber = session.currentNumber, requireDouble = needsDouble)
+        val dartsAtCurrentTarget = remember(session.throws, session.currentNumber) {
+            session.throws.takeLastWhile { it.targetField == currentTargetField }
+        }
+
+        TrainingDartInput(
+            showBoardInput    = showBoardInput,
+            pendingMultiplier = if (needsDouble) 2 else pendingMultiplier,
+            dartsAtTarget     = dartsAtCurrentTarget.size,
+            onRecordDart      = onRecordDart,
+            onRecordBoardDart = onRecordBoardDart,
+            onSetMultiplier   = onSetMultiplier
+        )
         Spacer(Modifier.height(16.dp))
+    }
+}
+
+// ── Shared dart input (Numpad ↔ Board toggle) ─────────────────────────────────
+
+@Composable
+private fun TrainingDartInput(
+    showBoardInput: Boolean,
+    pendingMultiplier: Int,
+    dartsAtTarget: Int,
+    onRecordDart: (String) -> Unit,
+    onRecordBoardDart: (Int, Int, Float, Float) -> Unit,
+    onSetMultiplier: (Int) -> Unit
+) {
+    if (showBoardInput) {
+        // Sync DartBoardInput's confirmed-dot count with darts at the current target.
+        // DartBoardInput only uses currentDarts.size, so we pass a dummy list of the right length.
+        val dummyDarts = remember(dartsAtTarget) {
+            List(dartsAtTarget) { DartInput(0, 1) }
+        }
+        DartBoardInput(
+            currentDarts      = dummyDarts,
+            onDartConfirmed   = { score, mult, bx, by -> onRecordBoardDart(score, mult, bx, by) },
+            modifier          = Modifier
+                .fillMaxWidth()
+                .aspectRatio(1f)
+        )
+    } else {
+        DartNumpad(
+            pendingMultiplier = pendingMultiplier,
+            onMultiplierChange = onSetMultiplier,
+            onDart = { num ->
+                val field = when {
+                    num == 25 && pendingMultiplier == 2 -> "Bullseye"
+                    num == 25                           -> "Bull"
+                    pendingMultiplier == 3              -> "T$num"
+                    pendingMultiplier == 2              -> "D$num"
+                    else                               -> "S$num"
+                }
+                onRecordDart(field)
+            },
+            onMiss = { onRecordDart("Miss") }
+        )
     }
 }
 
@@ -241,7 +339,6 @@ private fun ScoringRoundsContent(
 
         Spacer(Modifier.height(16.dp))
 
-        // Current round dart indicators
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             repeat(3) { i ->
                 val score = session.currentRoundDarts.getOrNull(i)
@@ -251,7 +348,6 @@ private fun ScoringRoundsContent(
 
         Spacer(Modifier.height(12.dp))
 
-        // Stats
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -276,120 +372,13 @@ private fun ScoringRoundsContent(
     }
 }
 
-// ── Input components ──────────────────────────────────────────────────────────
+// ── Scoring numpad ────────────────────────────────────────────────────────────
 
-/**
- * General dart input pad for TARGET_FIELD and AROUND_THE_CLOCK.
- * Layout: multiplier toggle (S/D/T) then number grid + special buttons.
- */
-@Composable
-private fun DartInputPad(
-    onDart: (String) -> Unit,
-    atcNumber: Int? = null,
-    requireDouble: Boolean = false
-) {
-    var multiplier by remember { mutableStateOf(if (requireDouble) "D" else "S") }
-
-    LaunchedEffect(requireDouble) {
-        if (requireDouble) multiplier = "D"
-    }
-
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        // Multiplier row
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            listOf("S", "D", "T").forEach { m ->
-                val isSelected = multiplier == m
-                Box(
-                    modifier = Modifier
-                        .weight(1f)
-                        .background(
-                            color = if (isSelected) Accent else Surface2,
-                            shape = RoundedCornerShape(8.dp)
-                        )
-                        .clickable { multiplier = m }
-                        .padding(vertical = 10.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = when (m) { "S" -> "Single"; "D" -> "Double"; else -> "Triple" },
-                        style = MaterialTheme.typography.labelMedium,
-                        color = if (isSelected) Background else TextSecondary
-                    )
-                }
-            }
-        }
-
-        // Number grid 1-20
-        LazyVerticalGrid(
-            columns = GridCells.Fixed(5),
-            verticalArrangement = Arrangement.spacedBy(6.dp),
-            horizontalArrangement = Arrangement.spacedBy(6.dp),
-            modifier = Modifier.heightIn(max = 200.dp)
-        ) {
-            items((1..20).toList()) { n ->
-                val fieldStr = "$multiplier$n"
-                NumberButton(label = "$n", onClick = { onDart(fieldStr) })
-            }
-        }
-
-        // Special buttons
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            SpecialButton(label = "Bull",     modifier = Modifier.weight(1f), onClick = { onDart("Bull") })
-            SpecialButton(label = "Bullseye", modifier = Modifier.weight(1f), onClick = { onDart("Bullseye") })
-            SpecialButton(label = stringResource(R.string.training_miss), modifier = Modifier.weight(1f), onClick = { onDart("Miss") }, color = Red)
-        }
-    }
-}
-
-@Composable
-private fun NumberButton(label: String, onClick: () -> Unit) {
-    Box(
-        modifier = Modifier
-            .aspectRatio(1f)
-            .background(Surface2, RoundedCornerShape(8.dp))
-            .clickable(onClick = onClick),
-        contentAlignment = Alignment.Center
-    ) {
-        Text(
-            text = label,
-            style = MaterialTheme.typography.bodyMedium,
-            fontFamily = DmMono,
-            color = TextPrimary
-        )
-    }
-}
-
-@Composable
-private fun SpecialButton(label: String, modifier: Modifier, onClick: () -> Unit, color: Color = TextSecondary) {
-    Box(
-        modifier = modifier
-            .background(Surface2, RoundedCornerShape(8.dp))
-            .clickable(onClick = onClick)
-            .padding(vertical = 10.dp),
-        contentAlignment = Alignment.Center
-    ) {
-        Text(text = label, style = MaterialTheme.typography.labelMedium, color = color)
-    }
-}
-
-/**
- * Numpad for SCORING_ROUNDS: enter individual dart scores.
- * Buttons: 0-60 (multiples of 1, with common scores highlighted), plus quick-taps.
- */
 @Composable
 private fun ScoringNumpad(onScore: (Int) -> Unit) {
     var inputBuffer by remember { mutableStateOf("") }
 
-    val currentValue = inputBuffer.toIntOrNull() ?: 0
-
     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-        // Display
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -406,7 +395,6 @@ private fun ScoringNumpad(onScore: (Int) -> Unit) {
             )
         }
 
-        // Digit grid
         val rows = listOf(
             listOf("7", "8", "9"),
             listOf("4", "5", "6"),
@@ -441,8 +429,7 @@ private fun ScoringNumpad(onScore: (Int) -> Unit) {
                                     }
                                     else -> {
                                         val next = inputBuffer + label
-                                        val v = next.toIntOrNull() ?: 0
-                                        if (v <= 180) inputBuffer = next
+                                        if ((next.toIntOrNull() ?: 0) <= 180) inputBuffer = next
                                     }
                                 }
                             },

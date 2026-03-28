@@ -13,19 +13,22 @@ fun TrainingScreen(
 
     when (uiState.screen) {
         TrainingScreenState.SETUP -> TrainingSetupScreen(
-            uiState           = uiState,
-            onSelectPlayer    = viewModel::selectPlayer,
-            onSelectMode      = viewModel::selectMode,
+            uiState            = uiState,
+            onSelectPlayer     = viewModel::selectPlayer,
+            onSelectMode       = viewModel::selectMode,
             onSelectDifficulty = viewModel::selectDifficulty,
-            onStart           = viewModel::startSession,
-            onOpenHeatmap     = onOpenHeatmap
+            onStart            = viewModel::startSession,
+            onOpenHeatmap      = onOpenHeatmap
         )
         TrainingScreenState.LIVE -> TrainingLiveScreen(
-            uiState           = uiState,
-            onRecordDart      = viewModel::recordDart,
+            uiState             = uiState,
+            onRecordDart        = viewModel::recordDart,
+            onRecordBoardDart   = viewModel::recordBoardDart,
             onRecordScoringDart = viewModel::recordScoringDart,
-            onUndo            = viewModel::undoLastDart,
-            onAbort           = viewModel::backToSetup
+            onSetMultiplier     = viewModel::setMultiplier,
+            onToggleInputMode   = viewModel::toggleInputMode,
+            onUndo              = viewModel::undoLastDart,
+            onAbort             = viewModel::backToSetup
         )
         TrainingScreenState.DONE -> TrainingDoneScreen(
             uiState   = uiState,

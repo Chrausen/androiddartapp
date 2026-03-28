@@ -114,7 +114,9 @@ data class TrainingUiState(
     val recentResults: List<TrainingSession> = emptyList(),
     val liveSession: LiveSessionState? = null,
     val lastResult: TrainingSession? = null,
-    val isSaving: Boolean = false
+    val isSaving: Boolean = false,
+    val pendingMultiplier: Int = 1,
+    val showBoardInput: Boolean = false
 )
 
 // ── ViewModel ─────────────────────────────────────────────────────────────────
@@ -161,6 +163,14 @@ class TrainingViewModel @Inject constructor(
         }
     }
 
+    fun setMultiplier(mult: Int) {
+        _uiState.update { it.copy(pendingMultiplier = if (it.pendingMultiplier == mult) 1 else mult) }
+    }
+
+    fun toggleInputMode() {
+        _uiState.update { it.copy(showBoardInput = !it.showBoardInput, pendingMultiplier = 1) }
+    }
+
     // ── Session start ─────────────────────────────────────────────────────────
 
     fun startSession() {
@@ -189,17 +199,30 @@ class TrainingViewModel @Inject constructor(
     /**
      * Record a dart in TARGET_FIELD or AROUND_THE_CLOCK mode.
      * [fieldString] is in the notation "S20", "D5", "T17", "Bull", "Bullseye", "Miss".
+     * [actualMmX]/[actualMmY] are board coordinates in mm from centre (only set via board input).
      */
-    fun recordDart(fieldString: String) {
+    fun recordDart(fieldString: String, actualMmX: Double? = null, actualMmY: Double? = null) {
         val session = _uiState.value.liveSession ?: return
+        _uiState.update { it.copy(pendingMultiplier = 1) }
         when (session) {
-            is LiveSessionState.TargetField    -> recordTargetFieldDart(session, fieldString)
-            is LiveSessionState.AroundTheClock -> recordAtcDart(session, fieldString)
+            is LiveSessionState.TargetField    -> recordTargetFieldDart(session, fieldString, actualMmX, actualMmY)
+            is LiveSessionState.AroundTheClock -> recordAtcDart(session, fieldString, actualMmX, actualMmY)
             is LiveSessionState.ScoringRounds  -> { /* use recordScoringDart */ }
         }
     }
 
-    private fun recordTargetFieldDart(session: LiveSessionState.TargetField, fieldString: String) {
+    /** Record a dart from the board input widget (score+multiplier + exact mm coordinates). */
+    fun recordBoardDart(score: Int, mult: Int, mmX: Float, mmY: Float) {
+        val fieldString = dartToFieldString(score, mult)
+        recordDart(fieldString, mmX.toDouble(), mmY.toDouble())
+    }
+
+    private fun recordTargetFieldDart(
+        session: LiveSessionState.TargetField,
+        fieldString: String,
+        actualMmX: Double?,
+        actualMmY: Double?
+    ) {
         if (session.isComplete) return
         val isHit = fieldString == session.currentTarget
         val (targetX, targetY) = fieldCentroid(session.currentTarget) ?: Pair(null, null)
@@ -208,7 +231,9 @@ class TrainingViewModel @Inject constructor(
             actualField = fieldString,
             isHit       = isHit,
             targetMmX   = targetX,
-            targetMmY   = targetY
+            targetMmY   = targetY,
+            actualMmX   = actualMmX,
+            actualMmY   = actualMmY
         )
         val newThrows = session.throws + record
         val newIdx    = if (isHit) session.currentIdx + 1 else session.currentIdx
@@ -217,7 +242,12 @@ class TrainingViewModel @Inject constructor(
         if (updated.isComplete) finishSession()
     }
 
-    private fun recordAtcDart(session: LiveSessionState.AroundTheClock, fieldString: String) {
+    private fun recordAtcDart(
+        session: LiveSessionState.AroundTheClock,
+        fieldString: String,
+        actualMmX: Double?,
+        actualMmY: Double?
+    ) {
         if (session.isComplete) return
         val isHit = isAtcHit(fieldString, session.currentNumber, session.requireDoubleNums)
         val targetField = if (session.requiresDouble(session.currentNumber)) "D${session.currentNumber}" else "S${session.currentNumber}"
@@ -227,7 +257,9 @@ class TrainingViewModel @Inject constructor(
             actualField = fieldString,
             isHit       = isHit,
             targetMmX   = targetX,
-            targetMmY   = targetY
+            targetMmY   = targetY,
+            actualMmX   = actualMmX,
+            actualMmY   = actualMmY
         )
         val newThrows = session.throws + record
         val newNumber = if (isHit) session.currentNumber + 1 else session.currentNumber
