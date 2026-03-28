@@ -55,7 +55,7 @@ class TrainingRepository @Inject constructor(
 
     /**
      * Returns dart positions (mm from board centre) for a player's games within
-     * the specified game index range [fromIndex..toIndex] (1-based, inclusive).
+     * the specified game index range fromIndex..toIndex (1-based, inclusive).
      * Uses games sorted by createdAt ascending.
      */
     suspend fun getDartCoordinatesForHeatmap(
