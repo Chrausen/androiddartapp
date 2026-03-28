@@ -20,6 +20,7 @@ sealed class BottomNavItem(
 ) {
     object Game     : BottomNavItem("game",     R.string.nav_game,     Icons.Default.RadioButtonUnchecked)
     object Stats    : BottomNavItem("stats",    R.string.nav_stats,    Icons.Default.BarChart)
+    object Training : BottomNavItem("training", R.string.nav_training, Icons.Default.FitnessCenter)
     object History  : BottomNavItem("history",  R.string.nav_history,  Icons.Default.History)
     object Rankings : BottomNavItem("rankings", R.string.nav_rankings, Icons.Default.EmojiEvents)
     object Players  : BottomNavItem("players",  R.string.nav_players,  Icons.Default.Group)
@@ -30,6 +31,7 @@ val baseBottomNavItems = listOf(
     BottomNavItem.Game,
     BottomNavItem.Players,
     BottomNavItem.Stats,
+    BottomNavItem.Training,
     BottomNavItem.History,
     BottomNavItem.Settings
 )
@@ -39,6 +41,7 @@ val rankingBottomNavItems = listOf(
     BottomNavItem.Rankings,
     BottomNavItem.Players,
     BottomNavItem.Stats,
+    BottomNavItem.Training,
     BottomNavItem.History,
     BottomNavItem.Settings
 )

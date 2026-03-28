@@ -26,6 +26,8 @@ import com.clubdarts.ui.settings.RankingSettingsScreen
 import com.clubdarts.ui.settings.SettingsScreen
 import com.clubdarts.ui.settings.TtsSettingsScreen
 import com.clubdarts.ui.stats.StatsScreen
+import com.clubdarts.ui.training.HeatmapScreen
+import com.clubdarts.ui.training.TrainingScreen
 import javax.inject.Inject
 
 @Composable
@@ -149,6 +151,20 @@ fun ClubDartsNavHost(
                     onNavigateToMatchDetail = { gameId ->
                         navController.navigate("history/detail/$gameId")
                     }
+                )
+            }
+            composable("training") {
+                TrainingScreen(
+                    onOpenHeatmap = {
+                        navController.navigate("training/heatmap") {
+                            launchSingleTop = true
+                        }
+                    }
+                )
+            }
+            composable("training/heatmap") {
+                HeatmapScreen(
+                    onBack = { navController.popBackStack() }
                 )
             }
             composable("history") {

@@ -8,6 +8,8 @@ data class ScoreFrequency(val visitTotal: Int, val frequency: Int)
 
 data class PlayerAverage(val playerId: Long, val average: Double)
 
+data class DartCoordinate(val x: Double, val y: Double)
+
 data class PlayerStatsAggregate(
     val average: Double?,
     val count180s: Int,
@@ -122,6 +124,32 @@ interface ThrowDao {
         WHERE t.playerId = :playerId
     """)
     suspend fun getPlayerStatsAggregate(playerId: Long): PlayerStatsAggregate
+
+    /**
+     * Returns all individual dart positions (mm from board centre) for a player
+     * in the given game IDs. Null coordinates (numpad-entered darts) are excluded.
+     */
+    @Query("""
+        SELECT t.dart1X as x, t.dart1Y as y
+        FROM throws t INNER JOIN legs l ON t.legId = l.id
+        WHERE t.playerId = :playerId AND l.gameId IN (:gameIds) AND t.dart1X IS NOT NULL
+        UNION ALL
+        SELECT t.dart2X, t.dart2Y
+        FROM throws t INNER JOIN legs l ON t.legId = l.id
+        WHERE t.playerId = :playerId AND l.gameId IN (:gameIds) AND t.dart2X IS NOT NULL AND t.dartsUsed >= 2
+        UNION ALL
+        SELECT t.dart3X, t.dart3Y
+        FROM throws t INNER JOIN legs l ON t.legId = l.id
+        WHERE t.playerId = :playerId AND l.gameId IN (:gameIds) AND t.dart3X IS NOT NULL AND t.dartsUsed >= 3
+    """)
+    suspend fun getDartCoordinatesForPlayer(playerId: Long, gameIds: List<Long>): List<DartCoordinate>
+
+    @Query("""
+        SELECT g.id FROM games g
+        WHERE g.finishedAt IS NOT NULL
+        ORDER BY g.createdAt ASC
+    """)
+    suspend fun getFinishedGameIdsSorted(): List<Long>
 
     @Query("SELECT COUNT(*) FROM throws WHERE visitTotal = 180")
     suspend fun getTotalClub180s(): Int
