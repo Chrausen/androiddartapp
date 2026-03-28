@@ -92,7 +92,7 @@ private fun MultiplierButton(
 ) {
     Box(
         modifier = modifier
-            .height(40.dp)
+            .height(60.dp)
             .background(
                 color = if (isActive) Accent else Surface2,
                 shape = RoundedCornerShape(8.dp)
@@ -102,7 +102,7 @@ private fun MultiplierButton(
     ) {
         Text(
             text = label,
-            style = MaterialTheme.typography.labelMedium,
+            fontSize = 18.sp,
             fontWeight = FontWeight.SemiBold,
             color = when {
                 isActive   -> Background

@@ -59,20 +59,32 @@ class HistoryViewModel @Inject constructor(
             _uiState.update { it.copy(isLoading = true) }
             try {
                 gameRepository.getAllGames().collect { games ->
-                    val summaries = games.filter { it.finishedAt != null }.mapNotNull { game ->
-                        try {
-                            val gamePlayers = gameRepository.getGamePlayers(game.id)
-                                .sortedBy { it.throwOrder }
-                            val players = playerRepository.getPlayersByIds(gamePlayers.map { it.playerId })
-                                .sortedBy { p -> gamePlayers.indexOfFirst { it.playerId == p.id } }
-                            val dateStr = dateFormat.format(Date(game.createdAt))
-                            val group = when (dateStr) {
-                                todayStr      -> "Today"
-                                yesterdayStr  -> "Yesterday"
-                                else          -> dateStr
-                            }
-                            GameSummary(game = game, players = players, gamePlayers = gamePlayers, dateGroup = group)
-                        } catch (e: Exception) { null }
+                    val finishedGames = games.filter { it.finishedAt != null }
+                    if (finishedGames.isEmpty()) {
+                        _uiState.update { it.copy(gameSummaries = emptyList(), isLoading = false) }
+                        return@collect
+                    }
+
+                    // Batch: one query for all game-players, one for all unique players
+                    val gameIds = finishedGames.map { it.id }
+                    val allGamePlayers = gameRepository.getGamePlayersByGameIds(gameIds)
+                        .groupBy { it.gameId }
+                    val allPlayerIds = allGamePlayers.values
+                        .flatMapTo(mutableSetOf()) { gps -> gps.map { it.playerId } }
+                    val playerById = playerRepository.getPlayersByIds(allPlayerIds.toList())
+                        .associateBy { it.id }
+
+                    val summaries = finishedGames.map { game ->
+                        val gamePlayers = (allGamePlayers[game.id] ?: emptyList())
+                            .sortedBy { it.throwOrder }
+                        val players = gamePlayers.mapNotNull { playerById[it.playerId] }
+                        val dateStr = dateFormat.format(Date(game.createdAt))
+                        val group = when (dateStr) {
+                            todayStr     -> "Today"
+                            yesterdayStr -> "Yesterday"
+                            else         -> dateStr
+                        }
+                        GameSummary(game = game, players = players, gamePlayers = gamePlayers, dateGroup = group)
                     }
                     _uiState.update { it.copy(gameSummaries = summaries, isLoading = false) }
                 }

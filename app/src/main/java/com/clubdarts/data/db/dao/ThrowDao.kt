@@ -6,6 +6,8 @@ import kotlinx.coroutines.flow.Flow
 
 data class ScoreFrequency(val visitTotal: Int, val frequency: Int)
 
+data class PlayerAverage(val playerId: Long, val average: Double)
+
 data class PlayerStatsAggregate(
     val average: Double?,
     val count180s: Int,
@@ -42,6 +44,12 @@ interface ThrowDao {
 
     @Query("SELECT AVG(visitTotal) FROM throws WHERE playerId = :playerId AND isBust = 0")
     suspend fun getAverageForPlayer(playerId: Long): Double?
+
+    @Query("""
+        SELECT playerId, AVG(CASE WHEN isBust = 0 THEN visitTotal ELSE NULL END) as average
+        FROM throws GROUP BY playerId
+    """)
+    suspend fun getAllPlayerAverages(): List<PlayerAverage>
 
     @Query("""
         SELECT MAX(t.visitTotal) FROM throws t
