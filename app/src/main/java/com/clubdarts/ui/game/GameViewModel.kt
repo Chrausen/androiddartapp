@@ -189,7 +189,7 @@ class GameViewModel @Inject constructor(
                         rankedLegsToWin = legsToWin
                     )
                 }
-            }.collect()
+            }.collect {}
         }
     }
 
