@@ -92,7 +92,7 @@ private fun MultiplierButton(
 ) {
     Box(
         modifier = modifier
-            .height(40.dp)
+            .height(60.dp)
             .background(
                 color = if (isActive) Accent else Surface2,
                 shape = RoundedCornerShape(8.dp)
