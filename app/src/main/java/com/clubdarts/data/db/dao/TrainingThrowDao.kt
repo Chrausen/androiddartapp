@@ -14,7 +14,7 @@ data class TrainingDartCoordinate(
 interface TrainingThrowDao {
 
     @Insert
-    suspend fun insertThrows(throws: List<TrainingThrow>)
+    suspend fun insertThrows(items: List<TrainingThrow>)
 
     @Query("SELECT * FROM training_throws WHERE sessionId = :sessionId ORDER BY throwIndex ASC")
     suspend fun getThrowsForSession(sessionId: Long): List<TrainingThrow>
