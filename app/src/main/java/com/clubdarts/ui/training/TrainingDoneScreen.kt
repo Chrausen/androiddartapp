@@ -85,7 +85,7 @@ fun TrainingDoneScreen(
             onClick = onBack,
             modifier = Modifier.fillMaxWidth().height(52.dp),
             shape = RoundedCornerShape(12.dp),
-            colors = OutlinedButtonDefaults.outlinedButtonColors(contentColor = TextPrimary)
+            colors = ButtonDefaults.outlinedButtonColors(contentColor = TextPrimary)
         ) {
             Text(
                 text = stringResource(R.string.btn_back),
