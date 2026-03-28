@@ -1,6 +1,6 @@
 # Club Darts
 
-HI
+Test
 A darts scoring app for Android built with Kotlin, Jetpack Compose, Room, and Hilt.
 
 ## Requirements
