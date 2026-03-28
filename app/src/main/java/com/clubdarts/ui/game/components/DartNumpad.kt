@@ -102,7 +102,7 @@ private fun MultiplierButton(
     ) {
         Text(
             text = label,
-            style = MaterialTheme.typography.labelMedium,
+            fontSize = 18.sp,
             fontWeight = FontWeight.SemiBold,
             color = when {
                 isActive   -> Background
