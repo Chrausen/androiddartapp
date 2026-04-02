@@ -58,6 +58,13 @@ class GameRepository @Inject constructor(
     suspend fun getActiveLeg(gameId: Long): Leg? = legDao.getActiveLeg(gameId)
     suspend fun getLegById(id: Long): Leg? = legDao.getLegById(id)
     suspend fun getLegWinsForPlayer(playerId: Long): Int = legDao.getLegWinsForPlayer(playerId)
+    suspend fun getGamesPlayed(playerId: Long): Int = gameDao.getGamesPlayed(playerId)
+    suspend fun getWins(playerId: Long): Int = gameDao.getWins(playerId)
+    suspend fun getSecondPlaceCount(playerId: Long): Int = gameDao.getSecondPlaceCount(playerId)
+    suspend fun getThirdPlaceCount(playerId: Long): Int = gameDao.getThirdPlaceCount(playerId)
+    suspend fun getBestBuddy(playerId: Long): String? = gameDao.getBestBuddy(playerId)
+    suspend fun getRival(playerId: Long): String? = gameDao.getRival(playerId)
+    suspend fun getEasyWin(playerId: Long): String? = gameDao.getEasyWin(playerId)
 
     suspend fun insertThrow(throw_: Throw): Long = throwDao.insertThrow(throw_)
     suspend fun deleteThrow(throw_: Throw) = throwDao.deleteThrow(throw_)
@@ -108,11 +115,25 @@ class GameRepository @Inject constructor(
             winningTeamIndex = winningTeamIndex,
             finishedAt = System.currentTimeMillis()
         ))
+        // Assign placements for non-team games
+        if (!game.isTeamGame && winnerId != null) {
+            val gamePlayers = gameDao.getGamePlayers(gameId)
+            val legs = legDao.getLegsForGame(gameId)
+            val legWinsByPlayer = legs.groupBy { it.winnerId }.mapValues { it.value.size }
+            gameDao.updateGamePlayerPlacement(gameId, winnerId, 1)
+            gamePlayers
+                .filter { it.playerId != winnerId }
+                .sortedByDescending { legWinsByPlayer[it.playerId] ?: 0 }
+                .forEachIndexed { index, gp ->
+                    gameDao.updateGamePlayerPlacement(gameId, gp.playerId, index + 2)
+                }
+        }
     }
 
     suspend fun unfinishGame(gameId: Long) {
         val game = gameDao.getGameById(gameId) ?: return
         gameDao.updateGame(game.copy(winnerId = null, winningTeamIndex = null, finishedAt = null))
+        gameDao.clearGamePlayerPlacements(gameId)
     }
 
     suspend fun deleteGame(gameId: Long) {

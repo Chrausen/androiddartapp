@@ -17,5 +17,6 @@ data class GamePlayer(
     val gameId: Long,
     val playerId: Long,
     val throwOrder: Int,
-    val teamIndex: Int = -1   // -1=single mode, 0=Team A (Red), 1=Team B (Blue)
+    val teamIndex: Int = -1,   // -1=single mode, 0=Team A (Red), 1=Team B (Blue)
+    val placement: Int? = null // 1=winner, 2=runner-up, etc.; null=not yet assigned
 )
