@@ -314,11 +314,33 @@ class GameViewModel @Inject constructor(
         voiceJob?.cancel()
         _uiState.update { it.copy(isVoiceListening = true, voiceSecondsLeft = 5) }
 
-        // Start recognition – callback fires on the main thread
-        voiceInputManager.startListening { result ->
-            voiceJob?.cancel()
-            processVoiceResult(result)
-        }
+        // Each confirmed dart is delivered here the moment the recogniser is sure of it.
+        voiceInputManager.startListening(
+            onDart = { dart ->
+                val state = _uiState.value
+                if (state.screen != GameScreen.LIVE) return@startListening
+                val dartsBefore = state.currentDarts.size
+                if (dartsBefore >= 3) return@startListening
+
+                if (dart.score == 0) {
+                    recordMiss()
+                } else {
+                    setMultiplier(dart.multiplier)
+                    recordDart(dart.score)
+                }
+
+                // If the visit resolved (bust / checkout / 3-dart visit), end the session.
+                if (_uiState.value.currentDarts.size < dartsBefore + 1) {
+                    stopVoiceInput()
+                }
+            },
+            onDone = {
+                // Recognition finished naturally (silence / timeout) — clean up state.
+                voiceJob?.cancel()
+                voiceJob = null
+                _uiState.update { it.copy(isVoiceListening = false, voiceSecondsLeft = 0) }
+            }
+        )
 
         // Countdown: tick every second, auto-stop when it reaches 0
         voiceJob = viewModelScope.launch {
@@ -335,35 +357,6 @@ class GameViewModel @Inject constructor(
         voiceJob = null
         voiceInputManager.stopListening()
         _uiState.update { it.copy(isVoiceListening = false, voiceSecondsLeft = 0) }
-    }
-
-    private fun processVoiceResult(result: VoiceInputManager.Result) {
-        stopVoiceInput()
-        when (result) {
-            is VoiceInputManager.Result.Darts -> {
-                if (result.darts.isEmpty()) {
-                    _uiState.update { it.copy(snackbarMessage = "No darts understood – try again") }
-                    return
-                }
-                for (dart in result.darts) {
-                    if (_uiState.value.screen != GameScreen.LIVE) break
-                    val dartsBefore = _uiState.value.currentDarts.size
-                    if (dartsBefore >= 3) break
-                    if (dart.score == 0) {
-                        recordMiss()
-                    } else {
-                        setMultiplier(dart.multiplier)
-                        recordDart(dart.score)
-                    }
-                    // If the visit was resolved (bust/checkout/3-dart visit) the
-                    // currentDarts list resets to empty – stop applying voice darts.
-                    if (_uiState.value.currentDarts.size < dartsBefore + 1) break
-                }
-            }
-            is VoiceInputManager.Result.Failure -> {
-                _uiState.update { it.copy(snackbarMessage = "Voice recognition failed") }
-            }
-        }
     }
 
     fun recordDart(score: Int) {

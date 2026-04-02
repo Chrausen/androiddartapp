@@ -9,65 +9,94 @@ import android.speech.SpeechRecognizer
 import com.clubdarts.ui.game.DartInput
 
 /**
- * Wraps Android's [SpeechRecognizer] to capture a short voice utterance and parse it into
- * up to three [DartInput]s.
+ * Wraps Android's [SpeechRecognizer] and streams parsed [DartInput]s in real time via
+ * partial results, so each recognised dart is delivered the moment it is confirmed rather
+ * than waiting for the full utterance to finish.
  *
- * **Thread safety**: [startListening] must be called from the main thread (SpeechRecognizer
- * requirement). The [onResult] callback is delivered on the main thread.
+ * **How streaming works**
+ * Android returns cumulative partial results as the user speaks.  We parse the full
+ * partial text on every update and emit only the *newly-confirmed* darts (those beyond
+ * [processedCount]).  The last parsed dart is always held back on a partial update because
+ * the recogniser might still be mid-word (e.g. "double" without the number yet).  It is
+ * released when the final result arrives.
  *
- * Accepted voice patterns (case-insensitive):
- * - Plain number 1–20 or "twenty-five" / "25"  → single
- * - "double <number>" / "d <number>"            → double
- * - "triple <number>" / "treble <number>"       → triple
- * - "bull" / "bullseye"                         → double bull (50 pts)
- * - "outer bull"                                → single 25
- * - "miss" / "missed" / "zero" / "out"          → miss (0 pts)
+ * Example session — user says "double twenty  triple eighteen  miss":
+ * ```
+ * partial "double"            → parse []        → emit nothing (nothing complete)
+ * partial "double twenty"     → parse [D20]     → emit nothing (last dart held back)
+ * partial "double twenty tri" → parse [D20]     → emit D20 (confirmed by new token)
+ * partial "…triple eighteen"  → parse [D20,T18] → emit T18 held back
+ * final   "…miss"             → parse [D20,T18,Miss] → emit Miss (all released)
+ * ```
+ *
+ * **Thread safety**: [startListening] must be called from the main thread.
+ * All callbacks are delivered on the main thread.
+ *
+ * Accepted patterns (case-insensitive):
+ * - Plain number 1–20 or 25            → single
+ * - "double"/"d" + number or "bull"    → double
+ * - "triple"/"treble"/"t" + number     → triple
+ * - "bull" / "bullseye"                → double bull (50 pts)
+ * - "outer bull"                       → single 25
+ * - "miss" / "missed" / "zero" / "out" → miss (0 pts)
  */
 class VoiceInputManager(private val context: Context) {
-
-    sealed class Result {
-        /** Successfully parsed darts (list may be empty if nothing was understood). */
-        data class Darts(val darts: List<DartInput>) : Result()
-        /** SpeechRecognizer error code, or -1 when recognition is not available. */
-        data class Failure(val errorCode: Int) : Result()
-    }
 
     private var recognizer: SpeechRecognizer? = null
 
     /**
-     * Start a single recognition session. [onResult] is called exactly once on the main thread.
-     * Call [stopListening] to cancel early.
+     * Start a recognition session.
+     *
+     * @param onDart  Called immediately each time a dart is confirmed. May be called
+     *                multiple times during the session. Delivered on the main thread.
+     * @param onDone  Called exactly once when the session ends (final result, error, or
+     *                after [stopListening]). Delivered on the main thread.
      */
-    fun startListening(onResult: (Result) -> Unit) {
+    fun startListening(onDart: (DartInput) -> Unit, onDone: () -> Unit) {
         stopListening()
 
         if (!SpeechRecognizer.isRecognitionAvailable(context)) {
-            onResult(Result.Failure(-1))
+            onDone()
             return
+        }
+
+        // How many darts from the parsed list have already been delivered upstream.
+        var processedCount = 0
+
+        /**
+         * Parse [text] and deliver any newly-confirmed darts.
+         * [keepLast] = true on partial updates (last dart may still be incomplete).
+         * [keepLast] = false on the final result (release everything).
+         */
+        fun flush(text: String, keepLast: Boolean) {
+            val darts = parseVoiceInput(text)
+            val deliverUpTo = if (keepLast) darts.size - 1 else darts.size
+            for (i in processedCount until deliverUpTo) {
+                onDart(darts[i])
+            }
+            processedCount = maxOf(processedCount, deliverUpTo)
         }
 
         recognizer = SpeechRecognizer.createSpeechRecognizer(context)
         recognizer?.setRecognitionListener(object : RecognitionListener {
-            private var delivered = false
-
-            private fun deliver(r: Result) {
-                if (!delivered) {
-                    delivered = true
-                    onResult(r)
-                }
+            override fun onPartialResults(partial: Bundle?) {
+                val text = partial
+                    ?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
+                    ?.firstOrNull() ?: return
+                flush(text, keepLast = true)
             }
 
             override fun onResults(results: Bundle?) {
                 val text = results
                     ?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
                     ?.firstOrNull() ?: ""
-                deliver(Result.Darts(parseVoiceInput(text)))
+                flush(text, keepLast = false)
+                onDone()
             }
 
-            override fun onError(errorCode: Int) = deliver(Result.Failure(errorCode))
+            override fun onError(errorCode: Int) { onDone() }
 
-            // Unused callbacks required by the interface
-            override fun onPartialResults(partial: Bundle?) {}
+            // Required by the interface; not needed here
             override fun onReadyForSpeech(params: Bundle?) {}
             override fun onBeginningOfSpeech() {}
             override fun onRmsChanged(rmsdB: Float) {}
@@ -78,9 +107,9 @@ class VoiceInputManager(private val context: Context) {
 
         val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
             putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
-            putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, false)
+            putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true)   // ← stream partial results
             putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 1)
-            // Give the user time to say all three darts before silence detection fires
+            // Give the user time to announce up to three darts
             putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS, 2500L)
             putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_POSSIBLY_COMPLETE_SILENCE_LENGTH_MILLIS, 1500L)
             putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_MINIMUM_LENGTH_MILLIS, 0L)
@@ -107,22 +136,18 @@ class VoiceInputManager(private val context: Context) {
         while (i < tokens.size && darts.size < 3) {
             val token = tokens[i]
             when {
-                // Miss
                 token in MISS_WORDS -> {
                     darts += DartInput(score = 0, multiplier = 0)
                     i++
                 }
-                // Bull / bullseye → double bull (50 pts)
                 token in BULL_WORDS -> {
                     darts += DartInput(score = 25, multiplier = 2)
                     i++
                 }
-                // "outer bull" → single 25
                 token == "outer" && i + 1 < tokens.size && tokens[i + 1] in BULL_WORDS -> {
                     darts += DartInput(score = 25, multiplier = 1)
                     i += 2
                 }
-                // "double <number|bull>"
                 token in DOUBLE_WORDS -> {
                     if (i + 1 < tokens.size) {
                         val next = tokens[i + 1]
@@ -139,7 +164,6 @@ class VoiceInputManager(private val context: Context) {
                         }
                     } else i++
                 }
-                // "triple <number>"
                 token in TRIPLE_WORDS -> {
                     if (i + 1 < tokens.size) {
                         val next = tokens[i + 1]
@@ -149,13 +173,12 @@ class VoiceInputManager(private val context: Context) {
                         } else i++
                     } else i++
                 }
-                // Plain number
                 else -> {
                     val n = parseNumber(token)
                     when {
-                        n == 25              -> { darts += DartInput(score = 25, multiplier = 1); i++ }
-                        n != null && n in 1..20 -> { darts += DartInput(score = n, multiplier = 1); i++ }
-                        else                 -> i++
+                        n == 25                  -> { darts += DartInput(score = 25, multiplier = 1); i++ }
+                        n != null && n in 1..20  -> { darts += DartInput(score = n,  multiplier = 1); i++ }
+                        else                     -> i++
                     }
                 }
             }
