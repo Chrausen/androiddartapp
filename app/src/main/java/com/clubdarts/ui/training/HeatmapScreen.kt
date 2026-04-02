@@ -355,8 +355,8 @@ private fun DrawScope.drawDispersionOverlay(cx: Float, cy: Float, scale: Float, 
     // Spec centre: T20 field at -90° (top), radius = midpoint of triple ring
     val t20AngleDeg = -90.0
     val tripleR = (TREBLE_INNER_R + TREBLE_OUTER_R) / 2.0
-    val refX = cx + mm((sin(t20AngleDeg * PI / 180.0) * tripleR).toFloat())
-    val refY = cy + mm((-cos(t20AngleDeg * PI / 180.0) * tripleR).toFloat())
+    val refX = cx + mm((cos(t20AngleDeg * PI / 180.0) * tripleR).toFloat())
+    val refY = cy + mm((sin(t20AngleDeg * PI / 180.0) * tripleR).toFloat())
     val refCentre = Offset(refX, refY)
 
     val canvasR   = minOf(size.width, size.height) / 2f

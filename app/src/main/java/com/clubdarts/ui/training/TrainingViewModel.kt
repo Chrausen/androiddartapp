@@ -116,7 +116,7 @@ data class TrainingUiState(
     val lastResult: TrainingSession? = null,
     val isSaving: Boolean = false,
     val pendingMultiplier: Int = 1,
-    val showBoardInput: Boolean = false
+    val showBoardInput: Boolean = true
 )
 
 // ── ViewModel ─────────────────────────────────────────────────────────────────
@@ -213,8 +213,11 @@ class TrainingViewModel @Inject constructor(
 
     /** Record a dart from the board input widget (score+multiplier + exact mm coordinates). */
     fun recordBoardDart(score: Int, mult: Int, mmX: Float, mmY: Float) {
-        val fieldString = dartToFieldString(score, mult)
-        recordDart(fieldString, mmX.toDouble(), mmY.toDouble())
+        if (_uiState.value.liveSession is LiveSessionState.ScoringRounds) {
+            recordScoringDart(score * mult)
+        } else {
+            recordDart(dartToFieldString(score, mult), mmX.toDouble(), mmY.toDouble())
+        }
     }
 
     private fun recordTargetFieldDart(

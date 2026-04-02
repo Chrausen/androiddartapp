@@ -2,7 +2,6 @@ package com.clubdarts.ui.training
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -102,7 +101,14 @@ fun TrainingLiveScreen(
                 onRecordBoardDart  = onRecordBoardDart,
                 onSetMultiplier    = onSetMultiplier
             )
-            is LiveSessionState.ScoringRounds  -> ScoringRoundsContent(session, onRecordScoringDart)
+            is LiveSessionState.ScoringRounds  -> ScoringRoundsContent(
+                session            = session,
+                pendingMultiplier  = uiState.pendingMultiplier,
+                showBoardInput     = uiState.showBoardInput,
+                onRecordScoringDart = onRecordScoringDart,
+                onRecordBoardDart  = onRecordBoardDart,
+                onSetMultiplier    = onSetMultiplier
+            )
         }
     }
 }
@@ -316,7 +322,11 @@ private fun TrainingDartInput(
 @Composable
 private fun ScoringRoundsContent(
     session: LiveSessionState.ScoringRounds,
-    onScoringDart: (Int) -> Unit
+    pendingMultiplier: Int,
+    showBoardInput: Boolean,
+    onRecordScoringDart: (Int) -> Unit,
+    onRecordBoardDart: (Int, Int, Float, Float) -> Unit,
+    onSetMultiplier: (Int) -> Unit
 ) {
     Column(
         modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp),
@@ -367,85 +377,26 @@ private fun ScoringRoundsContent(
 
         Spacer(Modifier.weight(1f))
 
-        ScoringNumpad(onScore = onScoringDart)
-        Spacer(Modifier.height(16.dp))
-    }
-}
-
-// ── Scoring numpad ────────────────────────────────────────────────────────────
-
-@Composable
-private fun ScoringNumpad(onScore: (Int) -> Unit) {
-    var inputBuffer by remember { mutableStateOf("") }
-
-    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(Surface2, RoundedCornerShape(10.dp))
-                .padding(horizontal = 16.dp, vertical = 12.dp),
-            contentAlignment = Alignment.CenterEnd
-        ) {
-            Text(
-                text = if (inputBuffer.isEmpty()) "0" else inputBuffer,
-                fontSize = 28.sp,
-                fontFamily = DmMono,
-                fontWeight = FontWeight.Bold,
-                color = TextPrimary
-            )
-        }
-
-        val rows = listOf(
-            listOf("7", "8", "9"),
-            listOf("4", "5", "6"),
-            listOf("1", "2", "3"),
-            listOf("⌫", "0", "✓")
-        )
-        rows.forEach { row ->
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(6.dp)
-            ) {
-                row.forEach { label ->
-                    Box(
-                        modifier = Modifier
-                            .weight(1f)
-                            .height(52.dp)
-                            .background(
-                                color = when (label) {
-                                    "✓"  -> Accent
-                                    "⌫"  -> Surface3
-                                    else -> Surface2
-                                },
-                                shape = RoundedCornerShape(10.dp)
-                            )
-                            .clickable {
-                                when (label) {
-                                    "⌫" -> inputBuffer = inputBuffer.dropLast(1)
-                                    "✓" -> {
-                                        val v = inputBuffer.toIntOrNull()?.coerceIn(0, 180) ?: 0
-                                        onScore(v)
-                                        inputBuffer = ""
-                                    }
-                                    else -> {
-                                        val next = inputBuffer + label
-                                        if ((next.toIntOrNull() ?: 0) <= 180) inputBuffer = next
-                                    }
-                                }
-                            },
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = label,
-                            fontSize = 20.sp,
-                            fontWeight = FontWeight.Medium,
-                            fontFamily = if (label == "✓" || label == "⌫") null else DmMono,
-                            color = if (label == "✓") Background else TextPrimary
-                        )
-                    }
+        TrainingDartInput(
+            showBoardInput    = showBoardInput,
+            pendingMultiplier = pendingMultiplier,
+            dartsAtTarget     = session.currentRoundDarts.size,
+            onRecordDart      = { field ->
+                // For scoring rounds, convert field string to score
+                val score = when {
+                    field == "Miss"     -> 0
+                    field == "Bullseye" -> 50
+                    field == "Bull"     -> 25
+                    field.startsWith("T") -> (field.drop(1).toIntOrNull() ?: 0) * 3
+                    field.startsWith("D") -> (field.drop(1).toIntOrNull() ?: 0) * 2
+                    else                  -> field.drop(1).toIntOrNull() ?: 0
                 }
-            }
-        }
+                onRecordScoringDart(score)
+            },
+            onRecordBoardDart = onRecordBoardDart,
+            onSetMultiplier   = onSetMultiplier
+        )
+        Spacer(Modifier.height(16.dp))
     }
 }
 

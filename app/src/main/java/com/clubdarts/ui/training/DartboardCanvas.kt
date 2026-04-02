@@ -64,7 +64,7 @@ fun DartboardCanvas(
         // 2. Segments
         for (i in 0 until 20) {
             val isEven      = (i % 2 == 0)
-            val singleColor = if (isEven) SEGMENT_CREAM else BOARD_BLACK
+            val singleColor = if (isEven) BOARD_BLACK   else SEGMENT_CREAM
             val ringColor   = if (isEven) SEGMENT_RED   else SEGMENT_GREEN
             val startAngle  = -90f + i * 18f - 9f
             val sweep       = 18f

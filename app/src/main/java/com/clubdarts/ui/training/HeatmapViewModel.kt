@@ -75,7 +75,12 @@ class HeatmapViewModel @Inject constructor(
             sessionFrom    = 1,
             sessionTo      = 1
         )}
-        if (player != null) loadGameCount(player)
+        if (player != null) {
+            when (_uiState.value.view) {
+                AnalyticsView.HEATMAP    -> loadGameCount(player)
+                AnalyticsView.DISPERSION -> loadSessionsAndComputeDispersion(player)
+            }
+        }
     }
 
     fun setView(view: AnalyticsView) {
