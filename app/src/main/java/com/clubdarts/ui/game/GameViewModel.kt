@@ -15,8 +15,6 @@ import com.clubdarts.util.SoundEffectsService
 import com.clubdarts.util.TtsManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import com.clubdarts.util.VoiceInputManager
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -124,8 +122,7 @@ data class GameUiState(
     // ID of the EloMatch record created when a ranked game ended (used for undo via EloRepository.revertMatch)
     val eloMatchId: Long? = null,
     // Voice input
-    val isVoiceListening: Boolean = false,
-    val voiceSecondsLeft: Int = 0
+    val isVoiceListening: Boolean = false
 )
 
 /**
@@ -167,7 +164,6 @@ class GameViewModel @Inject constructor(
     private var ttsScoreSettings: List<TtsScoreSetting> = emptyList()
 
     private val voiceInputManager = VoiceInputManager(application)
-    private var voiceJob: Job? = null
 
     // In-memory visit counter per player (reset each leg). Avoids a DB query on every throw.
     private val visitCounters = HashMap<Long, Int>()
@@ -311,8 +307,7 @@ class GameViewModel @Inject constructor(
         if (_uiState.value.isVoiceListening) return
         if (_uiState.value.currentDarts.size >= 3) return
 
-        voiceJob?.cancel()
-        _uiState.update { it.copy(isVoiceListening = true, voiceSecondsLeft = 5) }
+        _uiState.update { it.copy(isVoiceListening = true) }
 
         // Each confirmed dart is delivered here the moment the recogniser is sure of it.
         voiceInputManager.startListening(
@@ -335,28 +330,15 @@ class GameViewModel @Inject constructor(
                 }
             },
             onDone = {
-                // Recognition finished naturally (silence / timeout) — clean up state.
-                voiceJob?.cancel()
-                voiceJob = null
-                _uiState.update { it.copy(isVoiceListening = false, voiceSecondsLeft = 0) }
+                // Recognition finished naturally (silence detection) — clean up state.
+                _uiState.update { it.copy(isVoiceListening = false) }
             }
         )
-
-        // Countdown: tick every second, auto-stop when it reaches 0
-        voiceJob = viewModelScope.launch {
-            for (secondsLeft in 4 downTo 0) {
-                delay(1000)
-                _uiState.update { it.copy(voiceSecondsLeft = secondsLeft) }
-            }
-            stopVoiceInput()
-        }
     }
 
     fun stopVoiceInput() {
-        voiceJob?.cancel()
-        voiceJob = null
         voiceInputManager.stopListening()
-        _uiState.update { it.copy(isVoiceListening = false, voiceSecondsLeft = 0) }
+        _uiState.update { it.copy(isVoiceListening = false) }
     }
 
     fun recordDart(score: Int) {

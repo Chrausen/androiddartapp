@@ -114,7 +114,6 @@ fun LiveGameScreen(
                     showBoardInput = showBoardInput,
                     onToggleBoardInput = { showBoardInput = !showBoardInput },
                     isVoiceListening = uiState.isVoiceListening,
-                    voiceSecondsLeft = uiState.voiceSecondsLeft,
                     onMicClick = { onMicClick() },
                     onAbort = { showAbortDialog = true }
                 )
@@ -264,7 +263,6 @@ private fun GameStatusBar(
     showBoardInput: Boolean,
     onToggleBoardInput: () -> Unit,
     isVoiceListening: Boolean,
-    voiceSecondsLeft: Int,
     onMicClick: () -> Unit,
     onAbort: () -> Unit
 ) {
@@ -331,7 +329,6 @@ private fun GameStatusBar(
             )
             VoiceMicButton(
                 isListening = isVoiceListening,
-                secondsLeft = voiceSecondsLeft,
                 onClick = onMicClick
             )
             Surface(
@@ -353,7 +350,6 @@ private fun GameStatusBar(
 @Composable
 private fun VoiceMicButton(
     isListening: Boolean,
-    secondsLeft: Int,
     onClick: () -> Unit
 ) {
     val infiniteTransition = rememberInfiniteTransition(label = "mic_pulse")
@@ -368,26 +364,15 @@ private fun VoiceMicButton(
     )
 
     IconButton(onClick = onClick) {
-        Box(contentAlignment = Alignment.Center) {
-            Icon(
-                imageVector = if (isListening) Icons.Default.Mic else Icons.Default.MicOff,
-                contentDescription = if (isListening)
-                    stringResource(R.string.live_voice_stop)
-                else
-                    stringResource(R.string.live_voice_start),
-                tint = if (isListening) Red else TextTertiary,
-                modifier = if (isListening) Modifier.alpha(pulseAlpha) else Modifier
-            )
-            if (isListening && secondsLeft > 0) {
-                Text(
-                    text = "$secondsLeft",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = Red,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.align(Alignment.BottomEnd)
-                )
-            }
-        }
+        Icon(
+            imageVector = if (isListening) Icons.Default.Mic else Icons.Default.MicOff,
+            contentDescription = if (isListening)
+                stringResource(R.string.live_voice_stop)
+            else
+                stringResource(R.string.live_voice_start),
+            tint = if (isListening) Red else TextTertiary,
+            modifier = if (isListening) Modifier.alpha(pulseAlpha) else Modifier
+        )
     }
 }
 
