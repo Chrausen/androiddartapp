@@ -14,6 +14,9 @@ import com.clubdarts.util.ScoringEngine
 import com.clubdarts.util.SoundEffectsService
 import com.clubdarts.util.TtsManager
 import dagger.hilt.android.lifecycle.HiltViewModel
+import com.clubdarts.util.VoiceInputManager
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -119,7 +122,10 @@ data class GameUiState(
     // playerId → signed Elo change (positive = gain, negative = loss); null until game ends
     val eloResults: Map<Long, Double>? = null,
     // ID of the EloMatch record created when a ranked game ended (used for undo via EloRepository.revertMatch)
-    val eloMatchId: Long? = null
+    val eloMatchId: Long? = null,
+    // Voice input
+    val isVoiceListening: Boolean = false,
+    val voiceSecondsLeft: Int = 0
 )
 
 /**
@@ -160,6 +166,9 @@ class GameViewModel @Inject constructor(
     private val ttsManager = TtsManager(application)
     private var ttsScoreSettings: List<TtsScoreSetting> = emptyList()
 
+    private val voiceInputManager = VoiceInputManager(application)
+    private var voiceJob: Job? = null
+
     // In-memory visit counter per player (reset each leg). Avoids a DB query on every throw.
     private val visitCounters = HashMap<Long, Int>()
 
@@ -196,6 +205,7 @@ class GameViewModel @Inject constructor(
     override fun onCleared() {
         super.onCleared()
         ttsManager.shutdown()
+        voiceInputManager.stopListening()
     }
 
     // ── Audio helpers (available on all screens) ─────────────────────────────
@@ -283,6 +293,77 @@ class GameViewModel @Inject constructor(
 
     fun setMultiplier(mult: Int) {
         _uiState.update { it.copy(pendingMultiplier = mult) }
+    }
+
+    // ── Live game: voice input ────────────────────────────────────────────────
+
+    /**
+     * Toggle the 5-second voice input window. While active the mic listens for
+     * dart scores spoken aloud (e.g. "double twenty triple eighteen miss") and
+     * records each recognised dart automatically. The window closes as soon as
+     * speech recognition returns a result or after 5 seconds, whichever is first.
+     */
+    fun toggleVoiceInput() {
+        if (_uiState.value.isVoiceListening) stopVoiceInput() else startVoiceInput()
+    }
+
+    private fun startVoiceInput() {
+        if (_uiState.value.isVoiceListening) return
+        if (_uiState.value.currentDarts.size >= 3) return
+
+        voiceJob?.cancel()
+        _uiState.update { it.copy(isVoiceListening = true, voiceSecondsLeft = 5) }
+
+        // Start recognition – callback fires on the main thread
+        voiceInputManager.startListening { result ->
+            voiceJob?.cancel()
+            processVoiceResult(result)
+        }
+
+        // Countdown: tick every second, auto-stop when it reaches 0
+        voiceJob = viewModelScope.launch {
+            for (secondsLeft in 4 downTo 0) {
+                delay(1000)
+                _uiState.update { it.copy(voiceSecondsLeft = secondsLeft) }
+            }
+            stopVoiceInput()
+        }
+    }
+
+    fun stopVoiceInput() {
+        voiceJob?.cancel()
+        voiceJob = null
+        voiceInputManager.stopListening()
+        _uiState.update { it.copy(isVoiceListening = false, voiceSecondsLeft = 0) }
+    }
+
+    private fun processVoiceResult(result: VoiceInputManager.Result) {
+        stopVoiceInput()
+        when (result) {
+            is VoiceInputManager.Result.Darts -> {
+                if (result.darts.isEmpty()) {
+                    _uiState.update { it.copy(snackbarMessage = "No darts understood – try again") }
+                    return
+                }
+                for (dart in result.darts) {
+                    if (_uiState.value.screen != GameScreen.LIVE) break
+                    val dartsBefore = _uiState.value.currentDarts.size
+                    if (dartsBefore >= 3) break
+                    if (dart.score == 0) {
+                        recordMiss()
+                    } else {
+                        setMultiplier(dart.multiplier)
+                        recordDart(dart.score)
+                    }
+                    // If the visit was resolved (bust/checkout/3-dart visit) the
+                    // currentDarts list resets to empty – stop applying voice darts.
+                    if (_uiState.value.currentDarts.size < dartsBefore + 1) break
+                }
+            }
+            is VoiceInputManager.Result.Failure -> {
+                _uiState.update { it.copy(snackbarMessage = "Voice recognition failed") }
+            }
+        }
     }
 
     fun recordDart(score: Int) {

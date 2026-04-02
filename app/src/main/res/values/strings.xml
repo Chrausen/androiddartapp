@@ -76,6 +76,8 @@
     <string name="game_selected_count">%1$d selected</string>
 
     <!-- Live game screen -->
+    <string name="live_voice_start">Start voice input</string>
+    <string name="live_voice_stop">Stop voice input</string>
     <string name="live_abort">Abort</string>
     <string name="live_mute_tts">Mute TTS</string>
     <string name="live_unmute_tts">Unmute TTS</string>

@@ -1,6 +1,16 @@
 package com.clubdarts.ui.game
 
+import android.Manifest
+import android.content.Context
+import android.content.pm.PackageManager
 import androidx.activity.compose.BackHandler
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -10,20 +20,23 @@ import androidx.compose.material.icons.automirrored.filled.Undo
 import androidx.compose.material.icons.automirrored.filled.VolumeUp
 import androidx.compose.material.icons.filled.Adjust
 import androidx.compose.material.icons.filled.History
+import androidx.compose.material.icons.filled.Mic
+import androidx.compose.material.icons.filled.MicOff
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import android.content.Context
-import androidx.compose.ui.platform.LocalContext
 import com.clubdarts.R
 import com.clubdarts.ui.settings.GeneralSettingsViewModel
 import com.clubdarts.data.model.CheckoutRule
@@ -51,6 +64,24 @@ fun LiveGameScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     var showAbortDialog by remember { mutableStateOf(false) }
     var showBoardInput  by remember { mutableStateOf(false) }
+
+    val micPermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        if (granted) viewModel.toggleVoiceInput()
+    }
+
+    fun onMicClick() {
+        if (uiState.isVoiceListening) {
+            viewModel.stopVoiceInput()
+        } else {
+            val hasPerm = ContextCompat.checkSelfPermission(
+                context, Manifest.permission.RECORD_AUDIO
+            ) == PackageManager.PERMISSION_GRANTED
+            if (hasPerm) viewModel.toggleVoiceInput()
+            else micPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
+        }
+    }
 
     BackHandler { showAbortDialog = true }
 
@@ -82,6 +113,9 @@ fun LiveGameScreen(
                     onToggleHistory = { viewModel.toggleHistory() },
                     showBoardInput = showBoardInput,
                     onToggleBoardInput = { showBoardInput = !showBoardInput },
+                    isVoiceListening = uiState.isVoiceListening,
+                    voiceSecondsLeft = uiState.voiceSecondsLeft,
+                    onMicClick = { onMicClick() },
                     onAbort = { showAbortDialog = true }
                 )
             }
@@ -229,6 +263,9 @@ private fun GameStatusBar(
     onToggleHistory: () -> Unit,
     showBoardInput: Boolean,
     onToggleBoardInput: () -> Unit,
+    isVoiceListening: Boolean,
+    voiceSecondsLeft: Int,
+    onMicClick: () -> Unit,
     onAbort: () -> Unit
 ) {
     Row(
@@ -292,6 +329,11 @@ private fun GameStatusBar(
                 contentDescription = if (showHistory) stringResource(R.string.live_hide_history) else stringResource(R.string.live_show_history),
                 onClick = onToggleHistory
             )
+            VoiceMicButton(
+                isListening = isVoiceListening,
+                secondsLeft = voiceSecondsLeft,
+                onClick = onMicClick
+            )
             Surface(
                 onClick = onAbort,
                 color = androidx.compose.ui.graphics.Color.Transparent,
@@ -302,6 +344,47 @@ private fun GameStatusBar(
                     style = MaterialTheme.typography.labelMedium,
                     color = Red,
                     modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun VoiceMicButton(
+    isListening: Boolean,
+    secondsLeft: Int,
+    onClick: () -> Unit
+) {
+    val infiniteTransition = rememberInfiniteTransition(label = "mic_pulse")
+    val pulseAlpha by infiniteTransition.animateFloat(
+        initialValue = 1f,
+        targetValue = 0.35f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 600),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "mic_alpha"
+    )
+
+    IconButton(onClick = onClick) {
+        Box(contentAlignment = Alignment.Center) {
+            Icon(
+                imageVector = if (isListening) Icons.Default.Mic else Icons.Default.MicOff,
+                contentDescription = if (isListening)
+                    stringResource(R.string.live_voice_stop)
+                else
+                    stringResource(R.string.live_voice_start),
+                tint = if (isListening) Red else TextTertiary,
+                modifier = if (isListening) Modifier.alpha(pulseAlpha) else Modifier
+            )
+            if (isListening && secondsLeft > 0) {
+                Text(
+                    text = "$secondsLeft",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = Red,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.align(Alignment.BottomEnd)
                 )
             }
         }
