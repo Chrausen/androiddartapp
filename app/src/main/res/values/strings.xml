@@ -192,6 +192,8 @@
     <string name="training_difficulty_intermediate">Advanced</string>
     <string name="training_difficulty_pro">Pro</string>
     <string name="training_recent_results">Recent results</string>
+    <string name="training_select_player">Select player…</string>
+    <string name="training_change_player">Change</string>
     <string name="training_start">Start training</string>
     <string name="training_target">Target</string>
     <string name="training_misses_on_target">%1$d miss(es) on this target</string>

@@ -6,26 +6,24 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.clubdarts.R
-import com.clubdarts.data.model.Player
 import com.clubdarts.data.model.TrainingDifficulty
 import com.clubdarts.data.model.TrainingMode
 import com.clubdarts.data.model.TrainingSession
 import com.clubdarts.ui.game.components.PlayerAvatar
+import com.clubdarts.ui.game.components.PlayerPickerSheet
 import com.clubdarts.ui.theme.*
 import java.text.SimpleDateFormat
 import java.util.*
@@ -33,180 +31,189 @@ import java.util.*
 @Composable
 fun TrainingSetupScreen(
     uiState: TrainingUiState,
-    onSelectPlayer: (Player?) -> Unit,
+    onSelectPlayer: (com.clubdarts.data.model.Player?) -> Unit,
     onSelectMode: (TrainingMode) -> Unit,
     onSelectDifficulty: (TrainingDifficulty) -> Unit,
     onStart: () -> Unit,
     onOpenHeatmap: () -> Unit
 ) {
     val dateFormat = remember { SimpleDateFormat("dd.MM.yy", Locale.getDefault()) }
+    var showPlayerPicker by remember { mutableStateOf(false) }
 
-    LazyColumn(
+    Column(
         modifier = Modifier
             .fillMaxSize()
             .background(Background)
-            .padding(horizontal = 16.dp),
-        contentPadding = PaddingValues(vertical = 16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+            .padding(horizontal = 16.dp)
     ) {
-        item {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
+        Spacer(Modifier.height(16.dp))
+
+        // Header
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = stringResource(R.string.training_title),
+                style = MaterialTheme.typography.headlineMedium,
+                color = TextPrimary
+            )
+            TextButton(onClick = onOpenHeatmap) {
                 Text(
-                    text = stringResource(R.string.training_title),
-                    style = MaterialTheme.typography.headlineMedium,
-                    color = TextPrimary
+                    text = stringResource(R.string.training_analytics),
+                    color = Accent,
+                    style = MaterialTheme.typography.labelMedium
                 )
-                TextButton(onClick = onOpenHeatmap) {
-                    Text(
-                        text = stringResource(R.string.training_analytics),
-                        color = Accent,
-                        style = MaterialTheme.typography.labelMedium
-                    )
-                }
             }
         }
+
+        Spacer(Modifier.height(16.dp))
 
         // Player selection
-        item {
-            Text(
-                text = stringResource(R.string.training_player),
-                style = MaterialTheme.typography.labelMedium,
-                color = TextSecondary
-            )
-        }
-        item {
-            PlayerSelectionRow(
-                players = uiState.players,
-                selectedPlayer = uiState.selectedPlayer,
-                onSelectPlayer = onSelectPlayer
-            )
-        }
+        Text(
+            text = stringResource(R.string.training_player),
+            style = MaterialTheme.typography.labelMedium,
+            color = TextSecondary
+        )
+        Spacer(Modifier.height(6.dp))
+        PlayerChip(
+            selectedName = uiState.selectedPlayer?.name,
+            onClick = { showPlayerPicker = true }
+        )
+
+        Spacer(Modifier.height(16.dp))
 
         // Mode selection
-        item {
-            Text(
-                text = stringResource(R.string.training_mode),
-                style = MaterialTheme.typography.labelMedium,
-                color = TextSecondary
-            )
-        }
-        item {
-            ModeSelector(
-                selected = uiState.mode,
-                onSelect = onSelectMode
-            )
-        }
+        Text(
+            text = stringResource(R.string.training_mode),
+            style = MaterialTheme.typography.labelMedium,
+            color = TextSecondary
+        )
+        Spacer(Modifier.height(6.dp))
+        ModeSelector(selected = uiState.mode, onSelect = onSelectMode)
+
+        Spacer(Modifier.height(16.dp))
 
         // Difficulty selection
-        item {
+        Text(
+            text = stringResource(R.string.training_difficulty),
+            style = MaterialTheme.typography.labelMedium,
+            color = TextSecondary
+        )
+        Spacer(Modifier.height(6.dp))
+        DifficultySelector(selected = uiState.difficulty, onSelect = onSelectDifficulty)
+
+        Spacer(Modifier.height(16.dp))
+
+        // Recent results — scrollable, fills remaining space
+        if (uiState.selectedPlayer != null && uiState.recentResults.isNotEmpty()) {
             Text(
-                text = stringResource(R.string.training_difficulty),
+                text = stringResource(R.string.training_recent_results),
                 style = MaterialTheme.typography.labelMedium,
                 color = TextSecondary
             )
+            Spacer(Modifier.height(6.dp))
+            LazyColumn(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                items(uiState.recentResults) { session ->
+                    RecentResultRow(session = session, mode = uiState.mode, dateFormat = dateFormat)
+                }
+                item { Spacer(Modifier.height(4.dp)) }
+            }
+        } else {
+            Spacer(Modifier.weight(1f))
         }
-        item {
-            DifficultySelector(
-                selected = uiState.difficulty,
-                onSelect = onSelectDifficulty
+
+        // Start button pinned at bottom
+        Button(
+            onClick = onStart,
+            enabled = uiState.selectedPlayer != null,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 16.dp)
+                .height(52.dp),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = Accent,
+                disabledContainerColor = Surface3,
+                contentColor = Background,
+                disabledContentColor = TextTertiary
+            ),
+            shape = RoundedCornerShape(12.dp)
+        ) {
+            Text(
+                text = stringResource(R.string.training_start),
+                fontWeight = FontWeight.Bold,
+                fontSize = 16.sp
             )
         }
+    }
 
-        // Recent results
-        if (uiState.selectedPlayer != null && uiState.recentResults.isNotEmpty()) {
-            item {
-                Text(
-                    text = stringResource(R.string.training_recent_results),
-                    style = MaterialTheme.typography.labelMedium,
-                    color = TextSecondary
-                )
-            }
-            items(uiState.recentResults) { session ->
-                RecentResultRow(session = session, mode = uiState.mode, dateFormat = dateFormat)
-            }
-        }
-
-        // Start button
-        item {
-            Spacer(Modifier.height(8.dp))
-            Button(
-                onClick = onStart,
-                enabled = uiState.selectedPlayer != null,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(52.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = Accent,
-                    disabledContainerColor = Surface3,
-                    contentColor = Background,
-                    disabledContentColor = TextTertiary
-                ),
-                shape = RoundedCornerShape(12.dp)
-            ) {
-                Text(
-                    text = stringResource(R.string.training_start),
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 16.sp
-                )
-            }
-        }
+    if (showPlayerPicker) {
+        PlayerPickerSheet(
+            allPlayers = uiState.players,
+            recentPlayers = emptyList(),
+            selectedPlayerIds = setOfNotNull(uiState.selectedPlayer?.id),
+            onPlayerSelected = { player ->
+                onSelectPlayer(player)
+                showPlayerPicker = false
+            },
+            onDismiss = { showPlayerPicker = false }
+        )
     }
 }
 
 @Composable
-private fun PlayerSelectionRow(
-    players: List<Player>,
-    selectedPlayer: Player?,
-    onSelectPlayer: (Player?) -> Unit
+private fun PlayerChip(
+    selectedName: String?,
+    onClick: () -> Unit
 ) {
-    if (players.isEmpty()) {
-        Text(
-            text = stringResource(R.string.training_no_players),
-            style = MaterialTheme.typography.bodyMedium,
-            color = TextTertiary
-        )
-        return
-    }
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        players.forEach { player ->
-            val isSelected = player.id == selectedPlayer?.id
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(
-                        color = if (isSelected) AccentDim else Surface,
-                        shape = RoundedCornerShape(10.dp)
-                    )
-                    .border(
-                        width = if (isSelected) 1.dp else 0.dp,
-                        color = if (isSelected) Accent else Color.Transparent,
-                        shape = RoundedCornerShape(10.dp)
-                    )
-                    .clickable { onSelectPlayer(if (isSelected) null else player) }
-                    .padding(horizontal = 12.dp, vertical = 10.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                PlayerAvatar(name = player.name, size = 36.dp)
-                Spacer(Modifier.width(12.dp))
-                Text(
-                    text = player.name,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = TextPrimary,
-                    modifier = Modifier.weight(1f)
-                )
-                if (isSelected) {
-                    Icon(
-                        imageVector = Icons.Default.CheckCircle,
-                        contentDescription = null,
-                        tint = Accent,
-                        modifier = Modifier.size(20.dp)
-                    )
-                }
-            }
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(
+                color = if (selectedName != null) AccentDim else Surface,
+                shape = RoundedCornerShape(10.dp)
+            )
+            .border(
+                width = 1.dp,
+                color = if (selectedName != null) Accent else Border2,
+                shape = RoundedCornerShape(10.dp)
+            )
+            .clickable(onClick = onClick)
+            .padding(horizontal = 12.dp, vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        if (selectedName != null) {
+            PlayerAvatar(name = selectedName, size = 32.dp)
+            Spacer(Modifier.width(10.dp))
+            Text(
+                text = selectedName,
+                style = MaterialTheme.typography.bodyMedium,
+                color = TextPrimary,
+                modifier = Modifier.weight(1f)
+            )
+            Text(
+                text = stringResource(R.string.training_change_player),
+                style = MaterialTheme.typography.labelSmall,
+                color = Accent
+            )
+        } else {
+            Icon(
+                imageVector = Icons.Default.Person,
+                contentDescription = null,
+                tint = TextTertiary,
+                modifier = Modifier.size(24.dp)
+            )
+            Spacer(Modifier.width(10.dp))
+            Text(
+                text = stringResource(R.string.training_select_player),
+                style = MaterialTheme.typography.bodyMedium,
+                color = TextTertiary,
+                modifier = Modifier.weight(1f)
+            )
         }
     }
 }
@@ -257,9 +264,9 @@ private fun DifficultySelector(
     onSelect: (TrainingDifficulty) -> Unit
 ) {
     val difficulties = listOf(
-        TrainingDifficulty.BEGINNER    to R.string.training_difficulty_beginner,
+        TrainingDifficulty.BEGINNER     to R.string.training_difficulty_beginner,
         TrainingDifficulty.INTERMEDIATE to R.string.training_difficulty_intermediate,
-        TrainingDifficulty.PRO         to R.string.training_difficulty_pro
+        TrainingDifficulty.PRO          to R.string.training_difficulty_pro
     )
     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         difficulties.forEach { (diff, labelRes) ->
