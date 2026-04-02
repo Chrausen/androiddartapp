@@ -363,29 +363,37 @@ private fun DrawScope.drawDispersionOverlay(cx: Float, cy: Float, scale: Float, 
     val minRadius = canvasR * 0.02f
     val maxRadius = canvasR * SCORING_BOUNDARY_NORM
 
-    // Guide rings (10 rings at 0.1..1.0 dispersion steps)
-    val guidePaint = android.graphics.Paint().apply {
-        isAntiAlias = true
-        style       = android.graphics.Paint.Style.STROKE
-        strokeWidth = 1f
-        color       = android.graphics.Color.argb(80, 255, 255, 255)
-    }
-    val labelPaint = android.graphics.Paint().apply {
+    // Guide rings (10 rings at 0.1..1.0 dispersion steps) — Compose-native so they stay within clip.
+    val guideColor  = Color.White.copy(alpha = 0.31f)
+    val labelPaint  = android.graphics.Paint().apply {
         isAntiAlias = true
         textSize    = size.minDimension * 0.024f
         textAlign   = android.graphics.Paint.Align.CENTER
         color       = android.graphics.Color.argb(140, 200, 200, 200)
     }
 
+    for (step in 1..10) {
+        val d = step / 10f
+        val r = minRadius + d * (maxRadius - minRadius)
+        drawCircle(
+            color  = guideColor,
+            radius = r,
+            center = refCentre,
+            style  = Stroke(width = 1f)
+        )
+    }
+
+    // Labels: clip native canvas to the composable bounds so text never overflows.
     drawIntoCanvas { canvas ->
+        canvas.save()
+        canvas.clipRect(androidx.compose.ui.geometry.Rect(0f, 0f, size.width, size.height))
         for (step in 1..10) {
             val d = step / 10f
             val r = minRadius + d * (maxRadius - minRadius)
-            canvas.nativeCanvas.drawCircle(refX, refY, r, guidePaint)
-            // Label at bottom of ring
             val labelY = refY + r + labelPaint.textSize * 0.3f
             canvas.nativeCanvas.drawText("%.1f".format(d), refX, labelY, labelPaint)
         }
+        canvas.restore()
     }
 
     // Dispersion circle
