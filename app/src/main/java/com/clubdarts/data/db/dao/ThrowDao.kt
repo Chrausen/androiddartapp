@@ -24,6 +24,31 @@ data class PlayerStatsAggregate(
     val bucketBusts: Int
 )
 
+/**
+ * Extended per-throw / per-dart statistics for Stats 5–15.
+ * Computed in a single JOIN query for efficiency.
+ */
+data class ExtendedStatsAggregate(
+    /** Stat 5: total non-padding darts thrown */
+    val totalDarts: Int,
+    /** Stat 6: avg score per dart (excl. bust + checkout rounds) */
+    val avgPerDart: Double?,
+    /** Stat 7: avg score per round (excl. bust + checkout rounds) */
+    val avgPerRound: Double?,
+    /** Stat 10: highest single-round total (excl. bust) */
+    val highestRound: Int?,
+    /** Stat 11 numerator: darts with multiplier = 2 */
+    val doubleCount: Int,
+    /** Stat 12 numerator: darts with multiplier = 3 */
+    val tripleCount: Int,
+    /** Stat 13 numerator: non-padding darts with score = 0 */
+    val outOfBoundsCount: Int,
+    /** Stat 14: rounds where visitTotal < 10 (excl. bust) */
+    val roundsUnder10Count: Int,
+    /** Stat 14 denominator: all non-bust rounds */
+    val nonBustRoundsCount: Int
+)
+
 @Dao
 interface ThrowDao {
     @Insert
@@ -124,6 +149,54 @@ interface ThrowDao {
         WHERE t.playerId = :playerId
     """)
     suspend fun getPlayerStatsAggregate(playerId: Long): PlayerStatsAggregate
+
+    /**
+     * Stats 5–14 in a single JOIN query. "Checkout round" = isCheckoutAttempt=1 AND leg won by player.
+     */
+    @Query("""
+        SELECT
+            COALESCE(SUM(t.dartsUsed), 0) AS totalDarts,
+            CAST(
+                SUM(CASE WHEN t.isBust = 0 AND (t.isCheckoutAttempt = 0 OR l.winnerId != t.playerId)
+                    THEN t.visitTotal ELSE 0 END) AS REAL
+            ) / NULLIF(
+                SUM(CASE WHEN t.isBust = 0 AND (t.isCheckoutAttempt = 0 OR l.winnerId != t.playerId)
+                    THEN t.dartsUsed ELSE 0 END), 0
+            ) AS avgPerDart,
+            AVG(CASE WHEN t.isBust = 0 AND (t.isCheckoutAttempt = 0 OR l.winnerId != t.playerId)
+                THEN CAST(t.visitTotal AS REAL) ELSE NULL END) AS avgPerRound,
+            MAX(CASE WHEN t.isBust = 0 THEN t.visitTotal ELSE NULL END) AS highestRound,
+            (COALESCE(SUM(CASE WHEN t.dart1Mult = 2 THEN 1 ELSE 0 END), 0)
+             + COALESCE(SUM(CASE WHEN t.dart2Mult = 2 AND t.dartsUsed >= 2 THEN 1 ELSE 0 END), 0)
+             + COALESCE(SUM(CASE WHEN t.dart3Mult = 2 AND t.dartsUsed >= 3 THEN 1 ELSE 0 END), 0)) AS doubleCount,
+            (COALESCE(SUM(CASE WHEN t.dart1Mult = 3 THEN 1 ELSE 0 END), 0)
+             + COALESCE(SUM(CASE WHEN t.dart2Mult = 3 AND t.dartsUsed >= 2 THEN 1 ELSE 0 END), 0)
+             + COALESCE(SUM(CASE WHEN t.dart3Mult = 3 AND t.dartsUsed >= 3 THEN 1 ELSE 0 END), 0)) AS tripleCount,
+            (COALESCE(SUM(CASE WHEN t.dart1Score = 0 THEN 1 ELSE 0 END), 0)
+             + COALESCE(SUM(CASE WHEN t.dart2Score = 0 AND t.dartsUsed >= 2 THEN 1 ELSE 0 END), 0)
+             + COALESCE(SUM(CASE WHEN t.dart3Score = 0 AND t.dartsUsed >= 3 THEN 1 ELSE 0 END), 0)) AS outOfBoundsCount,
+            COUNT(CASE WHEN t.isBust = 0 AND t.visitTotal < 10 THEN 1 ELSE NULL END) AS roundsUnder10Count,
+            COUNT(CASE WHEN t.isBust = 0 THEN 1 ELSE NULL END) AS nonBustRoundsCount
+        FROM throws t
+        INNER JOIN legs l ON t.legId = l.id
+        WHERE t.playerId = :playerId
+    """)
+    suspend fun getExtendedPlayerStats(playerId: Long): ExtendedStatsAggregate
+
+    /**
+     * Stat 8: First-9 average — for each leg, sum the player's first 3 visits, then average over legs.
+     * Bust and checkout rounds are included if they fall within the first 3 visits.
+     */
+    @Query("""
+        SELECT AVG(CAST(legFirstNine AS REAL)) FROM (
+            SELECT l.id, SUM(t.visitTotal) AS legFirstNine
+            FROM throws t
+            INNER JOIN legs l ON t.legId = l.id
+            WHERE t.playerId = :playerId AND t.visitNumber <= 3
+            GROUP BY l.id
+        )
+    """)
+    suspend fun getFirst9Avg(playerId: Long): Double?
 
     /**
      * Returns all individual dart positions (mm from board centre) for a player

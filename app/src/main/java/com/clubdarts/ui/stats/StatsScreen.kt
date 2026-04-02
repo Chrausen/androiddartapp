@@ -81,7 +81,7 @@ fun StatsScreen(
                 )
             }
         } else {
-            // Player selected
+            // ── Player detail view ───────────────────────────────────────────
             val stats = uiState.selectedPlayerStats
             item {
                 Row(verticalAlignment = Alignment.CenterVertically) {
@@ -95,11 +95,55 @@ fun StatsScreen(
             }
 
             if (stats != null) {
+                // ── Section: Ergebnisse ──────────────────────────────────────
+                item { SectionHeader(stringResource(R.string.stats_section_results)) }
                 item {
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        MetricCard(stringResource(R.string.stats_avg), "%.1f".format(stats.average), modifier = Modifier.weight(1f))
-                        MetricCard(stringResource(R.string.stats_best), stats.highestFinish.toString(), modifier = Modifier.weight(1f))
+                        MetricCard(stringResource(R.string.stats_games_played), stats.gamesPlayed.toString(), modifier = Modifier.weight(1f))
+                        MetricCard(stringResource(R.string.stats_wins), stats.wins.toString(), modifier = Modifier.weight(1f))
+                    }
+                }
+                item {
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        MetricCard(stringResource(R.string.stats_second_place), stats.secondPlace.toString(), modifier = Modifier.weight(1f))
+                        MetricCard(stringResource(R.string.stats_third_place), stats.thirdPlace.toString(), modifier = Modifier.weight(1f))
+                    }
+                }
+
+                // ── Section: Scoring ─────────────────────────────────────────
+                item { SectionHeader(stringResource(R.string.stats_section_scoring)) }
+                item {
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        MetricCard(stringResource(R.string.stats_avg_per_dart), "%.2f".format(stats.avgPerDart), modifier = Modifier.weight(1f))
+                        MetricCard(stringResource(R.string.stats_avg_per_round), "%.1f".format(stats.avgPerRound), modifier = Modifier.weight(1f))
+                        MetricCard(stringResource(R.string.stats_first9_avg), "%.1f".format(stats.first9Avg), modifier = Modifier.weight(1f))
+                    }
+                }
+                item {
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        MetricCard(stringResource(R.string.stats_highest_checkout), stats.highestFinish.toString(), modifier = Modifier.weight(1f))
+                        MetricCard(stringResource(R.string.stats_highest_round), stats.highestRound.toString(), modifier = Modifier.weight(1f))
+                        MetricCard(stringResource(R.string.stats_total_darts), stats.totalDarts.toString(), modifier = Modifier.weight(1f))
+                    }
+                }
+
+                // ── Section: Präzision ───────────────────────────────────────
+                item { SectionHeader(stringResource(R.string.stats_section_precision)) }
+                item {
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        MetricCard(stringResource(R.string.stats_double_rate), "%.1f%%".format(stats.doubleRate), modifier = Modifier.weight(1f))
+                        MetricCard(stringResource(R.string.stats_triple_rate), "%.1f%%".format(stats.tripleRate), modifier = Modifier.weight(1f))
+                        MetricCard(stringResource(R.string.stats_oob_rate), "%.1f%%".format(stats.outOfBoundsRate), modifier = Modifier.weight(1f))
+                    }
+                }
+
+                // ── Section: Quoten ──────────────────────────────────────────
+                item { SectionHeader(stringResource(R.string.stats_section_rates)) }
+                item {
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         MetricCard(stringResource(R.string.stats_checkout_pct), "%.0f%%".format(stats.checkoutPercent * 100), modifier = Modifier.weight(1f))
+                        MetricCard(stringResource(R.string.stats_bust_rate), "%.1f%%".format(stats.bustRate), modifier = Modifier.weight(1f))
+                        MetricCard(stringResource(R.string.stats_rounds_under10), "%.1f%%".format(stats.roundsUnder10Rate), modifier = Modifier.weight(1f))
                     }
                 }
                 item {
@@ -109,7 +153,18 @@ fun StatsScreen(
                     }
                 }
 
-                // Chart toggle
+                // ── Section: Sozial ──────────────────────────────────────────
+                item { SectionHeader(stringResource(R.string.stats_section_social)) }
+                item {
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        SocialStatRow(stringResource(R.string.stats_best_buddy), stats.bestBuddy)
+                        SocialStatRow(stringResource(R.string.stats_rival), stats.rival)
+                        SocialStatRow(stringResource(R.string.stats_easy_win), stats.easyWin)
+                    }
+                }
+
+                // ── Chart toggle ─────────────────────────────────────────────
+                item { SectionHeader(stringResource(R.string.stats_score_buckets)) }
                 item {
                     Row(
                         modifier = Modifier
@@ -118,8 +173,8 @@ fun StatsScreen(
                         horizontalArrangement = Arrangement.spacedBy(2.dp)
                     ) {
                         val topScoresLabel = stringResource(R.string.stats_top_scores)
-                    val bucketsLabel = stringResource(R.string.stats_buckets)
-                    listOf(topScoresLabel to false, bucketsLabel to true).forEach { (label, isBuckets) ->
+                        val bucketsLabel = stringResource(R.string.stats_buckets)
+                        listOf(topScoresLabel to false, bucketsLabel to true).forEach { (label, isBuckets) ->
                             Box(
                                 modifier = Modifier
                                     .weight(1f)
@@ -176,9 +231,6 @@ fun StatsScreen(
                     }
                 } else {
                     item {
-                        Text(stringResource(R.string.stats_score_buckets), style = MaterialTheme.typography.labelMedium, color = TextSecondary)
-                    }
-                    item {
                         val total = stats.bucketHigh + stats.bucketMid + stats.bucketLow + stats.bucketVeryLow + stats.bucketBusts
                         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                             BucketBar("100–180", stats.bucketHigh, total, Blue)
@@ -191,6 +243,37 @@ fun StatsScreen(
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun SectionHeader(title: String) {
+    Text(
+        title,
+        style = MaterialTheme.typography.titleSmall,
+        color = Accent,
+        modifier = Modifier.padding(top = 4.dp)
+    )
+}
+
+@Composable
+private fun SocialStatRow(label: String, value: String?) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(Surface2, RoundedCornerShape(10.dp))
+            .padding(horizontal = 14.dp, vertical = 12.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(label, style = MaterialTheme.typography.labelMedium, color = TextSecondary)
+        Text(
+            value ?: "—",
+            style = MaterialTheme.typography.bodyMedium,
+            fontFamily = DmMono,
+            fontWeight = FontWeight.Bold,
+            color = if (value != null) TextPrimary else TextTertiary
+        )
     }
 }
 

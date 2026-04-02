@@ -15,8 +15,9 @@ import javax.inject.Inject
 
 data class PlayerStats(
     val player: Player,
+    // ── Existing stats (also used in leaderboard avg) ─────────────────────
     val average: Double,
-    val highestFinish: Int,
+    val highestFinish: Int,        // Stat 9: Höchstes Checkout
     val checkoutPercent: Float,
     val count180s: Int,
     val hundredPlus: Int,
@@ -27,7 +28,28 @@ data class PlayerStats(
     val bucketVeryLow: Int,
     val bucketBusts: Int,
     val topScores: List<ScoreFrequency>,
-    val games: List<Game>
+    val games: List<Game>,
+    // ── New stats 1–4: game results ───────────────────────────────────────
+    val gamesPlayed: Int,          // Stat 1
+    val wins: Int,                 // Stat 2
+    val secondPlace: Int,          // Stat 3
+    val thirdPlace: Int,           // Stat 4
+    // ── New stats 5–10: scoring ───────────────────────────────────────────
+    val totalDarts: Int,           // Stat 5
+    val avgPerDart: Double,        // Stat 6
+    val avgPerRound: Double,       // Stat 7 (excl. bust + checkout)
+    val first9Avg: Double,         // Stat 8
+    val highestRound: Int,         // Stat 10
+    // ── New stats 11–15: rates ────────────────────────────────────────────
+    val doubleRate: Float,         // Stat 11
+    val tripleRate: Float,         // Stat 12
+    val outOfBoundsRate: Float,    // Stat 13
+    val roundsUnder10Rate: Float,  // Stat 14
+    val bustRate: Float,           // Stat 15
+    // ── New stats 16–18: social ───────────────────────────────────────────
+    val bestBuddy: String?,        // Stat 16
+    val rival: String?,            // Stat 17
+    val easyWin: String?           // Stat 18
 )
 
 data class StatsUiState(
@@ -101,11 +123,36 @@ class StatsViewModel @Inject constructor(
             try {
                 _uiState.update { it.copy(isLoading = true, selectedPlayer = player) }
 
-                // Single aggregated query replaces 11 individual DB round-trips
+                // Basic aggregate (existing)
                 val agg = throwDao.getPlayerStatsAggregate(player.id)
                 val checkoutPct = if (agg.checkoutAttempts > 0) {
                     agg.successfulCheckouts.toFloat() / agg.checkoutAttempts
                 } else 0f
+
+                // Extended throw stats (stats 5–14)
+                val ext = throwDao.getExtendedPlayerStats(player.id)
+                val first9Avg = throwDao.getFirst9Avg(player.id) ?: 0.0
+
+                // Rates derived from ext counts
+                val doubleRate = if (ext.totalDarts > 0) ext.doubleCount.toFloat() / ext.totalDarts * 100f else 0f
+                val tripleRate = if (ext.totalDarts > 0) ext.tripleCount.toFloat() / ext.totalDarts * 100f else 0f
+                val oobRate = if (ext.totalDarts > 0) ext.outOfBoundsCount.toFloat() / ext.totalDarts * 100f else 0f
+                val under10Rate = if (ext.nonBustRoundsCount > 0) ext.roundsUnder10Count.toFloat() / ext.nonBustRoundsCount * 100f else 0f
+
+                // Stat 15: bustRounds / (bustRounds + winningRounds)
+                val bustDenom = agg.bucketBusts + agg.successfulCheckouts
+                val bustRate = if (bustDenom > 0) agg.bucketBusts.toFloat() / bustDenom * 100f else 0f
+
+                // Game-level stats (stats 1–4)
+                val gamesPlayed = gameRepository.getGamesPlayed(player.id)
+                val wins = gameRepository.getWins(player.id)
+                val secondPlace = gameRepository.getSecondPlaceCount(player.id)
+                val thirdPlace = gameRepository.getThirdPlaceCount(player.id)
+
+                // Social stats (stats 16–18)
+                val bestBuddy = gameRepository.getBestBuddy(player.id)
+                val rival = gameRepository.getRival(player.id)
+                val easyWin = gameRepository.getEasyWin(player.id)
 
                 val topScores = throwDao.getVisitScoreFrequencyForPlayer(player.id)
                 val legsWon = gameRepository.getLegWinsForPlayer(player.id)
@@ -125,7 +172,24 @@ class StatsViewModel @Inject constructor(
                     bucketVeryLow = agg.bucketVeryLow,
                     bucketBusts = agg.bucketBusts,
                     topScores = topScores,
-                    games = games
+                    games = games,
+                    gamesPlayed = gamesPlayed,
+                    wins = wins,
+                    secondPlace = secondPlace,
+                    thirdPlace = thirdPlace,
+                    totalDarts = ext.totalDarts,
+                    avgPerDart = ext.avgPerDart ?: 0.0,
+                    avgPerRound = ext.avgPerRound ?: 0.0,
+                    first9Avg = first9Avg,
+                    highestRound = ext.highestRound ?: 0,
+                    doubleRate = doubleRate,
+                    tripleRate = tripleRate,
+                    outOfBoundsRate = oobRate,
+                    roundsUnder10Rate = under10Rate,
+                    bustRate = bustRate,
+                    bestBuddy = bestBuddy,
+                    rival = rival,
+                    easyWin = easyWin
                 )
                 _uiState.update { it.copy(selectedPlayerStats = stats, isLoading = false) }
             } catch (e: Exception) {

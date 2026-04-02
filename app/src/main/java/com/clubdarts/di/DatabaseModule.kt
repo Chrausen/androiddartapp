@@ -12,6 +12,7 @@ import com.clubdarts.data.db.MIGRATION_6_7
 import com.clubdarts.data.db.MIGRATION_7_8
 import com.clubdarts.data.db.MIGRATION_8_9
 import com.clubdarts.data.db.MIGRATION_9_10
+import com.clubdarts.data.db.MIGRATION_10_11
 import com.clubdarts.data.db.dao.*
 import dagger.Module
 import dagger.Provides
@@ -28,7 +29,7 @@ object DatabaseModule {
     @Singleton
     fun provideAppDatabase(@ApplicationContext context: Context): AppDatabase =
         Room.databaseBuilder(context, AppDatabase::class.java, "clubdarts.db")
-            .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10)
+            .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11)
             .build()
 
     @Provides

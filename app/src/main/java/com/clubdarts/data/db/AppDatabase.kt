@@ -94,6 +94,19 @@ val MIGRATION_8_9 = object : Migration(8, 9) {
     }
 }
 
+val MIGRATION_10_11 = object : Migration(10, 11) {
+    override fun migrate(database: SupportSQLiteDatabase) {
+        database.execSQL("ALTER TABLE game_players ADD COLUMN placement INTEGER")
+        // Backfill placement = 1 for existing game winners
+        database.execSQL("""
+            UPDATE game_players SET placement = 1
+            WHERE playerId IN (
+                SELECT winnerId FROM games WHERE id = game_players.gameId AND winnerId IS NOT NULL
+            )
+        """)
+    }
+}
+
 val MIGRATION_9_10 = object : Migration(9, 10) {
     override fun migrate(database: SupportSQLiteDatabase) {
         database.execSQL("""
@@ -133,7 +146,7 @@ val MIGRATION_9_10 = object : Migration(9, 10) {
                 Leg::class, Throw::class, AppSettings::class,
                 EloMatch::class, EloMatchEntry::class,
                 TrainingSession::class, TrainingThrow::class],
-    version = 10,
+    version = 11,
     exportSchema = false
 )
 @TypeConverters(Converters::class)

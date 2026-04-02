@@ -143,6 +143,32 @@
     <string name="stats_score_buckets">Score buckets</string>
     <string name="stats_busts">Busts</string>
 
+    <!-- Stats: new stat labels (stats 1–18) -->
+    <string name="stats_section_results">Ergebnisse</string>
+    <string name="stats_section_scoring">Scoring</string>
+    <string name="stats_section_precision">Präzision</string>
+    <string name="stats_section_rates">Quoten</string>
+    <string name="stats_section_social">Sozial</string>
+    <string name="stats_games_played">Gespielte Spiele</string>
+    <string name="stats_wins">Siege</string>
+    <string name="stats_second_place">2. Platz</string>
+    <string name="stats_third_place">3. Platz</string>
+    <string name="stats_total_darts">Darts gesamt</string>
+    <string name="stats_avg_per_dart">Ø Punkte/Dart</string>
+    <string name="stats_avg_per_round">Ø Punkte/Runde</string>
+    <string name="stats_first9_avg">First 9 Ø</string>
+    <string name="stats_highest_checkout">Höchstes Checkout</string>
+    <string name="stats_highest_round">Höchste Runde</string>
+    <string name="stats_double_rate">Double-Quote</string>
+    <string name="stats_triple_rate">Triple-Quote</string>
+    <string name="stats_oob_rate">Out of Bounce</string>
+    <string name="stats_rounds_under10">Runden &lt; 10</string>
+    <string name="stats_bust_rate">Bust-Quote</string>
+    <string name="stats_best_buddy">Best Buddy</string>
+    <string name="stats_rival">Erzfeind</string>
+    <string name="stats_easy_win">Easy Win</string>
+    <string name="stats_none">—</string>
+
     <!-- Ranking settings screen -->
     <string name="ranking_title">Ranking System</string>
     <string name="ranking_enable">Enable Ranking System</string>
