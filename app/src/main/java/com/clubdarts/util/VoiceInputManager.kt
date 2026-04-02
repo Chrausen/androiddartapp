@@ -3,6 +3,8 @@ package com.clubdarts.util
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.speech.RecognitionListener
 import android.speech.RecognizerIntent
 import android.speech.SpeechRecognizer
@@ -42,6 +44,12 @@ import com.clubdarts.ui.game.DartInput
  */
 class VoiceInputManager(private val context: Context) {
 
+    private val mainHandler = Handler(Looper.getMainLooper())
+
+    // Incremented on every new session. Callbacks check their captured value against
+    // this to ignore events that belong to an already-cancelled session.
+    private var sessionId = 0
+
     private var recognizer: SpeechRecognizer? = null
 
     /**
@@ -60,6 +68,8 @@ class VoiceInputManager(private val context: Context) {
             return
         }
 
+        val mySession = ++sessionId
+
         // How many darts from the parsed list have already been delivered upstream.
         var processedCount = 0
 
@@ -69,6 +79,7 @@ class VoiceInputManager(private val context: Context) {
          * [keepLast] = false on the final result (release everything).
          */
         fun flush(text: String, keepLast: Boolean) {
+            if (sessionId != mySession) return
             val darts = parseVoiceInput(text)
             val deliverUpTo = if (keepLast) darts.size - 1 else darts.size
             for (i in processedCount until deliverUpTo) {
@@ -87,6 +98,7 @@ class VoiceInputManager(private val context: Context) {
             }
 
             override fun onResults(results: Bundle?) {
+                if (sessionId != mySession) return
                 val text = results
                     ?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
                     ?.firstOrNull() ?: ""
@@ -94,7 +106,10 @@ class VoiceInputManager(private val context: Context) {
                 onDone()
             }
 
-            override fun onError(errorCode: Int) { onDone() }
+            override fun onError(errorCode: Int) {
+                if (sessionId != mySession) return
+                onDone()
+            }
 
             // Required by the interface; not needed here
             override fun onReadyForSpeech(params: Bundle?) {}
@@ -107,9 +122,8 @@ class VoiceInputManager(private val context: Context) {
 
         val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
             putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
-            putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true)   // ← stream partial results
+            putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true)
             putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 1)
-            // Give the user time to announce up to three darts
             putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS, 5000L)
             putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_POSSIBLY_COMPLETE_SILENCE_LENGTH_MILLIS, 5000L)
             putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_MINIMUM_LENGTH_MILLIS, 0L)
@@ -118,9 +132,18 @@ class VoiceInputManager(private val context: Context) {
     }
 
     fun stopListening() {
-        recognizer?.stopListening()
-        recognizer?.destroy()
+        // Invalidate the current session so any in-flight callbacks are ignored.
+        sessionId++
+        // Defer destroy() to avoid calling it from within a RecognitionListener callback,
+        // which corrupts the recognizer and prevents future sessions from working.
+        val r = recognizer
         recognizer = null
+        if (r != null) {
+            mainHandler.post {
+                r.stopListening()
+                r.destroy()
+            }
+        }
     }
 
     // ── Parsing ───────────────────────────────────────────────────────────────
