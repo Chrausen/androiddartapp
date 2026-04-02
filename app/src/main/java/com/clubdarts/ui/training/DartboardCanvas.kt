@@ -159,21 +159,21 @@ internal fun fieldCentroid(field: String): Pair<Double, Double>? {
             val ang = (-90.0 + idx * 18.0) * PI / 180.0
             // Centre of outer single (between triple-outer and double-inner)
             val r = (TREBLE_OUTER_R + DOUBLE_INNER_R) / 2.0
-            Pair(sin(ang) * r, -cos(ang) * r)
+            Pair(cos(ang) * r, sin(ang) * r)
         }
         field.startsWith("D") -> {
             val n = field.drop(1).toIntOrNull() ?: return null
             val idx = SEGMENTS.indexOf(n).takeIf { it >= 0 } ?: return null
             val ang = (-90.0 + idx * 18.0) * PI / 180.0
             val r = (DOUBLE_INNER_R + DOUBLE_OUTER_R) / 2.0
-            Pair(sin(ang) * r, -cos(ang) * r)
+            Pair(cos(ang) * r, sin(ang) * r)
         }
         field.startsWith("T") -> {
             val n = field.drop(1).toIntOrNull() ?: return null
             val idx = SEGMENTS.indexOf(n).takeIf { it >= 0 } ?: return null
             val ang = (-90.0 + idx * 18.0) * PI / 180.0
             val r = (TREBLE_INNER_R + TREBLE_OUTER_R) / 2.0
-            Pair(sin(ang) * r, -cos(ang) * r)
+            Pair(cos(ang) * r, sin(ang) * r)
         }
         else -> null
     }
