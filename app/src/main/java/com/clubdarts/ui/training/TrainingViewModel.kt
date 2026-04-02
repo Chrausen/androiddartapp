@@ -112,6 +112,7 @@ data class TrainingUiState(
     val mode: TrainingMode = TrainingMode.TARGET_FIELD,
     val difficulty: TrainingDifficulty = TrainingDifficulty.BEGINNER,
     val recentResults: List<TrainingSession> = emptyList(),
+    val bestResult: com.clubdarts.data.db.dao.BestSessionWithPlayer? = null,
     val liveSession: LiveSessionState? = null,
     val lastResult: TrainingSession? = null,
     val isSaving: Boolean = false,
@@ -136,6 +137,7 @@ class TrainingViewModel @Inject constructor(
                 _uiState.update { it.copy(players = players) }
             }
         }
+        reloadRecentResults()
     }
 
     // ── Setup actions ─────────────────────────────────────────────────────────
@@ -155,11 +157,14 @@ class TrainingViewModel @Inject constructor(
     }
 
     private fun reloadRecentResults() {
-        val player = _uiState.value.selectedPlayer ?: return
-        val mode   = _uiState.value.mode
+        val mode = _uiState.value.mode
         viewModelScope.launch {
-            val results = trainingRepository.getRecentResults(player.id, mode, 10)
-            _uiState.update { it.copy(recentResults = results) }
+            val best = trainingRepository.getBestResult(mode)
+            val player = _uiState.value.selectedPlayer
+            val results = if (player != null)
+                trainingRepository.getRecentResults(player.id, mode, 10)
+            else emptyList()
+            _uiState.update { it.copy(recentResults = results, bestResult = best) }
         }
     }
 

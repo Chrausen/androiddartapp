@@ -8,6 +8,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.EmojiEvents
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -19,6 +20,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.clubdarts.R
+import com.clubdarts.data.db.dao.BestSessionWithPlayer
 import com.clubdarts.data.model.TrainingDifficulty
 import com.clubdarts.data.model.TrainingMode
 import com.clubdarts.data.model.TrainingSession
@@ -106,8 +108,10 @@ fun TrainingSetupScreen(
 
         Spacer(Modifier.height(16.dp))
 
-        // Recent results — scrollable, fills remaining space
-        if (uiState.selectedPlayer != null && uiState.recentResults.isNotEmpty()) {
+        // Best result + recent results — scrollable, fills remaining space
+        val hasBest   = uiState.bestResult != null
+        val hasRecent = uiState.selectedPlayer != null && uiState.recentResults.isNotEmpty()
+        if (hasBest || hasRecent) {
             Text(
                 text = stringResource(R.string.training_recent_results),
                 style = MaterialTheme.typography.labelMedium,
@@ -118,6 +122,15 @@ fun TrainingSetupScreen(
                 modifier = Modifier.weight(1f),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
+                if (hasBest) {
+                    item {
+                        BestResultRow(
+                            best = uiState.bestResult!!,
+                            mode = uiState.mode,
+                            dateFormat = dateFormat
+                        )
+                    }
+                }
                 items(uiState.recentResults) { session ->
                     RecentResultRow(session = session, mode = uiState.mode, dateFormat = dateFormat)
                 }
@@ -294,6 +307,54 @@ private fun DifficultySelector(
                 )
             }
         }
+    }
+}
+
+@Composable
+private fun BestResultRow(
+    best: BestSessionWithPlayer,
+    mode: TrainingMode,
+    dateFormat: SimpleDateFormat
+) {
+    val resultText = when (mode) {
+        TrainingMode.SCORING_ROUNDS -> "Ø %.1f".format(best.session.result / 10.0)
+        else                         -> "${best.session.result} Darts"
+    }
+    val gold = Color(0xFFFFD700)
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(gold.copy(alpha = 0.10f), RoundedCornerShape(10.dp))
+            .border(1.dp, gold.copy(alpha = 0.55f), RoundedCornerShape(10.dp))
+            .padding(horizontal = 12.dp, vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(
+            imageVector = Icons.Default.EmojiEvents,
+            contentDescription = null,
+            tint = gold,
+            modifier = Modifier.size(20.dp)
+        )
+        Spacer(Modifier.width(10.dp))
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = resultText,
+                style = MaterialTheme.typography.bodyMedium,
+                fontFamily = DmMono,
+                fontWeight = FontWeight.Bold,
+                color = gold
+            )
+            Text(
+                text = best.playerName,
+                style = MaterialTheme.typography.labelSmall,
+                color = gold.copy(alpha = 0.75f)
+            )
+        }
+        Text(
+            text = dateFormat.format(java.util.Date(best.session.completedAt)),
+            style = MaterialTheme.typography.labelSmall,
+            color = gold.copy(alpha = 0.6f)
+        )
     }
 }
 

@@ -1,5 +1,7 @@
 package com.clubdarts.data.repository
 
+import com.clubdarts.data.db.dao.BestSessionRow
+import com.clubdarts.data.db.dao.BestSessionWithPlayer
 import com.clubdarts.data.db.dao.DartCoordinate
 import com.clubdarts.data.db.dao.ThrowDao
 import com.clubdarts.data.db.dao.TrainingDartCoordinate
@@ -42,6 +44,15 @@ class TrainingRepository @Inject constructor(
 
     suspend fun getRecentResults(playerId: Long, mode: TrainingMode, limit: Int = 10): List<TrainingSession> =
         sessionDao.getRecentSessionsForPlayer(playerId, mode.name, limit)
+
+    /** Returns the all-time best session for [mode] across all players, or null if none recorded. */
+    suspend fun getBestResult(mode: TrainingMode): BestSessionWithPlayer? {
+        val row = if (mode == TrainingMode.SCORING_ROUNDS)
+            sessionDao.getBestSessionDescending(mode.name)
+        else
+            sessionDao.getBestSessionAscending(mode.name)
+        return row?.toBestSessionWithPlayer()
+    }
 
     /** Returns sessions for a player+mode sorted chronologically (oldest first). */
     suspend fun getSessionsChronological(playerId: Long, mode: TrainingMode): List<TrainingSession> =
