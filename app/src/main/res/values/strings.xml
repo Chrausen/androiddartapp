@@ -199,6 +199,7 @@
     <string name="training_misses_on_target">%1$d miss(es) on this target</string>
     <string name="training_total_darts">Total darts: %1$d</string>
     <string name="training_double_required">Double required</string>
+    <string name="training_triple_required">Triple required</string>
     <string name="training_round_progress">Round %1$d / %2$d</string>
     <string name="training_avg">Average</string>
     <string name="training_target_avg">Target avg</string>

@@ -316,8 +316,13 @@ private fun BestResultRow(
     mode: TrainingMode,
     dateFormat: SimpleDateFormat
 ) {
+    val diff = when (best.session.difficulty) {
+        TrainingDifficulty.BEGINNER.name     -> TrainingDifficulty.BEGINNER
+        TrainingDifficulty.INTERMEDIATE.name -> TrainingDifficulty.INTERMEDIATE
+        else                                 -> TrainingDifficulty.PRO
+    }
     val resultText = when (mode) {
-        TrainingMode.SCORING_ROUNDS -> "Ø %.1f".format(best.session.result / 10.0)
+        TrainingMode.SCORING_ROUNDS -> "Ø %.1f  /  Ziel: %d".format(best.session.result / 10.0, diff.targetAvg)
         else                         -> "${best.session.result} Darts"
     }
     val gold = Color(0xFFFFD700)
@@ -364,20 +369,24 @@ private fun RecentResultRow(
     mode: TrainingMode,
     dateFormat: SimpleDateFormat
 ) {
-    val resultText = when (mode) {
-        TrainingMode.SCORING_ROUNDS -> "Ø %.1f".format(session.result / 10.0)
-        else                         -> "${session.result} Darts"
-    }
-    val difficultyLabel = when (session.difficulty) {
+    val diff = when (session.difficulty) {
         TrainingDifficulty.BEGINNER.name     -> TrainingDifficulty.BEGINNER
         TrainingDifficulty.INTERMEDIATE.name -> TrainingDifficulty.INTERMEDIATE
         else                                 -> TrainingDifficulty.PRO
     }
-    val diffColor = when (difficultyLabel) {
+    val diffColor = when (diff) {
         TrainingDifficulty.BEGINNER     -> Green
         TrainingDifficulty.INTERMEDIATE -> Amber
         TrainingDifficulty.PRO          -> Red
     }
+
+    // For Scoring Rounds: determine win/loss against the target average
+    val scoringMeta: Pair<String, Boolean>? = if (mode == TrainingMode.SCORING_ROUNDS) {
+        val achieved = session.result / 10.0
+        val target   = diff.targetAvg
+        "Ø %.1f  /  Ziel: %d".format(achieved, target) to (achieved >= target)
+    } else null
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -385,13 +394,28 @@ private fun RecentResultRow(
             .padding(horizontal = 12.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Text(
-            text = resultText,
-            style = MaterialTheme.typography.bodyMedium,
-            fontFamily = DmMono,
-            color = TextPrimary,
-            modifier = Modifier.weight(1f)
-        )
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = if (scoringMeta != null) scoringMeta.first else "${session.result} Darts",
+                style = MaterialTheme.typography.bodyMedium,
+                fontFamily = DmMono,
+                color = TextPrimary
+            )
+        }
+        if (scoringMeta != null) {
+            val (winLabel, winColor) = if (scoringMeta.second)
+                "Win"  to Green
+            else
+                "Loss" to Red
+            Box(
+                modifier = Modifier
+                    .background(winColor.copy(alpha = 0.15f), RoundedCornerShape(4.dp))
+                    .padding(horizontal = 6.dp, vertical = 2.dp)
+            ) {
+                Text(text = winLabel, style = MaterialTheme.typography.labelSmall, color = winColor)
+            }
+            Spacer(Modifier.width(6.dp))
+        }
         Box(
             modifier = Modifier
                 .background(diffColor.copy(alpha = 0.15f), RoundedCornerShape(4.dp))

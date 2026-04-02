@@ -8,7 +8,7 @@ import androidx.room.PrimaryKey
 enum class TrainingMode { TARGET_FIELD, AROUND_THE_CLOCK, SCORING_ROUNDS }
 
 enum class TrainingDifficulty(val targetAvg: Int) {
-    BEGINNER(45), INTERMEDIATE(60), PRO(80)
+    BEGINNER(20), INTERMEDIATE(40), PRO(60)
 }
 
 @Entity(

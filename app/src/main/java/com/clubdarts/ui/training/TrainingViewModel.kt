@@ -31,32 +31,51 @@ data class TrainingThrowRecord(
     val actualMmY: Double? = null
 )
 
-/** Returns the field pool for TARGET_FIELD mode for a given difficulty. */
+/**
+ * Builds exactly 10 targets for TARGET_FIELD mode.
+ *
+ * Easy:   10 random singles (1–20, no Bull).
+ * Medium: 2 Doubles + 7 Singles (unique numbers, no repeats across types) + 1 Bull = 10.
+ * Hard:   2 Triples + 2 Doubles + 5 Singles (unique numbers) + 1 Bullseye = 10.
+ */
 private fun buildTargetPool(difficulty: TrainingDifficulty): List<String> {
-    val pool = mutableListOf<String>()
-    (1..20).forEach { pool.add("S$it") }
-    pool.add("Bull")
-    when (difficulty) {
+    val numbers = (1..20).shuffled()
+    return when (difficulty) {
+        TrainingDifficulty.BEGINNER -> numbers.take(10).map { "S$it" }.shuffled()
         TrainingDifficulty.INTERMEDIATE -> {
-            (1..20).forEach { pool.add("D$it") }
+            val picks = numbers.take(9)
+            (picks.take(2).map { "D$it" } + picks.drop(2).map { "S$it" } + listOf("Bull")).shuffled()
         }
         TrainingDifficulty.PRO -> {
-            (1..20).forEach { pool.add("D$it") }
-            (1..20).forEach { pool.add("T$it") }
-            (1..20).forEach { pool.add("T$it") }   // double weight
-            pool.add("Bullseye")
+            val picks = numbers.take(9)
+            (picks.take(2).map { "T$it" } +
+             picks.drop(2).take(2).map { "D$it" } +
+             picks.drop(4).map { "S$it" } +
+             listOf("Bullseye")).shuffled()
         }
-        TrainingDifficulty.BEGINNER -> { /* singles + Bull only */ }
     }
-    return pool.shuffled().take(10)
 }
 
-/** Numbers that require a double in AROUND_THE_CLOCK for the given difficulty. */
-private fun requireDoubleNumbers(difficulty: TrainingDifficulty): Set<Int> = when (difficulty) {
-    TrainingDifficulty.BEGINNER      -> emptySet()
-    TrainingDifficulty.INTERMEDIATE  -> setOf(5, 10, 15, 20)
-    TrainingDifficulty.PRO           -> (1..20).toSet()
-}
+/**
+ * Returns true when [actual] is an acceptable hit for [target] at [difficulty].
+ *
+ * Easy:   D and T of the target number also count (any scoring segment).
+ * Medium: Singles require exact single. Bull accepts Bullseye too.
+ * Hard:   Exact match only.
+ */
+private fun isTargetFieldHit(target: String, actual: String, difficulty: TrainingDifficulty): Boolean =
+    when (difficulty) {
+        TrainingDifficulty.BEGINNER -> {
+            val n = target.removePrefix("S").toIntOrNull()
+            if (n != null) actual == "S$n" || actual == "D$n" || actual == "T$n"
+            else actual == target
+        }
+        TrainingDifficulty.INTERMEDIATE -> when (target) {
+            "Bull" -> actual == "Bull" || actual == "Bullseye"
+            else   -> actual == target
+        }
+        TrainingDifficulty.PRO -> actual == target
+    }
 
 // ── UI state ──────────────────────────────────────────────────────────────────
 
@@ -74,6 +93,7 @@ sealed class LiveSessionState {
 
     data class TargetField(
         val targets: List<String>,
+        val difficulty: TrainingDifficulty,
         val currentIdx: Int = 0,
         override val throws: List<TrainingThrowRecord> = emptyList()
     ) : LiveSessionState() {
@@ -82,14 +102,37 @@ sealed class LiveSessionState {
         override val isComplete: Boolean get() = currentIdx >= targets.size
     }
 
+    /**
+     * Around-the-Clock session state.
+     *
+     * Easy:   numbers 1–20; any segment (S/D/T) counts.
+     * Medium: numbers 1–20 (double only), then Bull (outer bull; Bullseye also accepted).
+     * Hard:   numbers 1–20 (triple only), then Bullseye (inner bull).
+     */
     data class AroundTheClock(
-        val requireDoubleNums: Set<Int>,
+        val difficulty: TrainingDifficulty,
         val currentNumber: Int = 1,
         override val throws: List<TrainingThrowRecord> = emptyList()
     ) : LiveSessionState() {
+        /** 20 for Easy, 21 for Medium/Hard (extra Bull/Bullseye round). */
+        val totalTargets: Int get() = if (difficulty == TrainingDifficulty.BEGINNER) 20 else 21
+
         override val totalDarts: Int get() = throws.size
-        override val isComplete: Boolean get() = currentNumber > 20
-        fun requiresDouble(n: Int) = n in requireDoubleNums
+        override val isComplete: Boolean get() = currentNumber > totalTargets
+
+        /** The field string that must be hit to advance. */
+        val currentTargetField: String get() = when (difficulty) {
+            TrainingDifficulty.BEGINNER      -> "S$currentNumber"
+            TrainingDifficulty.INTERMEDIATE  -> if (currentNumber > 20) "Bull"     else "D$currentNumber"
+            TrainingDifficulty.PRO           -> if (currentNumber > 20) "Bullseye" else "T$currentNumber"
+        }
+
+        /** Multiplier hint for the board/numpad input (1=any, 2=double, 3=triple). */
+        val requiredMultiplier: Int get() = when (difficulty) {
+            TrainingDifficulty.BEGINNER     -> 1
+            TrainingDifficulty.INTERMEDIATE -> if (currentNumber > 20) 1 else 2
+            TrainingDifficulty.PRO          -> if (currentNumber > 20) 2 else 3
+        }
     }
 
     data class ScoringRounds(
@@ -184,13 +227,13 @@ class TrainingViewModel @Inject constructor(
 
         val liveState: LiveSessionState = when (state.mode) {
             TrainingMode.TARGET_FIELD -> {
-                val targets = buildTargetPool(state.difficulty)
-                LiveSessionState.TargetField(targets = targets)
+                LiveSessionState.TargetField(
+                    targets    = buildTargetPool(state.difficulty),
+                    difficulty = state.difficulty
+                )
             }
             TrainingMode.AROUND_THE_CLOCK -> {
-                LiveSessionState.AroundTheClock(
-                    requireDoubleNums = requireDoubleNumbers(state.difficulty)
-                )
+                LiveSessionState.AroundTheClock(difficulty = state.difficulty)
             }
             TrainingMode.SCORING_ROUNDS -> {
                 LiveSessionState.ScoringRounds(targetAvg = state.difficulty.targetAvg)
@@ -232,7 +275,7 @@ class TrainingViewModel @Inject constructor(
         actualMmY: Double?
     ) {
         if (session.isComplete) return
-        val isHit = fieldString == session.currentTarget
+        val isHit = isTargetFieldHit(session.currentTarget, fieldString, session.difficulty)
         val (targetX, targetY) = fieldCentroid(session.currentTarget) ?: Pair(null, null)
         val record = TrainingThrowRecord(
             targetField = session.currentTarget,
@@ -257,8 +300,8 @@ class TrainingViewModel @Inject constructor(
         actualMmY: Double?
     ) {
         if (session.isComplete) return
-        val isHit = isAtcHit(fieldString, session.currentNumber, session.requireDoubleNums)
-        val targetField = if (session.requiresDouble(session.currentNumber)) "D${session.currentNumber}" else "S${session.currentNumber}"
+        val isHit = isAtcHit(fieldString, session.currentNumber, session.difficulty)
+        val targetField = session.currentTargetField
         val (targetX, targetY) = fieldCentroid(targetField) ?: Pair(null, null)
         val record = TrainingThrowRecord(
             targetField = targetField,
@@ -403,11 +446,15 @@ class TrainingViewModel @Inject constructor(
 
     // ── Helpers ───────────────────────────────────────────────────────────────
 
-    private fun isAtcHit(fieldString: String, targetNumber: Int, requireDoubleNums: Set<Int>): Boolean {
-        val requireDouble = targetNumber in requireDoubleNums
-        return when {
-            requireDouble -> fieldString == "D$targetNumber"
-            else -> fieldString == "S$targetNumber" || fieldString == "D$targetNumber" || fieldString == "T$targetNumber"
+    private fun isAtcHit(fieldString: String, number: Int, difficulty: TrainingDifficulty): Boolean =
+        when (difficulty) {
+            TrainingDifficulty.BEGINNER     ->
+                fieldString == "S$number" || fieldString == "D$number" || fieldString == "T$number"
+            TrainingDifficulty.INTERMEDIATE ->
+                if (number > 20) fieldString == "Bull" || fieldString == "Bullseye"
+                else fieldString == "D$number"
+            TrainingDifficulty.PRO          ->
+                if (number > 20) fieldString == "Bullseye"
+                else fieldString == "T$number"
         }
-    }
 }

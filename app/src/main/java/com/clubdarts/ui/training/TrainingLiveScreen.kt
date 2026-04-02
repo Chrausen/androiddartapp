@@ -211,14 +211,14 @@ private fun AroundTheClockContent(
         Spacer(Modifier.height(16.dp))
 
         LinearProgressIndicator(
-            progress = { (session.currentNumber - 1) / 20f },
+            progress = { (session.currentNumber - 1) / session.totalTargets.toFloat() },
             modifier = Modifier.fillMaxWidth().height(6.dp),
             color = Accent,
             trackColor = Surface2
         )
         Spacer(Modifier.height(4.dp))
         Text(
-            text = "${session.currentNumber - 1} / 20",
+            text = "${session.currentNumber - 1} / ${session.totalTargets}",
             style = MaterialTheme.typography.labelSmall,
             color = TextTertiary
         )
@@ -232,18 +232,22 @@ private fun AroundTheClockContent(
         )
         Spacer(Modifier.height(4.dp))
 
-        val needsDouble = session.requiresDouble(session.currentNumber)
-        val currentTargetField = if (needsDouble) "D${session.currentNumber}" else "S${session.currentNumber}"
+        val currentTargetField = session.currentTargetField
         Text(
-            text = if (needsDouble) "D${session.currentNumber}" else "${session.currentNumber}",
+            text = currentTargetField,
             fontSize = 48.sp,
             fontWeight = FontWeight.Bold,
             fontFamily = DmMono,
             color = Accent
         )
-        if (needsDouble) {
+        val hintRes = when (session.requiredMultiplier) {
+            2 -> R.string.training_double_required
+            3 -> R.string.training_triple_required
+            else -> null
+        }
+        if (hintRes != null) {
             Text(
-                text = stringResource(R.string.training_double_required),
+                text = stringResource(hintRes),
                 style = MaterialTheme.typography.labelSmall,
                 color = Amber
             )
@@ -264,7 +268,7 @@ private fun AroundTheClockContent(
 
         TrainingDartInput(
             showBoardInput    = showBoardInput,
-            pendingMultiplier = if (needsDouble) 2 else pendingMultiplier,
+            pendingMultiplier = if (session.requiredMultiplier > 1) session.requiredMultiplier else pendingMultiplier,
             dartsAtTarget     = dartsAtCurrentTarget.size,
             onRecordDart      = onRecordDart,
             onRecordBoardDart = onRecordBoardDart,
