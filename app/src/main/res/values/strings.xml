@@ -5,6 +5,7 @@
     <!-- Navigation -->
     <string name="nav_game">Game</string>
     <string name="nav_stats">Stats</string>
+    <string name="nav_training">Training</string>
     <string name="nav_history">History</string>
     <string name="nav_rankings">Rankings</string>
     <string name="nav_players">Players</string>
@@ -176,6 +177,53 @@
     <!-- Game setup additional -->
     <string name="game_add_player">Add player</string>
     <string name="game_move_to_other_team">Move to other team</string>
+
+    <!-- Training screen -->
+    <string name="training_title">Training</string>
+    <string name="training_analytics">Analytics</string>
+    <string name="training_player">Player</string>
+    <string name="training_no_players">No players yet. Add one in the Players tab.</string>
+    <string name="training_mode">Mode</string>
+    <string name="training_mode_target">Target Field</string>
+    <string name="training_mode_atc">Around the Clock</string>
+    <string name="training_mode_scoring">Scoring Rounds</string>
+    <string name="training_difficulty">Difficulty</string>
+    <string name="training_difficulty_beginner">Beginner</string>
+    <string name="training_difficulty_intermediate">Advanced</string>
+    <string name="training_difficulty_pro">Pro</string>
+    <string name="training_recent_results">Recent results</string>
+    <string name="training_select_player">Select player…</string>
+    <string name="training_change_player">Change</string>
+    <string name="training_start">Start training</string>
+    <string name="training_target">Target</string>
+    <string name="training_misses_on_target">%1$d miss(es) on this target</string>
+    <string name="training_total_darts">Total darts: %1$d</string>
+    <string name="training_double_required">Double required</string>
+    <string name="training_triple_required">Triple required</string>
+    <string name="training_round_progress">Round %1$d / %2$d</string>
+    <string name="training_avg">Average</string>
+    <string name="training_target_avg">Target avg</string>
+    <string name="training_miss">Miss</string>
+    <string name="training_done_title">Session complete!</string>
+    <string name="training_pts_per_round">pts / round</string>
+    <string name="training_darts_used">darts</string>
+    <string name="training_repeat">Repeat</string>
+
+    <!-- Heatmap / Dispersion screen -->
+    <string name="heatmap_title">Analytics</string>
+    <string name="heatmap_view_heatmap">Heatmap</string>
+    <string name="heatmap_view_dispersion">Dispersion</string>
+    <string name="heatmap_select_player">Select a player…</string>
+    <string name="heatmap_no_game_data">No game data with board coordinates yet.</string>
+    <string name="heatmap_single_game">Only one game available — no range filter needed.</string>
+    <string name="heatmap_game_range">Game %1$d – %2$d of %3$d</string>
+    <string name="heatmap_from">From</string>
+    <string name="heatmap_to">To</string>
+    <string name="dispersion_no_data">No training sessions with coordinate data yet.</string>
+    <string name="dispersion_single_session">Only one session available.</string>
+    <string name="dispersion_session_range">Training %1$d – %2$d of %3$d</string>
+    <string name="dispersion_throw_count">Based on %1$d training throws</string>
+    <string name="dispersion_no_coords">No dartboard-input throws found in selected sessions.</string>
 
     <!-- Rankings screen -->
     <string name="rankings_title">Rankings</string>

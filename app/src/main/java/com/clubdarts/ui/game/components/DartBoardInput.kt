@@ -318,7 +318,7 @@ fun DartBoardInput(
         // ── 2. Twenty segments (double / outer-single / treble / inner-single) ─
         for (i in 0 until 20) {
             val isEven      = (i % 2 == 0)
-            val singleColor = if (isEven) SEGMENT_CREAM else BOARD_BLACK
+            val singleColor = if (isEven) BOARD_BLACK   else SEGMENT_CREAM
             val ringColor   = if (isEven) SEGMENT_RED   else SEGMENT_GREEN
             // Compose Canvas: 0° = 3 o'clock, clockwise. Top = −90°.
             // Segment i centre is at −90° + i×18°; span = 18°.
