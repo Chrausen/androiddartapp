@@ -55,9 +55,15 @@ data class PlayerStats(
     val totalScoreThrown: Long     // Gesamt geworfene Punktzahl
 )
 
+enum class LeaderboardMetric { AVERAGE, WINS, COUNT_180S, HIGHEST_FINISH }
+
 data class StatsUiState(
     val players: List<Player> = emptyList(),
     val averages: Map<Long, Double> = emptyMap(),
+    val winsMap: Map<Long, Int> = emptyMap(),
+    val count180sMap: Map<Long, Int> = emptyMap(),
+    val highestFinishMap: Map<Long, Int> = emptyMap(),
+    val leaderboardMetric: LeaderboardMetric = LeaderboardMetric.AVERAGE,
     val selectedPlayer: Player? = null,
     val selectedPlayerStats: PlayerStats? = null,
     val clubTotalGames: Int = 0,
@@ -91,9 +97,22 @@ class StatsViewModel @Inject constructor(
         viewModelScope.launch {
             playerRepository.getAllPlayers().collect { players ->
                 val averages = throwDao.getAllPlayerAverages().associate { it.playerId to it.average }
-                _uiState.update { it.copy(players = players, averages = averages) }
+                val winsMap = gameRepository.getAllPlayerWins()
+                val count180sMap = throwDao.getAllPlayer180s().associate { it.playerId to it.value }
+                val highestFinishMap = throwDao.getAllPlayerHighestFinish().associate { it.playerId to it.value }
+                _uiState.update { it.copy(
+                    players = players,
+                    averages = averages,
+                    winsMap = winsMap,
+                    count180sMap = count180sMap,
+                    highestFinishMap = highestFinishMap
+                ) }
             }
         }
+    }
+
+    fun setLeaderboardMetric(metric: LeaderboardMetric) {
+        _uiState.update { it.copy(leaderboardMetric = metric) }
     }
 
     private fun loadClubStats() {

@@ -61,6 +61,7 @@ class GameRepository @Inject constructor(
     suspend fun getTotalGamePlaytimeMs(): Long = gameDao.getTotalGamePlaytimeMs() ?: 0L
     suspend fun getGamesPlayed(playerId: Long): Int = gameDao.getGamesPlayed(playerId)
     suspend fun getWins(playerId: Long): Int = gameDao.getWins(playerId)
+    suspend fun getAllPlayerWins(): Map<Long, Int> = gameDao.getAllPlayerWins().associate { it.playerId to it.value }
     suspend fun getSecondPlaceCount(playerId: Long): Int = gameDao.getSecondPlaceCount(playerId)
     suspend fun getThirdPlaceCount(playerId: Long): Int = gameDao.getThirdPlaceCount(playerId)
     suspend fun getBestBuddy(playerId: Long): String? = gameDao.getBestBuddy(playerId)

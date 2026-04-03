@@ -136,6 +136,11 @@
     <string name="stats_best_finish">Best finish</string>
     <string name="stats_overall_playtime">Overall playtime customers payed for</string>
     <string name="stats_top_averages">Top averages</string>
+    <string name="stats_leaderboard_metric_average">Ø Average</string>
+    <string name="stats_leaderboard_metric_wins">Siege</string>
+    <string name="stats_leaderboard_metric_180s">180s</string>
+    <string name="stats_leaderboard_metric_highest_finish">Höchstes Finish</string>
+    <string name="stats_leaderboard_select">Rangliste nach</string>
     <string name="stats_avg">Avg</string>
     <string name="stats_best">Best</string>
     <string name="stats_checkout_pct">Checkout%</string>

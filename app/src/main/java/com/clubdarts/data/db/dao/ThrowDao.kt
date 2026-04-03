@@ -8,6 +8,8 @@ data class ScoreFrequency(val visitTotal: Int, val frequency: Int)
 
 data class PlayerAverage(val playerId: Long, val average: Double)
 
+data class PlayerIntStat(val playerId: Long, val value: Int)
+
 data class DartCoordinate(val x: Double, val y: Double)
 
 data class PlayerStatsAggregate(
@@ -226,6 +228,17 @@ interface ThrowDao {
         ORDER BY g.createdAt ASC
     """)
     suspend fun getFinishedGameIdsSorted(): List<Long>
+
+    @Query("SELECT playerId, COUNT(*) as value FROM throws WHERE visitTotal = 180 GROUP BY playerId")
+    suspend fun getAllPlayer180s(): List<PlayerIntStat>
+
+    @Query("""
+        SELECT t.playerId, MAX(t.visitTotal) as value FROM throws t
+        INNER JOIN legs l ON t.legId = l.id
+        WHERE t.isCheckoutAttempt = 1 AND t.isBust = 0 AND l.winnerId = t.playerId
+        GROUP BY t.playerId
+    """)
+    suspend fun getAllPlayerHighestFinish(): List<PlayerIntStat>
 
     @Query("SELECT COUNT(*) FROM throws WHERE visitTotal = 180")
     suspend fun getTotalClub180s(): Int

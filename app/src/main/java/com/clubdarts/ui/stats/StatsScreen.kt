@@ -31,8 +31,13 @@ fun StatsScreen(
     viewModel: StatsViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val sortedPlayers = remember(uiState.players, uiState.averages) {
-        uiState.players.sortedByDescending { uiState.averages[it.id] ?: 0.0 }
+    val sortedPlayers = remember(uiState.players, uiState.averages, uiState.winsMap, uiState.count180sMap, uiState.highestFinishMap, uiState.leaderboardMetric) {
+        when (uiState.leaderboardMetric) {
+            LeaderboardMetric.AVERAGE -> uiState.players.sortedByDescending { uiState.averages[it.id] ?: 0.0 }
+            LeaderboardMetric.WINS -> uiState.players.sortedByDescending { uiState.winsMap[it.id] ?: 0 }
+            LeaderboardMetric.COUNT_180S -> uiState.players.sortedByDescending { uiState.count180sMap[it.id] ?: 0 }
+            LeaderboardMetric.HIGHEST_FINISH -> uiState.players.sortedByDescending { uiState.highestFinishMap[it.id] ?: 0 }
+        }
     }
 
     LazyColumn(
@@ -71,16 +76,24 @@ fun StatsScreen(
                 MetricCard(stringResource(R.string.stats_overall_playtime), playtimeValue, modifier = Modifier.fillMaxWidth())
             }
 
-            // Leaderboard
+            // Leaderboard with metric dropdown
             item {
-                Text(stringResource(R.string.stats_top_averages), style = MaterialTheme.typography.titleMedium, color = TextPrimary)
+                LeaderboardHeader(
+                    selectedMetric = uiState.leaderboardMetric,
+                    onMetricSelected = { viewModel.setLeaderboardMetric(it) }
+                )
             }
             itemsIndexed(sortedPlayers, key = { _, player -> player.id }) { index, player ->
-                val avg = uiState.averages[player.id] ?: 0.0
+                val metricValue = when (uiState.leaderboardMetric) {
+                    LeaderboardMetric.AVERAGE -> "%.1f".format(uiState.averages[player.id] ?: 0.0)
+                    LeaderboardMetric.WINS -> (uiState.winsMap[player.id] ?: 0).toString()
+                    LeaderboardMetric.COUNT_180S -> (uiState.count180sMap[player.id] ?: 0).toString()
+                    LeaderboardMetric.HIGHEST_FINISH -> (uiState.highestFinishMap[player.id] ?: 0).toString()
+                }
                 LeaderboardRow(
                     rank = index + 1,
                     player = player,
-                    average = avg,
+                    metricValue = metricValue,
                     onClick = { viewModel.selectPlayer(player) }
                 )
             }
@@ -303,11 +316,82 @@ private fun MetricCard(label: String, value: String, modifier: Modifier = Modifi
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun LeaderboardHeader(
+    selectedMetric: LeaderboardMetric,
+    onMetricSelected: (LeaderboardMetric) -> Unit
+) {
+    var expanded by remember { mutableStateOf(false) }
+    val metricLabels = mapOf(
+        LeaderboardMetric.AVERAGE to stringResource(R.string.stats_leaderboard_metric_average),
+        LeaderboardMetric.WINS to stringResource(R.string.stats_leaderboard_metric_wins),
+        LeaderboardMetric.COUNT_180S to stringResource(R.string.stats_leaderboard_metric_180s),
+        LeaderboardMetric.HIGHEST_FINISH to stringResource(R.string.stats_leaderboard_metric_highest_finish)
+    )
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Text(
+            stringResource(R.string.stats_leaderboard_select),
+            style = MaterialTheme.typography.titleMedium,
+            color = TextPrimary
+        )
+        ExposedDropdownMenuBox(
+            expanded = expanded,
+            onExpandedChange = { expanded = !expanded }
+        ) {
+            OutlinedTextField(
+                value = metricLabels[selectedMetric] ?: "",
+                onValueChange = {},
+                readOnly = true,
+                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+                colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors(
+                    focusedBorderColor = Accent,
+                    unfocusedBorderColor = Surface3,
+                    focusedTextColor = TextPrimary,
+                    unfocusedTextColor = TextPrimary,
+                    focusedTrailingIconColor = Accent,
+                    unfocusedTrailingIconColor = TextSecondary
+                ),
+                textStyle = MaterialTheme.typography.bodyMedium,
+                modifier = Modifier
+                    .menuAnchor()
+                    .width(180.dp),
+                singleLine = true
+            )
+            ExposedDropdownMenu(
+                expanded = expanded,
+                onDismissRequest = { expanded = false },
+                modifier = Modifier.background(Surface2)
+            ) {
+                LeaderboardMetric.entries.forEach { metric ->
+                    DropdownMenuItem(
+                        text = {
+                            Text(
+                                metricLabels[metric] ?: "",
+                                color = if (metric == selectedMetric) Accent else TextPrimary,
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                        },
+                        onClick = {
+                            onMetricSelected(metric)
+                            expanded = false
+                        }
+                    )
+                }
+            }
+        }
+    }
+}
+
 @Composable
 private fun LeaderboardRow(
     rank: Int,
     player: Player,
-    average: Double,
+    metricValue: String,
     onClick: () -> Unit
 ) {
     Row(
@@ -328,7 +412,7 @@ private fun LeaderboardRow(
         PlayerAvatar(name = player.name, size = 36.dp)
         Spacer(modifier = Modifier.width(10.dp))
         Text(player.name, style = MaterialTheme.typography.bodyMedium, color = TextPrimary, modifier = Modifier.weight(1f))
-        Text("%.1f".format(average), fontFamily = DmMono, fontSize = 16.sp, color = TextPrimary)
+        Text(metricValue, fontFamily = DmMono, fontSize = 16.sp, color = TextPrimary)
     }
 }
 
