@@ -134,6 +134,7 @@
     <string name="stats_players">Players</string>
     <string name="stats_club_180s">Club 180s</string>
     <string name="stats_best_finish">Best finish</string>
+    <string name="stats_overall_playtime">Overall playtime customers payed for</string>
     <string name="stats_top_averages">Top averages</string>
     <string name="stats_avg">Avg</string>
     <string name="stats_best">Best</string>

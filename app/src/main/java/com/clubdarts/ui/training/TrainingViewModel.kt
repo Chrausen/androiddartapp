@@ -174,6 +174,8 @@ class TrainingViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(TrainingUiState())
     val uiState: StateFlow<TrainingUiState> = _uiState.asStateFlow()
 
+    private var sessionStartedAt: Long = 0L
+
     init {
         viewModelScope.launch {
             playerRepository.getAllPlayers().collect { players ->
@@ -239,6 +241,7 @@ class TrainingViewModel @Inject constructor(
                 LiveSessionState.ScoringRounds(targetAvg = state.difficulty.targetAvg)
             }
         }
+        sessionStartedAt = System.currentTimeMillis()
         _uiState.update { it.copy(screen = TrainingScreenState.LIVE, liveSession = liveState) }
     }
 
@@ -422,7 +425,8 @@ class TrainingViewModel @Inject constructor(
                 difficulty     = state.difficulty,
                 result         = result,
                 completedCount = completedCount,
-                throws         = throws
+                throws         = throws,
+                startedAt      = sessionStartedAt
             )
             val saved = trainingRepository.getRecentResults(player.id, state.mode, 10)
             _uiState.update { it.copy(

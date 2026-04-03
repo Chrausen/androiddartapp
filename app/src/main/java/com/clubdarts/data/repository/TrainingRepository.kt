@@ -26,14 +26,16 @@ class TrainingRepository @Inject constructor(
         difficulty: TrainingDifficulty,
         result: Int,
         completedCount: Int,
-        throws: List<TrainingThrow>
+        throws: List<TrainingThrow>,
+        startedAt: Long
     ): Long {
         val session = TrainingSession(
             playerId = playerId,
             mode = mode.name,
             difficulty = difficulty.name,
             result = result,
-            completedCount = completedCount
+            completedCount = completedCount,
+            startedAt = startedAt
         )
         val sessionId = sessionDao.insertSession(session)
         if (throws.isNotEmpty()) {
