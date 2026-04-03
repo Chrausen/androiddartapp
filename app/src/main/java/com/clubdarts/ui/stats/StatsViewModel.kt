@@ -49,7 +49,9 @@ data class PlayerStats(
     // ── New stats 16–18: social ───────────────────────────────────────────
     val bestBuddy: String?,        // Stat 16
     val rival: String?,            // Stat 17
-    val easyWin: String?           // Stat 18
+    val easyWin: String?,          // Stat 18
+    // ── New stats: totals ─────────────────────────────────────────────────
+    val totalScoreThrown: Long     // Gesamt geworfene Punktzahl
 )
 
 data class StatsUiState(
@@ -189,7 +191,8 @@ class StatsViewModel @Inject constructor(
                     bustRate = bustRate,
                     bestBuddy = bestBuddy,
                     rival = rival,
-                    easyWin = easyWin
+                    easyWin = easyWin,
+                    totalScoreThrown = ext.totalScoreThrown
                 )
                 _uiState.update { it.copy(selectedPlayerStats = stats, isLoading = false) }
             } catch (e: Exception) {
