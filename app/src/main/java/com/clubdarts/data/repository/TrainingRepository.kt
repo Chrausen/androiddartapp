@@ -47,12 +47,12 @@ class TrainingRepository @Inject constructor(
     suspend fun getRecentResults(playerId: Long, mode: TrainingMode, limit: Int = 10): List<TrainingSession> =
         sessionDao.getRecentSessionsForPlayer(playerId, mode.name, limit)
 
-    /** Returns the all-time best session for [mode] across all players, or null if none recorded. */
-    suspend fun getBestResult(mode: TrainingMode): BestSessionWithPlayer? {
+    /** Returns the all-time best session for [mode] + [difficulty] across all players, or null if none recorded. */
+    suspend fun getBestResult(mode: TrainingMode, difficulty: TrainingDifficulty): BestSessionWithPlayer? {
         val row = if (mode == TrainingMode.SCORING_ROUNDS)
-            sessionDao.getBestSessionDescending(mode.name)
+            sessionDao.getBestSessionDescending(mode.name, difficulty.name)
         else
-            sessionDao.getBestSessionAscending(mode.name)
+            sessionDao.getBestSessionAscending(mode.name, difficulty.name)
         return row?.toBestSessionWithPlayer()
     }
 
