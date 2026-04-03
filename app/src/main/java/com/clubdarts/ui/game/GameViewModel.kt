@@ -822,7 +822,7 @@ class GameViewModel @Inject constructor(
                         // Record Elo for ranked games (2+ players)
                         val eloMatchResult = if (state.isRanked && state.players.size >= 2) {
                             try {
-                                eloRepository.recordMatch(state.players, winnerId)
+                                eloRepository.recordMatch(state.players, winnerId, gameId = gameId)
                             } catch (e: Exception) {
                                 _uiState.update { it.copy(errorMessage = e.message) }
                                 null

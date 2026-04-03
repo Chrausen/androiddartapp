@@ -11,6 +11,9 @@ interface EloMatchEntryDao {
     @Query("SELECT * FROM elo_match_entries WHERE matchId = :matchId")
     suspend fun getEntriesForMatch(matchId: Long): List<EloMatchEntry>
 
+    @Query("SELECT * FROM elo_match_entries WHERE matchId IN (:matchIds)")
+    suspend fun getEntriesForMatches(matchIds: List<Long>): List<EloMatchEntry>
+
     @Query("SELECT * FROM elo_match_entries WHERE playerId = :playerId ORDER BY rowid DESC")
     suspend fun getEntriesForPlayer(playerId: Long): List<EloMatchEntry>
 

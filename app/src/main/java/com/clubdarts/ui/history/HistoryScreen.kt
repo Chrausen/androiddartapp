@@ -249,6 +249,7 @@ private fun GameCard(summary: GameSummary, onClick: () -> Unit) {
             } else {
                 summary.players.forEach { player ->
                     val isWinner = player.id == summary.game.winnerId
+                    val eloChange = summary.eloChanges?.get(player.id)
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         verticalAlignment = Alignment.CenterVertically
@@ -268,7 +269,15 @@ private fun GameCard(summary: GameSummary, onClick: () -> Unit) {
                             fontWeight = if (isWinner) FontWeight.SemiBold else FontWeight.Normal,
                             modifier = Modifier.weight(1f)
                         )
-                        if (isWinner) {
+                        if (eloChange != null) {
+                            val sign = if (eloChange >= 0) "+" else ""
+                            Text(
+                                text = "$sign${eloChange.toInt()}",
+                                style = MaterialTheme.typography.labelSmall,
+                                fontFamily = DmMono,
+                                color = if (eloChange >= 0) Green else Red
+                            )
+                        } else if (isWinner) {
                             Text("W", style = MaterialTheme.typography.labelSmall, color = Green)
                         }
                     }
