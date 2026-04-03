@@ -123,7 +123,12 @@ fun StatsScreen(
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         MetricCard(stringResource(R.string.stats_highest_checkout), stats.highestFinish.toString(), modifier = Modifier.weight(1f))
                         MetricCard(stringResource(R.string.stats_highest_round), stats.highestRound.toString(), modifier = Modifier.weight(1f))
+                    }
+                }
+                item {
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         MetricCard(stringResource(R.string.stats_total_darts), stats.totalDarts.toString(), modifier = Modifier.weight(1f))
+                        MetricCard(stringResource(R.string.stats_total_score_thrown), stats.totalScoreThrown.toString(), modifier = Modifier.weight(1f))
                     }
                 }
 

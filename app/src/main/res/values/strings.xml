@@ -157,6 +157,7 @@
     <string name="stats_second_place">2. Platz</string>
     <string name="stats_third_place">3. Platz</string>
     <string name="stats_total_darts">Darts gesamt</string>
+    <string name="stats_total_score_thrown">Punkte gesamt</string>
     <string name="stats_avg_per_dart">Ø Punkte/Dart</string>
     <string name="stats_avg_per_round">Ø Punkte/Runde</string>
     <string name="stats_first9_avg">First 9 Ø</string>

@@ -46,7 +46,9 @@ data class ExtendedStatsAggregate(
     /** Stat 14: rounds where visitTotal < 10 (excl. bust) */
     val roundsUnder10Count: Int,
     /** Stat 14 denominator: all non-bust rounds */
-    val nonBustRoundsCount: Int
+    val nonBustRoundsCount: Int,
+    /** Gesamt geworfene Punktzahl: sum of all visitTotals */
+    val totalScoreThrown: Long
 )
 
 @Dao
@@ -176,7 +178,8 @@ interface ThrowDao {
              + COALESCE(SUM(CASE WHEN t.dart2Score = 0 AND t.dartsUsed >= 2 THEN 1 ELSE 0 END), 0)
              + COALESCE(SUM(CASE WHEN t.dart3Score = 0 AND t.dartsUsed >= 3 THEN 1 ELSE 0 END), 0)) AS outOfBoundsCount,
             COUNT(CASE WHEN t.isBust = 0 AND t.visitTotal < 10 THEN 1 ELSE NULL END) AS roundsUnder10Count,
-            COUNT(CASE WHEN t.isBust = 0 THEN 1 ELSE NULL END) AS nonBustRoundsCount
+            COUNT(CASE WHEN t.isBust = 0 THEN 1 ELSE NULL END) AS nonBustRoundsCount,
+            COALESCE(SUM(t.visitTotal), 0) AS totalScoreThrown
         FROM throws t
         INNER JOIN legs l ON t.legId = l.id
         WHERE t.playerId = :playerId
