@@ -129,10 +129,9 @@ private fun FilterDropdown(
         }
         DropdownMenu(
             expanded = expanded,
-            onDismissRequest = { expanded = false },
-            containerColor = Surface
+            onDismissRequest = { expanded = false }
         ) {
-            GameFilter.entries.forEach { filter ->
+            for (filter in GameFilter.entries) {
                 val itemLabel = stringResource(
                     when (filter) {
                         GameFilter.ALL -> R.string.history_filter_all
