@@ -139,8 +139,10 @@ private fun RankingRow(rank: Int, player: Player, onClick: () -> Unit) {
                     fontWeight = FontWeight.SemiBold,
                     color = TextPrimary
                 )
+                val total = player.wins + player.losses
+                val winRate = if (total > 0) player.wins * 100.0 / total else 0.0
                 Text(
-                    text = "${player.wins}W — ${player.losses}L",
+                    text = "${player.wins}W — ${player.losses}L — ${"%.1f".format(winRate)}%",
                     style = MaterialTheme.typography.labelSmall,
                     color = TextSecondary
                 )
