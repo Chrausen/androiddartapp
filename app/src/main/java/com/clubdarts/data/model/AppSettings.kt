@@ -42,7 +42,7 @@ object SettingsDefaults {
     const val SOUND_EFFECTS_VOLUME = "1.0"
 
     // Ranking system
-    const val RANKING_ENABLED       = "false"
+    const val RANKING_ENABLED       = "true"
     const val RANKING_K_FACTOR      = "32"
     const val RANKING_START_SCORE   = "501"
     const val RANKING_CHECKOUT_RULE = "DOUBLE"
