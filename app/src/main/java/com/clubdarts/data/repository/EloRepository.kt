@@ -35,7 +35,8 @@ class EloRepository @Inject constructor(
     suspend fun recordMatch(
         players: List<Player>,
         winnerId: Long,
-        playedAt: Long = System.currentTimeMillis()
+        playedAt: Long = System.currentTimeMillis(),
+        gameId: Long? = null
     ): EloMatchResult {
         require(players.size >= 2) { "Need at least 2 players" }
         require(players.map { it.id }.distinct().size == players.size) { "Duplicate players" }
@@ -50,7 +51,7 @@ class EloRepository @Inject constructor(
             }
             val changes = EloCalculator.computeChanges(freshPlayers, winnerId, kFactor)
 
-            val matchId = eloMatchDao.insert(EloMatch(winnerId = winnerId, playedAt = playedAt))
+            val matchId = eloMatchDao.insert(EloMatch(winnerId = winnerId, playedAt = playedAt, gameId = gameId))
 
             val updatedPlayers = freshPlayers.map { p ->
                 val delta = changes[p.id] ?: 0.0
@@ -101,6 +102,30 @@ class EloRepository @Inject constructor(
             eloMatchEntryDao.deleteByMatchId(matchId)
             eloMatchDao.deleteById(matchId)
         }
+    }
+
+    /** Returns a map of playerId → eloChange for a ranked game, or null if no Elo record exists. */
+    suspend fun getEloChangesForGame(gameId: Long): Map<Long, Double>? {
+        val match = eloMatchDao.getByGameId(gameId) ?: return null
+        val entries = eloMatchEntryDao.getEntriesForMatch(match.id)
+        if (entries.isEmpty()) return null
+        return entries.associate { it.playerId to it.eloChange }
+    }
+
+    /** Returns maps of gameId → (playerId → eloChange) for multiple ranked games at once. */
+    suspend fun getEloChangesForGames(gameIds: List<Long>): Map<Long, Map<Long, Double>> {
+        if (gameIds.isEmpty()) return emptyMap()
+        val matches = eloMatchDao.getAll().filter { it.gameId != null && it.gameId in gameIds }
+        if (matches.isEmpty()) return emptyMap()
+        val matchIds = matches.map { it.id }
+        val entries = eloMatchEntryDao.getEntriesForMatches(matchIds)
+        val entriesByMatchId = entries.groupBy { it.matchId }
+        return matches.mapNotNull { match ->
+            val gId = match.gameId ?: return@mapNotNull null
+            val changeMap = (entriesByMatchId[match.id] ?: return@mapNotNull null)
+                .associate { it.playerId to it.eloChange }
+            gId to changeMap
+        }.toMap()
     }
 
     fun getLeaderboard(players: List<Player>): List<Player> =

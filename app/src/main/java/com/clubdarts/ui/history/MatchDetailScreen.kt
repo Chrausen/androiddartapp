@@ -69,6 +69,7 @@ fun MatchDetailScreen(
         val detail = uiState.detail ?: return@Column
         val game = detail.game
         val players = detail.players
+        val eloChanges = uiState.eloChanges
 
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
@@ -104,7 +105,10 @@ fun MatchDetailScreen(
                                 horizontalArrangement = Arrangement.SpaceEvenly,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                PlayerAvatarNameColumn(player = players[0])
+                                PlayerAvatarNameColumn(
+                                    player = players[0],
+                                    eloChange = eloChanges?.get(players[0].id)
+                                )
                                 // Score
                                 val p1Legs = detail.legs.count { it.leg.winnerId == players[0].id }
                                 val p2Legs = detail.legs.count { it.leg.winnerId == players[1].id }
@@ -115,15 +119,29 @@ fun MatchDetailScreen(
                                     fontWeight = FontWeight.Bold,
                                     color = TextPrimary
                                 )
-                                PlayerAvatarNameColumn(player = players[1])
+                                PlayerAvatarNameColumn(
+                                    player = players[1],
+                                    eloChange = eloChanges?.get(players[1].id)
+                                )
                             }
                         } else {
                             players.forEach { player ->
                                 val legsWon = detail.legs.count { it.leg.winnerId == player.id }
+                                val eloChange = eloChanges?.get(player.id)
                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                     PlayerAvatar(name = player.name, size = 32.dp)
                                     Spacer(modifier = Modifier.width(8.dp))
                                     Text(player.name, style = MaterialTheme.typography.bodyMedium, color = TextPrimary, modifier = Modifier.weight(1f))
+                                    if (eloChange != null) {
+                                        val sign = if (eloChange >= 0) "+" else ""
+                                        Text(
+                                            text = "$sign${eloChange.toInt()}",
+                                            style = MaterialTheme.typography.labelMedium,
+                                            fontFamily = DmMono,
+                                            color = if (eloChange >= 0) Green else Red
+                                        )
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                    }
                                     Text(stringResource(R.string.match_detail_legs_won, legsWon), style = MaterialTheme.typography.labelMedium, fontFamily = DmMono, color = TextSecondary)
                                 }
                                 Spacer(modifier = Modifier.height(4.dp))
@@ -234,11 +252,23 @@ fun MatchDetailScreen(
 }
 
 @Composable
-private fun PlayerAvatarNameColumn(player: com.clubdarts.data.model.Player) {
+private fun PlayerAvatarNameColumn(
+    player: com.clubdarts.data.model.Player,
+    eloChange: Double? = null
+) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         PlayerAvatar(name = player.name, size = 48.dp)
         Spacer(modifier = Modifier.height(4.dp))
         Text(player.name, style = MaterialTheme.typography.labelMedium, color = TextPrimary)
+        if (eloChange != null) {
+            val sign = if (eloChange >= 0) "+" else ""
+            Text(
+                text = "$sign${eloChange.toInt()}",
+                style = MaterialTheme.typography.labelSmall,
+                fontFamily = DmMono,
+                color = if (eloChange >= 0) Green else Red
+            )
+        }
     }
 }
 

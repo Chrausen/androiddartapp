@@ -17,6 +17,9 @@ interface EloMatchDao {
     @Query("SELECT * FROM elo_matches WHERE id = :id")
     suspend fun getById(id: Long): EloMatch?
 
+    @Query("SELECT * FROM elo_matches WHERE gameId = :gameId LIMIT 1")
+    suspend fun getByGameId(gameId: Long): EloMatch?
+
     @Query("DELETE FROM elo_matches WHERE id = :id")
     suspend fun deleteById(id: Long)
 
