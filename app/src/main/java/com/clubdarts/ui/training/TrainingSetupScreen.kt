@@ -61,11 +61,15 @@ fun TrainingSetupScreen(
                 style = MaterialTheme.typography.headlineMedium,
                 color = TextPrimary
             )
-            TextButton(onClick = onOpenHeatmap) {
+            TextButton(
+                onClick = onOpenHeatmap,
+                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 10.dp)
+            ) {
                 Text(
                     text = stringResource(R.string.training_analytics),
                     color = Accent,
-                    style = MaterialTheme.typography.labelMedium
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontWeight = FontWeight.SemiBold
                 )
             }
         }
