@@ -354,7 +354,8 @@ fun GameSetupScreen(
                             legsToWin = rankedLegsToWin,
                             isSolo = false,
                             playerIds = orderedPlayers.map { it.id },
-                            isRanked = true
+                            isRanked = true,
+                            randomOrder = randomOrder
                         )
                         gameViewModel.startGame(config)
                     } else if (gameMode == GameMode.TEAMS) {
@@ -377,7 +378,8 @@ fun GameSetupScreen(
                             checkoutRule = checkoutRule,
                             legsToWin = legsToWin,
                             isSolo = orderedPlayers.size == 1,
-                            playerIds = orderedPlayers.map { it.id }
+                            playerIds = orderedPlayers.map { it.id },
+                            randomOrder = randomOrder
                         )
                         gameViewModel.startGame(config)
                     }
