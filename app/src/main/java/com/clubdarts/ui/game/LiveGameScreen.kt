@@ -98,6 +98,8 @@ fun LiveGameScreen(
                 teamAssignments = uiState.teamAssignments,
                 teamScores = uiState.teamScores,
                 teamLegWins = uiState.teamLegWins,
+                currentTeamIndex = uiState.currentTeamIndex,
+                teamPlayerIndexes = uiState.teamPlayerIndexes,
                 animationsEnabled = animationsEnabled
             )
 
