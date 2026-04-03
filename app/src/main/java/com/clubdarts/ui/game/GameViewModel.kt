@@ -700,7 +700,7 @@ class GameViewModel @Inject constructor(
                     score = config.startScore,
                     rule = config.checkoutRule,
                     legs = config.legsToWin,
-                    random = config.isSolo
+                    random = config.randomOrder
                 )
                 settingsRepository.setLastGameMode(if (config.isTeamGame) GameMode.TEAMS.name else GameMode.SINGLE.name)
                 config.playerIds.forEach { settingsRepository.addRecentPlayer(it) }
