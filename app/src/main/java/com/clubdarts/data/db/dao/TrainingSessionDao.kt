@@ -47,11 +47,11 @@ interface TrainingSessionDao {
                p.name AS playerName
         FROM training_sessions ts
         JOIN players p ON ts.playerId = p.id
-        WHERE ts.mode = :mode
+        WHERE ts.mode = :mode AND ts.difficulty = :difficulty
         ORDER BY ts.result ASC
         LIMIT 1
     """)
-    suspend fun getBestSessionAscending(mode: String): BestSessionRow?
+    suspend fun getBestSessionAscending(mode: String, difficulty: String): BestSessionRow?
 
     /** Best result for modes where MORE points = better (SCORING_ROUNDS). */
     @Query("""
@@ -59,11 +59,11 @@ interface TrainingSessionDao {
                p.name AS playerName
         FROM training_sessions ts
         JOIN players p ON ts.playerId = p.id
-        WHERE ts.mode = :mode
+        WHERE ts.mode = :mode AND ts.difficulty = :difficulty
         ORDER BY ts.result DESC
         LIMIT 1
     """)
-    suspend fun getBestSessionDescending(mode: String): BestSessionRow?
+    suspend fun getBestSessionDescending(mode: String, difficulty: String): BestSessionRow?
 
     @Query("SELECT SUM(completedAt - startedAt) FROM training_sessions WHERE startedAt > 0 AND completedAt > startedAt")
     suspend fun getTotalTrainingPlaytimeMs(): Long?

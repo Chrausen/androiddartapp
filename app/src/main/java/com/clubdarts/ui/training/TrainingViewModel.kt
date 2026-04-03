@@ -199,12 +199,14 @@ class TrainingViewModel @Inject constructor(
 
     fun selectDifficulty(difficulty: TrainingDifficulty) {
         _uiState.update { it.copy(difficulty = difficulty) }
+        reloadRecentResults()
     }
 
     private fun reloadRecentResults() {
         val mode = _uiState.value.mode
+        val difficulty = _uiState.value.difficulty
         viewModelScope.launch {
-            val best = trainingRepository.getBestResult(mode)
+            val best = trainingRepository.getBestResult(mode, difficulty)
             val player = _uiState.value.selectedPlayer
             val results = if (player != null)
                 trainingRepository.getRecentResults(player.id, mode, 10)
