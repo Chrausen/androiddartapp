@@ -172,6 +172,15 @@ class GameViewModel @Inject constructor(
         ttsManager.init()
         loadSetupDefaults()
         viewModelScope.launch {
+            // Clean up any stale active game left in the DB from a previous session
+            // (e.g. the app was killed while a game was in progress). The ViewModel starts
+            // fresh at SETUP, so there is no way to resume — delete the orphaned record.
+            val staleGame = gameRepository.getActiveGame()
+            if (staleGame != null) {
+                gameRepository.deleteGame(staleGame.id)
+            }
+        }
+        viewModelScope.launch {
             settingsRepository.observeTtsScoreSettings().collect { settings ->
                 ttsScoreSettings = settings
             }
