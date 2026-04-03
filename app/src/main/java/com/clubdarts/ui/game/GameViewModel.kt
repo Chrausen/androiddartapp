@@ -88,6 +88,9 @@ data class GameUiState(
     val teamScores: Map<Int, Int> = emptyMap(),          // teamIndex → remaining score
     val teamLegWins: Map<Int, Int> = emptyMap(),         // teamIndex → legs won
     val winningTeamIndex: Int? = null,
+    // Team turn tracking (team games only)
+    val currentTeamIndex: Int = -1,             // -1 = non-team game, 0/1 for team games
+    val teamPlayerIndexes: Map<Int, Int> = emptyMap(), // teamIndex → current player pos within team
     // Current visit
     val currentDarts: List<DartInput> = emptyList(),
     val pendingMultiplier: Int = 1,
@@ -347,6 +350,25 @@ class GameViewModel @Inject constructor(
         _uiState.update { it.copy(checkoutHint = hint) }
     }
 
+    // ── Team turn-order helpers ───────────────────────────────────────────────
+
+    /**
+     * Returns the indices into [players] for each team, in the order players
+     * were assigned to that team (i.e. their throw order within the team).
+     * Key 0 = Team A, Key 1 = Team B.
+     */
+    private fun computeTeamPlayerIndices(
+        players: List<Player>,
+        teamAssignments: Map<Long, Int>
+    ): Map<Int, List<Int>> {
+        val result = mutableMapOf<Int, MutableList<Int>>()
+        players.forEachIndexed { idx, p ->
+            val team = teamAssignments[p.id] ?: return@forEachIndexed
+            result.getOrPut(team) { mutableListOf() }.add(idx)
+        }
+        return result
+    }
+
     // ── Live game: visit resolution ───────────────────────────────────────────
 
     private fun resolveVisit() {
@@ -447,14 +469,28 @@ class GameViewModel @Inject constructor(
             }
         }
 
-        val nextPlayerIndex = (state.currentPlayerIndex + 1) % state.players.size
         val newHistory = listOf(visitRecord) + state.visitHistory.take(19)
+
+        val (nextPlayerIndex, nextTeamIndex, nextTeamPlayerIndexes) = if (state.isTeamGame) {
+            val teamPlayerIndices = computeTeamPlayerIndices(state.players, state.teamAssignments)
+            val prevTeam = state.currentTeamIndex
+            val nextTeam = 1 - prevTeam
+            val prevTeamSize = teamPlayerIndices[prevTeam]?.size ?: 1
+            val advancedPrevIdx = ((state.teamPlayerIndexes[prevTeam] ?: 0) + 1) % prevTeamSize
+            val nextIdxInTeam = state.teamPlayerIndexes[nextTeam] ?: 0
+            val nextIdx = teamPlayerIndices[nextTeam]?.get(nextIdxInTeam) ?: 0
+            Triple(nextIdx, nextTeam, state.teamPlayerIndexes + (prevTeam to advancedPrevIdx))
+        } else {
+            Triple((state.currentPlayerIndex + 1) % state.players.size, state.currentTeamIndex, state.teamPlayerIndexes)
+        }
 
         _uiState.update {
             updatedState.copy(
                 currentDarts = emptyList(),
                 pendingMultiplier = 1,
                 currentPlayerIndex = nextPlayerIndex,
+                currentTeamIndex = nextTeamIndex,
+                teamPlayerIndexes = nextTeamPlayerIndexes,
                 visitHistory = newHistory
             )
         }
@@ -479,10 +515,28 @@ class GameViewModel @Inject constructor(
                     val legId = state.legId ?: return@launch
                     val lastThrow = gameRepository.getLastThrowInLeg(legId) ?: return@launch
 
-                    val prevPlayerIndex = if (state.currentPlayerIndex == 0) {
-                        state.players.size - 1
+                    // Compute the previous player index and (for team games) team state
+                    val prevPlayerIndex: Int
+                    val prevTeamIndex: Int
+                    val prevTeamPlayerIndexes: Map<Int, Int>
+                    if (state.isTeamGame) {
+                        val teamPlayerIndices = computeTeamPlayerIndices(state.players, state.teamAssignments)
+                        // The team that just played is the one before the current team
+                        val justPlayedTeam = 1 - state.currentTeamIndex
+                        val justPlayedTeamSize = teamPlayerIndices[justPlayedTeam]?.size ?: 1
+                        // Their pointer was advanced after playing; rewind it
+                        val rewindedIdx = ((state.teamPlayerIndexes[justPlayedTeam] ?: 0) - 1 + justPlayedTeamSize) % justPlayedTeamSize
+                        prevPlayerIndex = teamPlayerIndices[justPlayedTeam]?.get(rewindedIdx) ?: 0
+                        prevTeamIndex = justPlayedTeam
+                        prevTeamPlayerIndexes = state.teamPlayerIndexes + (justPlayedTeam to rewindedIdx)
                     } else {
-                        state.currentPlayerIndex - 1
+                        prevPlayerIndex = if (state.currentPlayerIndex == 0) {
+                            state.players.size - 1
+                        } else {
+                            state.currentPlayerIndex - 1
+                        }
+                        prevTeamIndex = state.currentTeamIndex
+                        prevTeamPlayerIndexes = state.teamPlayerIndexes
                     }
                     val prevPlayer = state.players.getOrNull(prevPlayerIndex) ?: return@launch
 
@@ -507,6 +561,8 @@ class GameViewModel @Inject constructor(
                         _uiState.update { it.copy(
                             teamScores = it.teamScores + (teamIdx to prevScore),
                             currentPlayerIndex = prevPlayerIndex,
+                            currentTeamIndex = prevTeamIndex,
+                            teamPlayerIndexes = prevTeamPlayerIndexes,
                             currentDarts = restoredDarts,
                             pendingMultiplier = 1,
                             visitHistory = newHistory
@@ -542,9 +598,24 @@ class GameViewModel @Inject constructor(
 
                 val lastThrow = gameRepository.getLastThrowInLeg(legId) ?: return@launch
 
-                // The checkout player advanced currentPlayerIndex by 1 in resolveVisit().
+                // The checkout player advanced currentPlayerIndex (and team pointers) in resolveVisit().
                 // Reverse that to recover the index of the player who checked out.
-                val checkerOutIndex = (state.currentPlayerIndex - 1 + state.players.size) % state.players.size
+                val checkerOutIndex: Int
+                val checkerOutTeamIndex: Int
+                val checkerOutTeamPlayerIndexes: Map<Int, Int>
+                if (state.isTeamGame) {
+                    val teamPlayerIndices = computeTeamPlayerIndices(state.players, state.teamAssignments)
+                    val justPlayedTeam = 1 - state.currentTeamIndex
+                    val justPlayedTeamSize = teamPlayerIndices[justPlayedTeam]?.size ?: 1
+                    val rewindedIdx = ((state.teamPlayerIndexes[justPlayedTeam] ?: 0) - 1 + justPlayedTeamSize) % justPlayedTeamSize
+                    checkerOutIndex = teamPlayerIndices[justPlayedTeam]?.get(rewindedIdx) ?: 0
+                    checkerOutTeamIndex = justPlayedTeam
+                    checkerOutTeamPlayerIndexes = state.teamPlayerIndexes + (justPlayedTeam to rewindedIdx)
+                } else {
+                    checkerOutIndex = (state.currentPlayerIndex - 1 + state.players.size) % state.players.size
+                    checkerOutTeamIndex = state.currentTeamIndex
+                    checkerOutTeamPlayerIndexes = state.teamPlayerIndexes
+                }
 
                 // Reconstruct the darts of the finishing visit, then drop the last dart —
                 // matching the behaviour of undoLastDart on the live screen.
@@ -582,6 +653,8 @@ class GameViewModel @Inject constructor(
                         teamScores = it.teamScores + (teamIdx to restoredScore),
                         winningTeamIndex = null,
                         currentPlayerIndex = checkerOutIndex,
+                        currentTeamIndex = checkerOutTeamIndex,
+                        teamPlayerIndexes = checkerOutTeamPlayerIndexes,
                         currentDarts = restoredDarts,
                         pendingMultiplier = 1,
                         visitHistory = newHistory,
@@ -655,6 +728,8 @@ class GameViewModel @Inject constructor(
                         teamScores = teamScores,
                         teamLegWins = teamLegWins,
                         winningTeamIndex = null,
+                        currentTeamIndex = 0,
+                        teamPlayerIndexes = mapOf(0 to 0, 1 to 0),
                         currentPlayerIndex = 0,
                         currentDarts = emptyList(),
                         pendingMultiplier = 1,
@@ -730,6 +805,8 @@ class GameViewModel @Inject constructor(
                             teamLegWins = newTeamLegWins,
                             teamScores = newTeamScores,
                             currentLegNumber = newLegNumber,
+                            currentTeamIndex = 0,
+                            teamPlayerIndexes = mapOf(0 to 0, 1 to 0),
                             currentPlayerIndex = 0,
                             currentDarts = emptyList(),
                             pendingMultiplier = 1,

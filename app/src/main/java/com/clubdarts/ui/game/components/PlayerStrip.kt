@@ -41,9 +41,32 @@ fun PlayerStrip(
     teamAssignments: Map<Long, Int> = emptyMap(),   // playerId → 0 or 1
     teamScores: Map<Int, Int> = emptyMap(),          // teamIndex → remaining score
     teamLegWins: Map<Int, Int> = emptyMap(),         // teamIndex → legs won
+    currentTeamIndex: Int = -1,                      // team whose turn it is (-1 for non-team)
+    teamPlayerIndexes: Map<Int, Int> = emptyMap(),   // teamIndex → current player pos within team
     animationsEnabled: Boolean = true
 ) {
-    val orderedPlayers = if (players.isEmpty()) emptyList() else {
+    val orderedPlayers = if (players.isEmpty()) {
+        emptyList()
+    } else if (isTeamGame && currentTeamIndex >= 0 && teamPlayerIndexes.isNotEmpty()) {
+        // Build the team→[playerIndices] map and simulate upcoming turn order
+        val teamPlayerIndices = buildMap<Int, List<Int>> {
+            val tmp = mutableMapOf<Int, MutableList<Int>>()
+            players.forEachIndexed { idx, p ->
+                val team = teamAssignments[p.id] ?: return@forEachIndexed
+                tmp.getOrPut(team) { mutableListOf() }.add(idx)
+            }
+            putAll(tmp)
+        }
+        val pointers = teamPlayerIndexes.toMutableMap()
+        var team = currentTeamIndex
+        (0 until players.size).map {
+            val playerIdx = teamPlayerIndices[team]?.get(pointers[team] ?: 0) ?: 0
+            val teamSize = teamPlayerIndices[team]?.size ?: 1
+            pointers[team] = ((pointers[team] ?: 0) + 1) % teamSize
+            team = 1 - team
+            players[playerIdx]
+        }
+    } else {
         players.indices.map { offset -> players[(currentPlayerIndex + offset) % players.size] }
     }
 
