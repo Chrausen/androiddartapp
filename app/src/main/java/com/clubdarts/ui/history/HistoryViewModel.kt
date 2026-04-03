@@ -15,6 +15,8 @@ import java.text.SimpleDateFormat
 import java.util.*
 import javax.inject.Inject
 
+enum class GameFilter { ALL, CASUAL, RANKED }
+
 data class GameSummary(
     val game: Game,
     val players: List<Player>,
@@ -24,6 +26,8 @@ data class GameSummary(
 
 data class HistoryUiState(
     val gameSummaries: List<GameSummary> = emptyList(),
+    val allSummaries: List<GameSummary> = emptyList(),
+    val selectedFilter: GameFilter = GameFilter.ALL,
     val isLoading: Boolean = true,
     val errorMessage: String? = null
 )
@@ -86,13 +90,32 @@ class HistoryViewModel @Inject constructor(
                         }
                         GameSummary(game = game, players = players, gamePlayers = gamePlayers, dateGroup = group)
                     }
-                    _uiState.update { it.copy(gameSummaries = summaries, isLoading = false) }
+                    _uiState.update { state ->
+                        val filtered = applyFilter(summaries, state.selectedFilter)
+                        state.copy(gameSummaries = filtered, allSummaries = summaries, isLoading = false)
+                    }
                 }
             } catch (e: Exception) {
                 _uiState.update { it.copy(errorMessage = e.message, isLoading = false) }
             }
         }
     }
+
+    fun setFilter(filter: GameFilter) {
+        _uiState.update { state ->
+            state.copy(
+                selectedFilter = filter,
+                gameSummaries = applyFilter(state.allSummaries, filter)
+            )
+        }
+    }
+
+    private fun applyFilter(summaries: List<GameSummary>, filter: GameFilter): List<GameSummary> =
+        when (filter) {
+            GameFilter.ALL -> summaries
+            GameFilter.CASUAL -> summaries.filter { !it.game.isRanked }
+            GameFilter.RANKED -> summaries.filter { it.game.isRanked }
+        }
 
     fun loadMatchDetail(gameId: Long) {
         viewModelScope.launch {

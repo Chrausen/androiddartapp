@@ -107,6 +107,9 @@
     <string name="history_ranked">Gewertet</string>
     <string name="history_solo">Solo</string>
     <string name="history_teams">Teams</string>
+    <string name="history_filter_all">Alle Spiele</string>
+    <string name="history_filter_casual">Nur Casual</string>
+    <string name="history_filter_ranked">Nur Gewertet</string>
 
     <!-- Match detail screen -->
     <string name="match_detail_title">Spieldetail</string>
