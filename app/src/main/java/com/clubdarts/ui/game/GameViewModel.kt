@@ -114,7 +114,7 @@ data class GameUiState(
     val setupTeamBPlayerIds: List<Long> = emptyList(),
     // Ranking
     val rankingEnabled: Boolean = false,  // mirrors the global ranking-enabled setting
-    val isRanked: Boolean = false,        // whether the user toggled ranked mode for THIS game
+    val isRanked: Boolean = true,         // whether the user toggled ranked mode for THIS game
     // Locked config for ranked matches (loaded once from ranking settings; cannot be changed mid-game)
     val rankedStartScore: Int = 501,
     val rankedCheckoutRule: CheckoutRule = CheckoutRule.DOUBLE,
@@ -966,7 +966,7 @@ class GameViewModel @Inject constructor(
             winnerId = null,
             checkoutHint = null,
             gameSaved = false,
-            isRanked = false,
+            isRanked = true,
             eloResults = null,
             eloMatchId = null
         )}
