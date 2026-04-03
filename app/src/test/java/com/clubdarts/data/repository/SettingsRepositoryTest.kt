@@ -293,10 +293,10 @@ class SettingsRepositoryTest {
     }
 
     @Test
-    fun `getRankingEnabled returns false by default`() = runTest {
+    fun `getRankingEnabled returns true by default`() = runTest {
         stubKey(SettingsKeys.RANKING_ENABLED, null)
-        // SettingsDefaults.RANKING_ENABLED = "false"
-        assertFalse(repo.getRankingEnabled())
+        // SettingsDefaults.RANKING_ENABLED = "true"
+        assertTrue(repo.getRankingEnabled())
     }
 
     @Test
@@ -510,9 +510,9 @@ class SettingsRepositoryTest {
     }
 
     @Test
-    fun `observeRankingEnabled emits false by default`() = runTest {
+    fun `observeRankingEnabled emits true by default`() = runTest {
         every { dao.observe(SettingsKeys.RANKING_ENABLED) } returns flowOf(null)
-        assertFalse(repo.observeRankingEnabled().first())
+        assertTrue(repo.observeRankingEnabled().first())
     }
 
     @Test
