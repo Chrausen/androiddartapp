@@ -147,7 +147,7 @@
     <string name="stats_leaderboard_metric_100plus">100+</string>
     <string name="stats_leaderboard_metric_highest_finish">Höchstes Finish</string>
     <string name="stats_leaderboard_metric_highest_round">Höchste Runde</string>
-    <string name="stats_leaderboard_metric_checkout_pct">Checkout %%</string>
+    <string name="stats_leaderboard_metric_checkout_pct">Checkout %</string>
     <string name="stats_leaderboard_metric_total_darts">Gesamt Darts</string>
     <string name="stats_leaderboard_metric_total_score">Gesamt Punkte</string>
     <string name="stats_leaderboard_select">Rangliste nach</string>
