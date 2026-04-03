@@ -26,4 +26,7 @@ interface LegDao {
 
     @Query("SELECT COUNT(*) FROM legs WHERE winnerId = :playerId")
     suspend fun getLegWinsForPlayer(playerId: Long): Int
+
+    @Query("SELECT winnerId as playerId, COUNT(*) as value FROM legs WHERE winnerId IS NOT NULL GROUP BY winnerId")
+    suspend fun getAllPlayerLegsWon(): List<PlayerIntStat>
 }

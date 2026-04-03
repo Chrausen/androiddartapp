@@ -55,9 +55,36 @@ data class PlayerStats(
     val totalScoreThrown: Long     // Gesamt geworfene Punktzahl
 )
 
+enum class LeaderboardMetric {
+    AVERAGE, AVG_PER_ROUND, AVG_PER_DART, FIRST_9_AVG,
+    WINS, GAMES_PLAYED, LEGS_WON,
+    COUNT_180S, HUNDRED_PLUS,
+    HIGHEST_FINISH, HIGHEST_ROUND,
+    CHECKOUT_PCT, TOTAL_DARTS, TOTAL_SCORE
+}
+
+/** Merged per-player leaderboard data (throw stats + game/leg stats). */
+data class PlayerLeaderboardStats(
+    val average: Double = 0.0,
+    val avgPerDart: Double = 0.0,
+    val avgPerRound: Double = 0.0,
+    val first9Avg: Double = 0.0,
+    val wins: Int = 0,
+    val gamesPlayed: Int = 0,
+    val legsWon: Int = 0,
+    val count180s: Int = 0,
+    val hundredPlus: Int = 0,
+    val highestFinish: Int = 0,
+    val highestRound: Int = 0,
+    val checkoutPct: Float = 0f,
+    val totalDarts: Int = 0,
+    val totalScore: Long = 0
+)
+
 data class StatsUiState(
     val players: List<Player> = emptyList(),
-    val averages: Map<Long, Double> = emptyMap(),
+    val leaderboardStats: Map<Long, PlayerLeaderboardStats> = emptyMap(),
+    val leaderboardMetric: LeaderboardMetric = LeaderboardMetric.AVERAGE,
     val selectedPlayer: Player? = null,
     val selectedPlayerStats: PlayerStats? = null,
     val clubTotalGames: Int = 0,
@@ -90,10 +117,41 @@ class StatsViewModel @Inject constructor(
     private fun observePlayers() {
         viewModelScope.launch {
             playerRepository.getAllPlayers().collect { players ->
-                val averages = throwDao.getAllPlayerAverages().associate { it.playerId to it.average }
-                _uiState.update { it.copy(players = players, averages = averages) }
+                val throwRows = throwDao.getAllPlayerLeaderboardRows().associateBy { it.playerId }
+                val first9Map = throwDao.getAllPlayerFirst9Avg().associate { it.playerId to it.value }
+                val winsMap = gameRepository.getAllPlayerWins()
+                val gamesPlayedMap = gameRepository.getAllPlayerGamesPlayed()
+                val legsWonMap = gameRepository.getAllPlayerLegsWon()
+
+                val leaderboardStats = players.associate { player ->
+                    val row = throwRows[player.id]
+                    val checkoutPct = if ((row?.checkoutAttempts ?: 0) > 0)
+                        (row!!.successfulCheckouts.toFloat() / row.checkoutAttempts)
+                    else 0f
+                    player.id to PlayerLeaderboardStats(
+                        average = row?.average ?: 0.0,
+                        avgPerDart = row?.avgPerDart ?: 0.0,
+                        avgPerRound = row?.avgPerRound ?: 0.0,
+                        first9Avg = first9Map[player.id] ?: 0.0,
+                        wins = winsMap[player.id] ?: 0,
+                        gamesPlayed = gamesPlayedMap[player.id] ?: 0,
+                        legsWon = legsWonMap[player.id] ?: 0,
+                        count180s = row?.count180s ?: 0,
+                        hundredPlus = row?.hundredPlus ?: 0,
+                        highestFinish = row?.highestFinish ?: 0,
+                        highestRound = row?.highestRound ?: 0,
+                        checkoutPct = checkoutPct,
+                        totalDarts = row?.totalDarts ?: 0,
+                        totalScore = row?.totalScoreThrown ?: 0
+                    )
+                }
+                _uiState.update { it.copy(players = players, leaderboardStats = leaderboardStats) }
             }
         }
+    }
+
+    fun setLeaderboardMetric(metric: LeaderboardMetric) {
+        _uiState.update { it.copy(leaderboardMetric = metric) }
     }
 
     private fun loadClubStats() {

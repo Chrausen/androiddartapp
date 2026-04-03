@@ -8,6 +8,26 @@ data class ScoreFrequency(val visitTotal: Int, val frequency: Int)
 
 data class PlayerAverage(val playerId: Long, val average: Double)
 
+data class PlayerIntStat(val playerId: Long, val value: Int)
+
+data class PlayerDoubleStat(val playerId: Long, val value: Double)
+
+/** Batch leaderboard aggregate — one row per player, all numeric stats in one query. */
+data class PlayerLeaderboardRow(
+    val playerId: Long,
+    val average: Double?,
+    val avgPerDart: Double?,
+    val avgPerRound: Double?,
+    val count180s: Int,
+    val hundredPlus: Int,
+    val highestFinish: Int?,
+    val highestRound: Int?,
+    val totalDarts: Int,
+    val totalScoreThrown: Long,
+    val checkoutAttempts: Int,
+    val successfulCheckouts: Int
+)
+
 data class DartCoordinate(val x: Double, val y: Double)
 
 data class PlayerStatsAggregate(
@@ -226,6 +246,54 @@ interface ThrowDao {
         ORDER BY g.createdAt ASC
     """)
     suspend fun getFinishedGameIdsSorted(): List<Long>
+
+    @Query("SELECT playerId, COUNT(*) as value FROM throws WHERE visitTotal = 180 GROUP BY playerId")
+    suspend fun getAllPlayer180s(): List<PlayerIntStat>
+
+    @Query("""
+        SELECT t.playerId, MAX(t.visitTotal) as value FROM throws t
+        INNER JOIN legs l ON t.legId = l.id
+        WHERE t.isCheckoutAttempt = 1 AND t.isBust = 0 AND l.winnerId = t.playerId
+        GROUP BY t.playerId
+    """)
+    suspend fun getAllPlayerHighestFinish(): List<PlayerIntStat>
+
+    @Query("""
+        SELECT
+            t.playerId,
+            AVG(CASE WHEN t.isBust = 0 THEN t.visitTotal ELSE NULL END) AS average,
+            CAST(SUM(CASE WHEN t.isBust = 0 AND (t.isCheckoutAttempt = 0 OR l.winnerId != t.playerId)
+                THEN t.visitTotal ELSE 0 END) AS REAL)
+                / NULLIF(SUM(CASE WHEN t.isBust = 0 AND (t.isCheckoutAttempt = 0 OR l.winnerId != t.playerId)
+                THEN t.dartsUsed ELSE 0 END), 0) AS avgPerDart,
+            AVG(CASE WHEN t.isBust = 0 AND (t.isCheckoutAttempt = 0 OR l.winnerId != t.playerId)
+                THEN CAST(t.visitTotal AS REAL) ELSE NULL END) AS avgPerRound,
+            COUNT(CASE WHEN t.visitTotal = 180 THEN 1 ELSE NULL END) AS count180s,
+            COUNT(CASE WHEN t.visitTotal >= 100 AND t.isBust = 0 THEN 1 ELSE NULL END) AS hundredPlus,
+            MAX(CASE WHEN t.isCheckoutAttempt = 1 AND t.isBust = 0 AND l.winnerId = t.playerId
+                THEN t.visitTotal ELSE NULL END) AS highestFinish,
+            MAX(CASE WHEN t.isBust = 0 THEN t.visitTotal ELSE NULL END) AS highestRound,
+            COALESCE(SUM(t.dartsUsed), 0) AS totalDarts,
+            COALESCE(SUM(t.visitTotal), 0) AS totalScoreThrown,
+            COUNT(CASE WHEN t.isCheckoutAttempt = 1 THEN 1 ELSE NULL END) AS checkoutAttempts,
+            COUNT(CASE WHEN t.isCheckoutAttempt = 1 AND l.winnerId = t.playerId
+                THEN 1 ELSE NULL END) AS successfulCheckouts
+        FROM throws t
+        INNER JOIN legs l ON t.legId = l.id
+        GROUP BY t.playerId
+    """)
+    suspend fun getAllPlayerLeaderboardRows(): List<PlayerLeaderboardRow>
+
+    @Query("""
+        SELECT t.playerId, AVG(CAST(legFirstNine AS REAL)) AS value FROM (
+            SELECT t2.playerId, t2.legId, SUM(t2.visitTotal) AS legFirstNine
+            FROM throws t2
+            WHERE t2.visitNumber <= 3
+            GROUP BY t2.playerId, t2.legId
+        ) t
+        GROUP BY t.playerId
+    """)
+    suspend fun getAllPlayerFirst9Avg(): List<PlayerDoubleStat>
 
     @Query("SELECT COUNT(*) FROM throws WHERE visitTotal = 180")
     suspend fun getTotalClub180s(): Int

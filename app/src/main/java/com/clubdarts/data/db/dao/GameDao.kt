@@ -72,6 +72,21 @@ interface GameDao {
     suspend fun getWins(playerId: Long): Int
 
     @Query("""
+        SELECT winnerId as playerId, COUNT(*) as value FROM games
+        WHERE winnerId IS NOT NULL AND finishedAt IS NOT NULL
+        GROUP BY winnerId
+    """)
+    suspend fun getAllPlayerWins(): List<PlayerIntStat>
+
+    @Query("""
+        SELECT gp.playerId, COUNT(DISTINCT gp.gameId) as value FROM game_players gp
+        INNER JOIN games g ON gp.gameId = g.id
+        WHERE g.finishedAt IS NOT NULL
+        GROUP BY gp.playerId
+    """)
+    suspend fun getAllPlayerGamesPlayed(): List<PlayerIntStat>
+
+    @Query("""
         SELECT COUNT(*) FROM game_players gp
         INNER JOIN games g ON gp.gameId = g.id
         WHERE gp.playerId = :playerId AND gp.placement = 2 AND g.finishedAt IS NOT NULL
