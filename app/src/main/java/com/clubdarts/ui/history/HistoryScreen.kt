@@ -7,6 +7,8 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -40,7 +42,17 @@ fun HistoryScreen(
             .padding(horizontal = 16.dp)
     ) {
         Spacer(modifier = Modifier.height(16.dp))
-        Text(stringResource(R.string.history_title), style = MaterialTheme.typography.headlineMedium, color = TextPrimary)
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Text(stringResource(R.string.history_title), style = MaterialTheme.typography.headlineMedium, color = TextPrimary)
+            FilterDropdown(
+                selectedFilter = uiState.selectedFilter,
+                onFilterSelected = { viewModel.setFilter(it) }
+            )
+        }
         Spacer(modifier = Modifier.height(16.dp))
 
         if (uiState.isLoading) {
@@ -71,6 +83,75 @@ fun HistoryScreen(
                     }
                 }
                 item { Spacer(modifier = Modifier.height(16.dp)) }
+            }
+        }
+    }
+}
+
+@Composable
+private fun FilterDropdown(
+    selectedFilter: GameFilter,
+    onFilterSelected: (GameFilter) -> Unit
+) {
+    var expanded by remember { mutableStateOf(false) }
+
+    val label = stringResource(
+        when (selectedFilter) {
+            GameFilter.ALL -> R.string.history_filter_all
+            GameFilter.CASUAL -> R.string.history_filter_casual
+            GameFilter.RANKED -> R.string.history_filter_ranked
+        }
+    )
+
+    Box {
+        Surface(
+            color = Surface3,
+            shape = RoundedCornerShape(8.dp),
+            modifier = Modifier.clickable { expanded = true }
+        ) {
+            Row(
+                modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                Text(
+                    text = label,
+                    style = MaterialTheme.typography.labelMedium,
+                    color = TextSecondary
+                )
+                Icon(
+                    imageVector = Icons.Filled.ArrowDropDown,
+                    contentDescription = null,
+                    tint = TextSecondary,
+                    modifier = Modifier.size(16.dp)
+                )
+            }
+        }
+        DropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false }
+        ) {
+            for (filter in GameFilter.entries) {
+                val itemLabel = stringResource(
+                    when (filter) {
+                        GameFilter.ALL -> R.string.history_filter_all
+                        GameFilter.CASUAL -> R.string.history_filter_casual
+                        GameFilter.RANKED -> R.string.history_filter_ranked
+                    }
+                )
+                DropdownMenuItem(
+                    text = {
+                        Text(
+                            text = itemLabel,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = if (filter == selectedFilter) Accent else TextPrimary
+                        )
+                    },
+                    onClick = {
+                        onFilterSelected(filter)
+                        expanded = false
+                    }
+                )
             }
         }
     }
