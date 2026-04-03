@@ -31,12 +31,25 @@ fun StatsScreen(
     viewModel: StatsViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val sortedPlayers = remember(uiState.players, uiState.averages, uiState.winsMap, uiState.count180sMap, uiState.highestFinishMap, uiState.leaderboardMetric) {
-        when (uiState.leaderboardMetric) {
-            LeaderboardMetric.AVERAGE -> uiState.players.sortedByDescending { uiState.averages[it.id] ?: 0.0 }
-            LeaderboardMetric.WINS -> uiState.players.sortedByDescending { uiState.winsMap[it.id] ?: 0 }
-            LeaderboardMetric.COUNT_180S -> uiState.players.sortedByDescending { uiState.count180sMap[it.id] ?: 0 }
-            LeaderboardMetric.HIGHEST_FINISH -> uiState.players.sortedByDescending { uiState.highestFinishMap[it.id] ?: 0 }
+    val sortedPlayers = remember(uiState.players, uiState.leaderboardStats, uiState.leaderboardMetric) {
+        val s = uiState.leaderboardStats
+        uiState.players.sortedByDescending { player ->
+            when (uiState.leaderboardMetric) {
+                LeaderboardMetric.AVERAGE        -> s[player.id]?.average ?: 0.0
+                LeaderboardMetric.AVG_PER_DART   -> s[player.id]?.avgPerDart ?: 0.0
+                LeaderboardMetric.AVG_PER_ROUND  -> s[player.id]?.avgPerRound ?: 0.0
+                LeaderboardMetric.FIRST_9_AVG    -> s[player.id]?.first9Avg ?: 0.0
+                LeaderboardMetric.WINS           -> (s[player.id]?.wins ?: 0).toDouble()
+                LeaderboardMetric.GAMES_PLAYED   -> (s[player.id]?.gamesPlayed ?: 0).toDouble()
+                LeaderboardMetric.LEGS_WON       -> (s[player.id]?.legsWon ?: 0).toDouble()
+                LeaderboardMetric.COUNT_180S     -> (s[player.id]?.count180s ?: 0).toDouble()
+                LeaderboardMetric.HUNDRED_PLUS   -> (s[player.id]?.hundredPlus ?: 0).toDouble()
+                LeaderboardMetric.HIGHEST_FINISH -> (s[player.id]?.highestFinish ?: 0).toDouble()
+                LeaderboardMetric.HIGHEST_ROUND  -> (s[player.id]?.highestRound ?: 0).toDouble()
+                LeaderboardMetric.CHECKOUT_PCT   -> (s[player.id]?.checkoutPct ?: 0f).toDouble()
+                LeaderboardMetric.TOTAL_DARTS    -> (s[player.id]?.totalDarts ?: 0).toDouble()
+                LeaderboardMetric.TOTAL_SCORE    -> (s[player.id]?.totalScore ?: 0L).toDouble()
+            }
         }
     }
 
@@ -84,11 +97,22 @@ fun StatsScreen(
                 )
             }
             itemsIndexed(sortedPlayers, key = { _, player -> player.id }) { index, player ->
+                val s = uiState.leaderboardStats[player.id]
                 val metricValue = when (uiState.leaderboardMetric) {
-                    LeaderboardMetric.AVERAGE -> "%.1f".format(uiState.averages[player.id] ?: 0.0)
-                    LeaderboardMetric.WINS -> (uiState.winsMap[player.id] ?: 0).toString()
-                    LeaderboardMetric.COUNT_180S -> (uiState.count180sMap[player.id] ?: 0).toString()
-                    LeaderboardMetric.HIGHEST_FINISH -> (uiState.highestFinishMap[player.id] ?: 0).toString()
+                    LeaderboardMetric.AVERAGE        -> "%.1f".format(s?.average ?: 0.0)
+                    LeaderboardMetric.AVG_PER_DART   -> "%.2f".format(s?.avgPerDart ?: 0.0)
+                    LeaderboardMetric.AVG_PER_ROUND  -> "%.1f".format(s?.avgPerRound ?: 0.0)
+                    LeaderboardMetric.FIRST_9_AVG    -> "%.1f".format(s?.first9Avg ?: 0.0)
+                    LeaderboardMetric.WINS           -> (s?.wins ?: 0).toString()
+                    LeaderboardMetric.GAMES_PLAYED   -> (s?.gamesPlayed ?: 0).toString()
+                    LeaderboardMetric.LEGS_WON       -> (s?.legsWon ?: 0).toString()
+                    LeaderboardMetric.COUNT_180S     -> (s?.count180s ?: 0).toString()
+                    LeaderboardMetric.HUNDRED_PLUS   -> (s?.hundredPlus ?: 0).toString()
+                    LeaderboardMetric.HIGHEST_FINISH -> (s?.highestFinish ?: 0).toString()
+                    LeaderboardMetric.HIGHEST_ROUND  -> (s?.highestRound ?: 0).toString()
+                    LeaderboardMetric.CHECKOUT_PCT   -> "%.0f%%".format((s?.checkoutPct ?: 0f) * 100)
+                    LeaderboardMetric.TOTAL_DARTS    -> (s?.totalDarts ?: 0).toString()
+                    LeaderboardMetric.TOTAL_SCORE    -> (s?.totalScore ?: 0L).toString()
                 }
                 LeaderboardRow(
                     rank = index + 1,
@@ -324,10 +348,20 @@ private fun LeaderboardHeader(
 ) {
     var expanded by remember { mutableStateOf(false) }
     val metricLabels = mapOf(
-        LeaderboardMetric.AVERAGE to stringResource(R.string.stats_leaderboard_metric_average),
-        LeaderboardMetric.WINS to stringResource(R.string.stats_leaderboard_metric_wins),
-        LeaderboardMetric.COUNT_180S to stringResource(R.string.stats_leaderboard_metric_180s),
-        LeaderboardMetric.HIGHEST_FINISH to stringResource(R.string.stats_leaderboard_metric_highest_finish)
+        LeaderboardMetric.AVERAGE        to stringResource(R.string.stats_leaderboard_metric_average),
+        LeaderboardMetric.AVG_PER_DART   to stringResource(R.string.stats_leaderboard_metric_avg_per_dart),
+        LeaderboardMetric.AVG_PER_ROUND  to stringResource(R.string.stats_leaderboard_metric_avg_per_round),
+        LeaderboardMetric.FIRST_9_AVG    to stringResource(R.string.stats_leaderboard_metric_first9),
+        LeaderboardMetric.WINS           to stringResource(R.string.stats_leaderboard_metric_wins),
+        LeaderboardMetric.GAMES_PLAYED   to stringResource(R.string.stats_leaderboard_metric_games_played),
+        LeaderboardMetric.LEGS_WON       to stringResource(R.string.stats_leaderboard_metric_legs_won),
+        LeaderboardMetric.COUNT_180S     to stringResource(R.string.stats_leaderboard_metric_180s),
+        LeaderboardMetric.HUNDRED_PLUS   to stringResource(R.string.stats_leaderboard_metric_100plus),
+        LeaderboardMetric.HIGHEST_FINISH to stringResource(R.string.stats_leaderboard_metric_highest_finish),
+        LeaderboardMetric.HIGHEST_ROUND  to stringResource(R.string.stats_leaderboard_metric_highest_round),
+        LeaderboardMetric.CHECKOUT_PCT   to stringResource(R.string.stats_leaderboard_metric_checkout_pct),
+        LeaderboardMetric.TOTAL_DARTS    to stringResource(R.string.stats_leaderboard_metric_total_darts),
+        LeaderboardMetric.TOTAL_SCORE    to stringResource(R.string.stats_leaderboard_metric_total_score)
     )
     Row(
         modifier = Modifier.fillMaxWidth(),
