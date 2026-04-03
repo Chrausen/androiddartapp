@@ -87,6 +87,9 @@ interface GameDao {
     """)
     suspend fun getThirdPlaceCount(playerId: Long): Int
 
+    @Query("SELECT SUM(finishedAt - createdAt) FROM games WHERE finishedAt IS NOT NULL")
+    suspend fun getTotalGamePlaytimeMs(): Long?
+
     // ── Stats 16–18: social stats ────────────────────────────────────────────
 
     @Query("""

@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.clubdarts.data.db.dao.ScoreFrequency
 import com.clubdarts.data.db.dao.ThrowDao
+import com.clubdarts.data.db.dao.TrainingSessionDao
 import com.clubdarts.data.model.Game
 import com.clubdarts.data.model.Player
 import com.clubdarts.data.repository.GameRepository
@@ -63,6 +64,8 @@ data class StatsUiState(
     val clubTotalPlayers: Int = 0,
     val clubTotal180s: Int = 0,
     val clubHighestFinish: Int? = null,
+    val clubTotalPlaytimeHours: Long = 0,
+    val clubTotalPlaytimeMinutes: Int = 0,
     val showBuckets: Boolean = false,
     val isLoading: Boolean = false,
     val errorMessage: String? = null
@@ -72,7 +75,8 @@ data class StatsUiState(
 class StatsViewModel @Inject constructor(
     private val playerRepository: PlayerRepository,
     private val gameRepository: GameRepository,
-    private val throwDao: ThrowDao
+    private val throwDao: ThrowDao,
+    private val trainingSessionDao: TrainingSessionDao
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(StatsUiState())
@@ -98,10 +102,17 @@ class StatsViewModel @Inject constructor(
                 val total180s = throwDao.getTotalClub180s()
                 val highestFinish = throwDao.getClubHighestFinish()
                 val totalPlayers = playerRepository.getPlayerCount()
+                val gamePlaytimeMs = gameRepository.getTotalGamePlaytimeMs()
+                val trainingPlaytimeMs = trainingSessionDao.getTotalTrainingPlaytimeMs() ?: 0L
+                val totalMs = gamePlaytimeMs + trainingPlaytimeMs
+                val totalHours = totalMs / (1000L * 60 * 60)
+                val totalMinutes = ((totalMs % (1000L * 60 * 60)) / (1000L * 60)).toInt()
                 _uiState.update { it.copy(
                     clubTotal180s = total180s,
                     clubHighestFinish = highestFinish,
-                    clubTotalPlayers = totalPlayers
+                    clubTotalPlayers = totalPlayers,
+                    clubTotalPlaytimeHours = totalHours,
+                    clubTotalPlaytimeMinutes = totalMinutes
                 )}
 
                 gameRepository.getAllGames().collect { games ->

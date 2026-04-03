@@ -66,6 +66,10 @@ fun StatsScreen(
                     MetricCard(stringResource(R.string.stats_best_finish), uiState.clubHighestFinish?.toString() ?: "—", modifier = Modifier.weight(1f))
                 }
             }
+            item {
+                val playtimeValue = "${uiState.clubTotalPlaytimeHours}h ${uiState.clubTotalPlaytimeMinutes}m"
+                MetricCard(stringResource(R.string.stats_overall_playtime), playtimeValue, modifier = Modifier.fillMaxWidth())
+            }
 
             // Leaderboard
             item {

@@ -65,6 +65,9 @@ interface TrainingSessionDao {
     """)
     suspend fun getBestSessionDescending(mode: String): BestSessionRow?
 
+    @Query("SELECT SUM(completedAt - startedAt) FROM training_sessions WHERE startedAt > 0 AND completedAt > startedAt")
+    suspend fun getTotalTrainingPlaytimeMs(): Long?
+
     @Query("DELETE FROM training_sessions")
     suspend fun deleteAll()
 }

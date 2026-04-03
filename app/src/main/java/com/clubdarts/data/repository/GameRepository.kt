@@ -58,6 +58,7 @@ class GameRepository @Inject constructor(
     suspend fun getActiveLeg(gameId: Long): Leg? = legDao.getActiveLeg(gameId)
     suspend fun getLegById(id: Long): Leg? = legDao.getLegById(id)
     suspend fun getLegWinsForPlayer(playerId: Long): Int = legDao.getLegWinsForPlayer(playerId)
+    suspend fun getTotalGamePlaytimeMs(): Long = gameDao.getTotalGamePlaytimeMs() ?: 0L
     suspend fun getGamesPlayed(playerId: Long): Int = gameDao.getGamesPlayed(playerId)
     suspend fun getWins(playerId: Long): Int = gameDao.getWins(playerId)
     suspend fun getSecondPlaceCount(playerId: Long): Int = gameDao.getSecondPlaceCount(playerId)

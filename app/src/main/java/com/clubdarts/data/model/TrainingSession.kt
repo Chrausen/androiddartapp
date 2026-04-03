@@ -24,5 +24,6 @@ data class TrainingSession(
     /** Total darts used (TARGET_FIELD / AROUND_THE_CLOCK) or average×10 (SCORING_ROUNDS). */
     val result: Int,
     val completedCount: Int,   // fields completed (TARGET/ATC) or rounds completed (SCORING)
-    val completedAt: Long = System.currentTimeMillis()
+    val completedAt: Long = System.currentTimeMillis(),
+    val startedAt: Long = System.currentTimeMillis()
 )
