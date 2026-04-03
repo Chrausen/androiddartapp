@@ -349,8 +349,8 @@ private fun LeaderboardHeader(
     var expanded by remember { mutableStateOf(false) }
     val metricLabels = mapOf(
         LeaderboardMetric.AVERAGE        to stringResource(R.string.stats_leaderboard_metric_average),
-        LeaderboardMetric.AVG_PER_DART   to stringResource(R.string.stats_leaderboard_metric_avg_per_dart),
         LeaderboardMetric.AVG_PER_ROUND  to stringResource(R.string.stats_leaderboard_metric_avg_per_round),
+        LeaderboardMetric.AVG_PER_DART   to stringResource(R.string.stats_leaderboard_metric_avg_per_dart),
         LeaderboardMetric.FIRST_9_AVG    to stringResource(R.string.stats_leaderboard_metric_first9),
         LeaderboardMetric.WINS           to stringResource(R.string.stats_leaderboard_metric_wins),
         LeaderboardMetric.GAMES_PLAYED   to stringResource(R.string.stats_leaderboard_metric_games_played),

@@ -136,9 +136,9 @@
     <string name="stats_best_finish">Best finish</string>
     <string name="stats_overall_playtime">Overall playtime customers payed for</string>
     <string name="stats_top_averages">Top averages</string>
-    <string name="stats_leaderboard_metric_average">Ø Schnitt</string>
+    <string name="stats_leaderboard_metric_average">Ø inkl. Checkouts</string>
     <string name="stats_leaderboard_metric_avg_per_dart">Ø pro Dart</string>
-    <string name="stats_leaderboard_metric_avg_per_round">Ø pro Runde</string>
+    <string name="stats_leaderboard_metric_avg_per_round">Ø ohne Checkout</string>
     <string name="stats_leaderboard_metric_first9">First 9 Ø</string>
     <string name="stats_leaderboard_metric_wins">Siege</string>
     <string name="stats_leaderboard_metric_games_played">Gespielte Spiele</string>
