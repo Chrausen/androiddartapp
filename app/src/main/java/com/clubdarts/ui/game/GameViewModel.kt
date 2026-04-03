@@ -629,6 +629,12 @@ class GameViewModel @Inject constructor(
                 // Score displayed = remaining before the entire visit (same as undoLastDart)
                 val restoredScore = lastThrow.visitTotal
 
+                // Keep visitCounter in sync with the deleted throw
+                val checkerOutPlayer = state.players.getOrNull(checkerOutIndex)
+                if (checkerOutPlayer != null) {
+                    visitCounters[checkerOutPlayer.id] = ((visitCounters[checkerOutPlayer.id] ?: 1) - 1).coerceAtLeast(0)
+                }
+
                 // Revert DB: delete throw, unfinish leg, unfinish game
                 gameRepository.deleteThrow(lastThrow)
                 gameRepository.unfinishLeg(legId)

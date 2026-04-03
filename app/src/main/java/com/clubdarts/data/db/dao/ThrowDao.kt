@@ -88,7 +88,7 @@ interface ThrowDao {
     @Query("SELECT * FROM throws WHERE legId = :legId AND playerId = :playerId ORDER BY visitNumber ASC")
     suspend fun getThrowsForPlayerInLeg(legId: Long, playerId: Long): List<Throw>
 
-    @Query("SELECT * FROM throws WHERE legId = :legId ORDER BY visitNumber DESC LIMIT 1")
+    @Query("SELECT * FROM throws WHERE legId = :legId ORDER BY id DESC LIMIT 1")
     suspend fun getLastThrowInLeg(legId: Long): Throw?
 
     @Query("SELECT AVG(visitTotal) FROM throws WHERE playerId = :playerId AND isBust = 0")
