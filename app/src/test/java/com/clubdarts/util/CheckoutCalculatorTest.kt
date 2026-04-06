@@ -32,6 +32,22 @@ class CheckoutCalculatorTest {
     }
 
     @Test
+    fun `suggest returns T20 T20 T20 for score 180 with straight rule`() {
+        assertEquals("T20 · T20 · T20", CheckoutCalculator.suggest(180, CheckoutRule.STRAIGHT))
+    }
+
+    @Test
+    fun `suggest returns T20 T20 T20 for score 180 with triple rule`() {
+        assertEquals("T20 · T20 · T20", CheckoutCalculator.suggest(180, CheckoutRule.TRIPLE))
+    }
+
+    @Test
+    fun `suggest returns null for score above 180`() {
+        assertNull(CheckoutCalculator.suggest(181, CheckoutRule.STRAIGHT))
+        assertNull(CheckoutCalculator.suggest(181, CheckoutRule.TRIPLE))
+    }
+
+    @Test
     fun `suggest returns null for score 0`() {
         assertNull(CheckoutCalculator.suggest(0, CheckoutRule.DOUBLE))
     }

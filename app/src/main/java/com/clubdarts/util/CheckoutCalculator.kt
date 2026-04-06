@@ -99,7 +99,9 @@ object CheckoutCalculator {
      * suppressed so the hint always reflects what is still achievable this turn.
      */
     fun suggest(score: Int, rule: CheckoutRule, maxDarts: Int = 3): String? {
-        if (score < 1 || score > 170) return null
+        if (score < 1) return null
+        val maxScore = if (rule == CheckoutRule.DOUBLE) 170 else 180
+        if (score > maxScore) return null
         val raw = when (rule) {
             CheckoutRule.DOUBLE -> doubleOutPaths[score]
             CheckoutRule.STRAIGHT -> straightOutPaths[score]
