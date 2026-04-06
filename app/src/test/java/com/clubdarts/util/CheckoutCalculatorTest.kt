@@ -101,8 +101,14 @@ class CheckoutCalculatorTest {
     }
 
     @Test
-    fun `isCheckoutPossible STRAIGHT is false for score above 60`() {
-        assertFalse(CheckoutCalculator.isCheckoutPossible(61, CheckoutRule.STRAIGHT))
+    fun `isCheckoutPossible STRAIGHT is true for score 61 reachable in 2 darts`() {
+        // T20 (60) + single 1 = 61 — a valid 2-dart Straight Out finish
+        assertTrue(CheckoutCalculator.isCheckoutPossible(61, CheckoutRule.STRAIGHT))
+    }
+
+    @Test
+    fun `isCheckoutPossible STRAIGHT is false for score above 180`() {
+        assertFalse(CheckoutCalculator.isCheckoutPossible(181, CheckoutRule.STRAIGHT))
     }
 
     @Test
