@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material.icons.filled.CloudSync
 import androidx.compose.material.icons.filled.EmojiEvents
 import androidx.compose.material.icons.filled.RecordVoiceOver
 import androidx.compose.material.icons.filled.Tune
@@ -24,7 +25,8 @@ import com.clubdarts.ui.theme.*
 fun SettingsScreen(
     onNavigateToTtsScores: () -> Unit,
     onNavigateToRankingSettings: () -> Unit,
-    onNavigateToGeneralSettings: () -> Unit
+    onNavigateToGeneralSettings: () -> Unit,
+    onNavigateToBackup: () -> Unit
 ) {
     Box(
         modifier = Modifier
@@ -66,6 +68,16 @@ fun SettingsScreen(
                 title = stringResource(R.string.settings_tts_phrases),
                 subtitle = stringResource(R.string.settings_tts_subtitle),
                 onClick = onNavigateToTtsScores
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            SettingsRow(
+                icon = Icons.Default.CloudSync,
+                iconTint = Accent,
+                title = stringResource(R.string.settings_backup_title),
+                subtitle = stringResource(R.string.settings_backup_subtitle),
+                onClick = onNavigateToBackup
             )
         }
     }

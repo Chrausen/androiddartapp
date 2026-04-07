@@ -19,4 +19,13 @@ interface AppSettingsDao {
 
     @Query("DELETE FROM app_settings WHERE `key` = :key")
     suspend fun delete(key: String)
+
+    @Query("SELECT * FROM app_settings")
+    suspend fun getAll(): List<AppSettings>
+
+    @Query("DELETE FROM app_settings")
+    suspend fun deleteAll()
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertAll(settings: List<AppSettings>)
 }

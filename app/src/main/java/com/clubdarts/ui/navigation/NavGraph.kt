@@ -210,6 +210,9 @@ fun ClubDartsNavHost(
                     },
                     onNavigateToGeneralSettings = {
                         navController.navigate("settings/general")
+                    },
+                    onNavigateToBackup = {
+                        navController.navigate("settings/backup")
                     }
                 )
             }
@@ -231,6 +234,11 @@ fun ClubDartsNavHost(
             }
             composable("settings/ranking") {
                 RankingSettingsScreen(
+                    onBack = { navController.popBackStack() }
+                )
+            }
+            composable("settings/backup") {
+                com.clubdarts.ui.settings.backup.BackupScreen(
                     onBack = { navController.popBackStack() }
                 )
             }

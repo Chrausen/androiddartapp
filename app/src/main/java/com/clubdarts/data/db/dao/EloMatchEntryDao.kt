@@ -22,4 +22,10 @@ interface EloMatchEntryDao {
 
     @Query("DELETE FROM elo_match_entries")
     suspend fun deleteAll()
+
+    @Query("SELECT * FROM elo_match_entries")
+    suspend fun getAll(): List<EloMatchEntry>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertAll(entries: List<EloMatchEntry>)
 }

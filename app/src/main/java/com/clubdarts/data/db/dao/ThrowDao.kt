@@ -306,4 +306,13 @@ interface ThrowDao {
         AND l.winnerId = t.playerId
     """)
     suspend fun getClubHighestFinish(): Int?
+
+    @Query("SELECT * FROM throws")
+    suspend fun getAll(): List<Throw>
+
+    @Query("DELETE FROM throws")
+    suspend fun deleteAll()
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertAll(items: List<Throw>)
 }
