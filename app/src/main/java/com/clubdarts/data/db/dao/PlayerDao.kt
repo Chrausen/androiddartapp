@@ -9,6 +9,9 @@ interface PlayerDao {
     @Query("SELECT * FROM players ORDER BY name ASC")
     fun getAllPlayers(): Flow<List<Player>>
 
+    @Query("SELECT * FROM players ORDER BY name ASC")
+    suspend fun getAllPlayersList(): List<Player>
+
     @Query("SELECT * FROM players WHERE id IN (:ids)")
     suspend fun getPlayersByIds(ids: List<Long>): List<Player>
 
@@ -32,4 +35,7 @@ interface PlayerDao {
 
     @Query("DELETE FROM players")
     suspend fun deleteAll()
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertAll(players: List<Player>)
 }

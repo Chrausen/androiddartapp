@@ -34,4 +34,10 @@ interface TrainingThrowDao {
 
     @Query("DELETE FROM training_throws")
     suspend fun deleteAll()
+
+    @Query("SELECT * FROM training_throws")
+    suspend fun getAll(): List<TrainingThrow>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertAll(throws: List<TrainingThrow>)
 }

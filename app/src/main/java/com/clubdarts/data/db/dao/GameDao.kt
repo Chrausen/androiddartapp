@@ -19,6 +19,9 @@ interface GameDao {
     @Query("SELECT * FROM games ORDER BY createdAt DESC")
     fun getAllGames(): Flow<List<Game>>
 
+    @Query("SELECT * FROM games ORDER BY createdAt DESC")
+    suspend fun getAllGamesList(): List<Game>
+
     @Query("SELECT * FROM games WHERE id = :id")
     suspend fun getGameById(id: Long): Game?
 
@@ -52,6 +55,15 @@ interface GameDao {
 
     @Delete
     suspend fun deleteGame(game: Game)
+
+    @Query("SELECT * FROM game_players")
+    suspend fun getAllGamePlayers(): List<GamePlayer>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertAll(games: List<Game>)
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertAllGamePlayers(gamePlayers: List<GamePlayer>)
 
     @Query("DELETE FROM games")
     suspend fun deleteAll()

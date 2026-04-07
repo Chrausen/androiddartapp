@@ -29,4 +29,13 @@ interface LegDao {
 
     @Query("SELECT winnerId as playerId, COUNT(*) as value FROM legs WHERE winnerId IS NOT NULL GROUP BY winnerId")
     suspend fun getAllPlayerLegsWon(): List<PlayerIntStat>
+
+    @Query("SELECT * FROM legs")
+    suspend fun getAll(): List<Leg>
+
+    @Query("DELETE FROM legs")
+    suspend fun deleteAll()
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertAll(legs: List<Leg>)
 }

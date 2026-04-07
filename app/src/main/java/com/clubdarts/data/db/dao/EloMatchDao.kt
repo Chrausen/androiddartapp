@@ -25,4 +25,7 @@ interface EloMatchDao {
 
     @Query("DELETE FROM elo_matches")
     suspend fun deleteAll()
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertAll(matches: List<EloMatch>)
 }

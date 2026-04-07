@@ -70,4 +70,10 @@ interface TrainingSessionDao {
 
     @Query("DELETE FROM training_sessions")
     suspend fun deleteAll()
+
+    @Query("SELECT * FROM training_sessions")
+    suspend fun getAll(): List<TrainingSession>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertAll(sessions: List<TrainingSession>)
 }
