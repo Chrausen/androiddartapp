@@ -155,16 +155,16 @@ fun BackupScreen(
                 "import" -> stringResource(R.string.backup_import_success)
                 else -> state.message
             }
-            ResultSnackbar(message = msg, isRed = false, onDismiss = { viewModel.dismissResult() })
+            ResultSnackbar(message = msg, isError = false, onDismiss = { viewModel.dismissResult() })
         }
-        is BackupUiState.Red -> {
+        is BackupUiState.Error -> {
             val msg = when (state.message) {
                 "export" -> stringResource(R.string.backup_error_write)
                 "import" -> stringResource(R.string.backup_error_read)
                 "parse" -> stringResource(R.string.backup_error_parse)
                 else -> state.message
             }
-            ResultSnackbar(message = msg, isRed = true, onDismiss = { viewModel.dismissResult() })
+            ResultSnackbar(message = msg, isError = true, onDismiss = { viewModel.dismissResult() })
         }
         else -> {}
     }
@@ -214,7 +214,7 @@ private fun BackupCard(
 }
 
 @Composable
-private fun ResultSnackbar(message: String, isRed: Boolean, onDismiss: () -> Unit) {
+private fun ResultSnackbar(message: String, isError: Boolean, onDismiss: () -> Unit) {
     LaunchedEffect(message) {
         kotlinx.coroutines.delay(3000)
         onDismiss()
@@ -225,7 +225,7 @@ private fun ResultSnackbar(message: String, isRed: Boolean, onDismiss: () -> Uni
     ) {
         Snackbar(
             modifier = Modifier.padding(16.dp),
-            containerColor = if (isRed) Red else Accent,
+            containerColor = if (isError) Red else Accent,
             contentColor = Background
         ) {
             Text(message)
