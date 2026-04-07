@@ -314,5 +314,5 @@ interface ThrowDao {
     suspend fun deleteAll()
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertAll(throws: List<Throw>)
+    suspend fun insertAll(items: List<Throw>)
 }

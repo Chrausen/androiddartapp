@@ -39,5 +39,5 @@ interface TrainingThrowDao {
     suspend fun getAll(): List<TrainingThrow>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertAll(throws: List<TrainingThrow>)
+    suspend fun insertAll(items: List<TrainingThrow>)
 }
