@@ -500,10 +500,11 @@ private fun DrawScope.drawFieldHighlight(
 ) {
     if (score.score == 0) return   // miss – no highlight
 
-    // Even-index single beds are cream (light background) → dark overlay for contrast.
-    // Odd-index singles are black, all rings and bull zones are coloured → white overlay.
-    val isEvenSegSingle = score.segIdx >= 0 && score.segIdx % 2 == 0 && score.multiplier == 1
-    val highlightColor = if (isEvenSegSingle) Color(0xFF1A1A1A).copy(alpha = alpha)
+    // Even-index single beds are BOARD_BLACK (dark) → white overlay for contrast.
+    // Odd-index singles are SEGMENT_CREAM (light) → dark overlay for contrast.
+    // All rings and bull zones are coloured → white overlay.
+    val isOddSegSingle = score.segIdx >= 0 && score.segIdx % 2 != 0 && score.multiplier == 1
+    val highlightColor = if (isOddSegSingle) Color(0xFF1A1A1A).copy(alpha = alpha)
                          else Color.White.copy(alpha = alpha)
 
     when {

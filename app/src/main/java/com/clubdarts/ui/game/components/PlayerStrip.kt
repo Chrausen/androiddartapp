@@ -214,10 +214,32 @@ private fun ActivePlayerPanel(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
+                // Left: dart slots
+                Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                    repeat(3) { i ->
+                        DartSlot(dart = currentDarts.getOrNull(i))
+                    }
+                }
+                // Right: avg label + score
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
+                    playerAvg?.let {
+                        Column(horizontalAlignment = Alignment.End) {
+                            Text(
+                                text = "avg",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = TextTertiary
+                            )
+                            Text(
+                                text = "%.1f".format(it),
+                                fontSize = 14.sp,
+                                fontFamily = DmMono,
+                                color = TextTertiary
+                            )
+                        }
+                    }
                     Box {
                         Text(
                             text = "888",
@@ -235,26 +257,6 @@ private fun ActivePlayerPanel(
                             color = if (isBusting) Red else highlightColor,
                             lineHeight = 46.sp
                         )
-                    }
-                    playerAvg?.let {
-                        Column {
-                            Text(
-                                text = "avg",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = TextTertiary
-                            )
-                            Text(
-                                text = "%.1f".format(it),
-                                fontSize = 14.sp,
-                                fontFamily = DmMono,
-                                color = TextTertiary
-                            )
-                        }
-                    }
-                }
-                Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                    repeat(3) { i ->
-                        DartSlot(dart = currentDarts.getOrNull(i))
                     }
                 }
             }
