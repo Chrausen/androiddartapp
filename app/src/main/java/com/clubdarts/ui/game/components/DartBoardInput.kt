@@ -97,6 +97,8 @@ private data class PlacedDart(
 @Composable
 fun DartBoardInput(
     currentDarts: List<DartInput>,
+    visitKey: Int = 0,
+    onPendingValueChanged: (Int) -> Unit = {},
     onDartConfirmed: (score: Int, multiplier: Int, boardX: Float, boardY: Float) -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -118,13 +120,15 @@ fun DartBoardInput(
     // ── Confirmed dots for the current visit (positional) ────────────────────
     val confirmedDarts = remember { mutableStateListOf<PlacedDart>() }
 
-    // Sync with ViewModel state: handle undo and new-visit clears
+    // Sync with ViewModel state: handle undo and new-visit clears.
+    // Key on both visitKey and currentDarts.size so the clear fires even when StateFlow
+    // conflates the 0→1→0 transition into a single frame (no net size change observed).
     var prevCount by remember { mutableIntStateOf(0) }
-    LaunchedEffect(currentDarts.size) {
+    LaunchedEffect(visitKey, currentDarts.size) {
         val newCount = currentDarts.size
         when {
-            newCount == 0 && prevCount > 0   -> confirmedDarts.clear()
-            newCount < prevCount             -> repeat(prevCount - newCount) { confirmedDarts.removeLastOrNull() }
+            newCount == 0 && (prevCount > 0 || visitKey > 0) -> confirmedDarts.clear()
+            newCount < prevCount -> repeat(prevCount - newCount) { confirmedDarts.removeLastOrNull() }
         }
         prevCount = newCount
     }
@@ -175,6 +179,7 @@ fun DartBoardInput(
         hasPending = false
         pendingScore = null
         countdownProgress = 0f
+        onPendingValueChanged(0)          // clear before the dart value lands in currentDarts
         onDartConfirmed(s.score, s.multiplier, pendingMmX, pendingMmY)
     }
 
@@ -206,6 +211,7 @@ fun DartBoardInput(
         pendingMmY   = mmY
         pendingScore = detectScore(mmX, mmY)
         hasPending   = true
+        onPendingValueChanged(pendingScore?.let { it.score * it.multiplier } ?: 0)
         startCountdown()
     }
 
@@ -293,6 +299,7 @@ fun DartBoardInput(
                                     pendingMmX   = mmX
                                     pendingMmY   = mmY
                                     pendingScore = detectScore(mmX, mmY)
+                                    onPendingValueChanged(pendingScore?.let { it.score * it.multiplier } ?: 0)
                                     change.consume()
                                 }
                             }
