@@ -210,41 +210,53 @@ private fun ActivePlayerPanel(
             }
 
             Row(
+                modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Box {
-                    Text(
-                        text = "888",
-                        fontSize = 42.sp,
-                        fontWeight = FontWeight.Bold,
-                        fontFamily = DmMono,
-                        lineHeight = 46.sp,
-                        modifier = Modifier.alpha(0f)
-                    )
-                    Text(
-                        text = if (isBusting) score.toString() else liveRemaining.toString(),
-                        fontSize = 42.sp,
-                        fontWeight = FontWeight.Bold,
-                        fontFamily = DmMono,
-                        color = if (isBusting) Red else highlightColor,
-                        lineHeight = 46.sp
-                    )
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Box {
+                        Text(
+                            text = "888",
+                            fontSize = 42.sp,
+                            fontWeight = FontWeight.Bold,
+                            fontFamily = DmMono,
+                            lineHeight = 46.sp,
+                            modifier = Modifier.alpha(0f)
+                        )
+                        Text(
+                            text = if (isBusting) score.toString() else liveRemaining.toString(),
+                            fontSize = 42.sp,
+                            fontWeight = FontWeight.Bold,
+                            fontFamily = DmMono,
+                            color = if (isBusting) Red else highlightColor,
+                            lineHeight = 46.sp
+                        )
+                    }
+                    playerAvg?.let {
+                        Column {
+                            Text(
+                                text = "avg",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = TextTertiary
+                            )
+                            Text(
+                                text = "%.1f".format(it),
+                                fontSize = 14.sp,
+                                fontFamily = DmMono,
+                                color = TextTertiary
+                            )
+                        }
+                    }
                 }
                 Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                     repeat(3) { i ->
                         DartSlot(dart = currentDarts.getOrNull(i))
                     }
                 }
-            }
-            playerAvg?.let {
-                Text(
-                    text = "avg ${"%.1f".format(it)}",
-                    style = MaterialTheme.typography.labelSmall,
-                    fontFamily = DmMono,
-                    color = TextTertiary,
-                    modifier = Modifier.padding(top = 2.dp)
-                )
             }
         }
 
@@ -317,22 +329,24 @@ private fun WaitingPlayerPanel(
                     style = MaterialTheme.typography.labelSmall,
                     color = TextTertiary
                 )
-                playerAvg?.let {
-                    Text(
-                        text = "avg ${"%.1f".format(it)}",
-                        style = MaterialTheme.typography.labelSmall,
-                        fontFamily = DmMono,
-                        color = TextTertiary
-                    )
-                }
             }
         }
-        Text(
-            text = score.toString(),
-            fontSize = 20.sp,
-            fontWeight = FontWeight.Bold,
-            fontFamily = DmMono,
-            color = TextPrimary
-        )
+        Column(horizontalAlignment = Alignment.End) {
+            Text(
+                text = score.toString(),
+                fontSize = 20.sp,
+                fontWeight = FontWeight.Bold,
+                fontFamily = DmMono,
+                color = TextPrimary
+            )
+            playerAvg?.let {
+                Text(
+                    text = "avg ${"%.1f".format(it)}",
+                    style = MaterialTheme.typography.labelSmall,
+                    fontFamily = DmMono,
+                    color = TextTertiary
+                )
+            }
+        }
     }
 }

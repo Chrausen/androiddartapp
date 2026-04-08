@@ -44,7 +44,7 @@ private const val AUTO_CONFIRM_MS    = 1500
 private const val DAMP_MIN           = 0.1f
 private const val DAMP_MAX           = 1.0f
 private const val DAMP_DISTANCE_PX   = 60f
-private const val HIGHLIGHT_BASE_ALPHA = 0.55f
+private const val HIGHLIGHT_BASE_ALPHA = 0.78f
 private const val RING_RADIUS_MM     = 11f
 private const val RING_LINE_WIDTH_MM = 2.2f
 
