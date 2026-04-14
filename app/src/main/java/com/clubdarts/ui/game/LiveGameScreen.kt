@@ -50,7 +50,7 @@ fun LiveGameScreen(
 
     val snackbarHostState = remember { SnackbarHostState() }
     var showAbortDialog       by remember { mutableStateOf(false) }
-    var showBoardInput        by remember { mutableStateOf(false) }
+    var showBoardInput        by remember { mutableStateOf(true) }
     var pendingBoardDartValue by remember { mutableIntStateOf(0) }
 
     // Clear the pending preview when the user switches back to numpad mode
@@ -110,6 +110,7 @@ fun LiveGameScreen(
                 pendingBoardDartValue = pendingBoardDartValue,
                 playerVisitTotals = uiState.playerVisitTotals,
                 playerVisitCounts = uiState.playerVisitCounts,
+                visitHistory = uiState.visitHistory,
             )
 
             // Checkout hint bar — always visible so the numpad never moves.

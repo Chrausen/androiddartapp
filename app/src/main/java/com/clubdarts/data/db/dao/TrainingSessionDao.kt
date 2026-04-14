@@ -26,6 +26,13 @@ data class BestSessionRow(
     )
 }
 
+/** One row in the club leaderboard: player's best result for a mode/difficulty. */
+data class LeaderboardEntry(
+    val playerId: Long,
+    val playerName: String,
+    val bestResult: Int
+)
+
 @Dao
 interface TrainingSessionDao {
 
@@ -64,6 +71,28 @@ interface TrainingSessionDao {
         LIMIT 1
     """)
     suspend fun getBestSessionDescending(mode: String, difficulty: String): BestSessionRow?
+
+    /** Club leaderboard for modes where FEWER darts = better (TARGET_FIELD, AROUND_THE_CLOCK). */
+    @Query("""
+        SELECT ts.playerId, p.name AS playerName, MIN(ts.result) AS bestResult
+        FROM training_sessions ts
+        JOIN players p ON ts.playerId = p.id
+        WHERE ts.mode = :mode AND ts.difficulty = :difficulty
+        GROUP BY ts.playerId
+        ORDER BY MIN(ts.result) ASC
+    """)
+    suspend fun getClubLeaderboardAscending(mode: String, difficulty: String): List<LeaderboardEntry>
+
+    /** Club leaderboard for modes where MORE points = better (SCORING_ROUNDS). */
+    @Query("""
+        SELECT ts.playerId, p.name AS playerName, MAX(ts.result) AS bestResult
+        FROM training_sessions ts
+        JOIN players p ON ts.playerId = p.id
+        WHERE ts.mode = :mode AND ts.difficulty = :difficulty
+        GROUP BY ts.playerId
+        ORDER BY MAX(ts.result) DESC
+    """)
+    suspend fun getClubLeaderboardDescending(mode: String, difficulty: String): List<LeaderboardEntry>
 
     @Query("SELECT SUM(completedAt - startedAt) FROM training_sessions WHERE startedAt > 0 AND completedAt > startedAt")
     suspend fun getTotalTrainingPlaytimeMs(): Long?

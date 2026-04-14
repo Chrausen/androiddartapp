@@ -180,6 +180,7 @@ private fun PlayerPickerRow(
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .clickable(enabled = !isInGame) { onAdd() }
             .padding(vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween

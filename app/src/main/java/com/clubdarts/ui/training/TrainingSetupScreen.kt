@@ -6,7 +6,9 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.EmojiEvents
 import androidx.compose.material.icons.filled.Person
@@ -15,12 +17,13 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.clubdarts.R
-import com.clubdarts.data.db.dao.BestSessionWithPlayer
+import com.clubdarts.data.db.dao.LeaderboardEntry
 import com.clubdarts.data.model.TrainingDifficulty
 import com.clubdarts.data.model.TrainingMode
 import com.clubdarts.data.model.TrainingSession
@@ -37,7 +40,7 @@ fun TrainingSetupScreen(
     onSelectMode: (TrainingMode) -> Unit,
     onSelectDifficulty: (TrainingDifficulty) -> Unit,
     onStart: () -> Unit,
-    onOpenHeatmap: () -> Unit
+    onOpenHeatmap: () -> Unit,
 ) {
     val dateFormat = remember { SimpleDateFormat("dd.MM.yy", Locale.getDefault()) }
     var showPlayerPicker by remember { mutableStateOf(false) }
@@ -112,33 +115,88 @@ fun TrainingSetupScreen(
 
         Spacer(Modifier.height(16.dp))
 
-        // Best result + recent results — scrollable, fills remaining space
-        val hasBest   = uiState.bestResult != null
-        val hasRecent = uiState.selectedPlayer != null && uiState.recentResults.isNotEmpty()
-        if (hasBest || hasRecent) {
-            Text(
-                text = stringResource(R.string.training_recent_results),
-                style = MaterialTheme.typography.labelMedium,
-                color = TextSecondary
-            )
-            Spacer(Modifier.height(6.dp))
-            LazyColumn(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                if (hasBest) {
-                    item {
-                        BestResultRow(
-                            best = uiState.bestResult!!,
-                            mode = uiState.mode,
-                            dateFormat = dateFormat
-                        )
+        // Leaderboard area — two columns on wide screens, stacked on phones
+        val screenWidthDp = LocalConfiguration.current.screenWidthDp
+        val isWide = screenWidthDp >= 600
+
+        val hasPersonal = uiState.selectedPlayer != null && uiState.recentResults.isNotEmpty()
+        val hasClub = uiState.clubLeaderboard.isNotEmpty()
+
+        if (hasPersonal || hasClub) {
+            if (isWide) {
+                Row(
+                    modifier = Modifier.weight(1f).fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    // Left: personal stats
+                    Column(
+                        modifier = Modifier.weight(1f).fillMaxHeight()
+                    ) {
+                        PersonalSectionHeader(uiState.selectedPlayer?.name)
+                        Spacer(Modifier.height(6.dp))
+                        LazyColumn(
+                            modifier = Modifier.fillMaxSize(),
+                            verticalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            items(uiState.recentResults) { session ->
+                                RecentResultRow(session = session, mode = uiState.mode, dateFormat = dateFormat)
+                            }
+                            item { Spacer(Modifier.height(4.dp)) }
+                        }
+                    }
+                    // Right: club leaderboard
+                    Column(
+                        modifier = Modifier.weight(1f).fillMaxHeight()
+                    ) {
+                        ClubSectionHeader()
+                        Spacer(Modifier.height(6.dp))
+                        LazyColumn(
+                            modifier = Modifier.fillMaxSize(),
+                            verticalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            items(uiState.clubLeaderboard.size) { index ->
+                                ClubLeaderboardRow(
+                                    rank = index + 1,
+                                    entry = uiState.clubLeaderboard[index],
+                                    mode = uiState.mode,
+                                    isCurrentPlayer = uiState.clubLeaderboard[index].playerId == uiState.selectedPlayer?.id
+                                )
+                            }
+                            item { Spacer(Modifier.height(4.dp)) }
+                        }
                     }
                 }
-                items(uiState.recentResults) { session ->
-                    RecentResultRow(session = session, mode = uiState.mode, dateFormat = dateFormat)
+            } else {
+                // Stacked layout for phones
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxWidth()
+                        .verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    if (hasPersonal) {
+                        PersonalSectionHeader(uiState.selectedPlayer?.name)
+                        Spacer(Modifier.height(2.dp))
+                        uiState.recentResults.forEach { session ->
+                            RecentResultRow(session = session, mode = uiState.mode, dateFormat = dateFormat)
+                        }
+                    }
+                    if (hasClub) {
+                        if (hasPersonal) Spacer(Modifier.height(8.dp))
+                        ClubSectionHeader()
+                        Spacer(Modifier.height(2.dp))
+                        uiState.clubLeaderboard.forEachIndexed { index, entry ->
+                            ClubLeaderboardRow(
+                                rank = index + 1,
+                                entry = entry,
+                                mode = uiState.mode,
+                                isCurrentPlayer = entry.playerId == uiState.selectedPlayer?.id
+                            )
+                        }
+                    }
+                    Spacer(Modifier.height(4.dp))
                 }
-                item { Spacer(Modifier.height(4.dp)) }
             }
         } else {
             Spacer(Modifier.weight(1f))
@@ -315,54 +373,92 @@ private fun DifficultySelector(
 }
 
 @Composable
-private fun BestResultRow(
-    best: BestSessionWithPlayer,
-    mode: TrainingMode,
-    dateFormat: SimpleDateFormat
-) {
-    val diff = when (best.session.difficulty) {
-        TrainingDifficulty.BEGINNER.name     -> TrainingDifficulty.BEGINNER
-        TrainingDifficulty.INTERMEDIATE.name -> TrainingDifficulty.INTERMEDIATE
-        else                                 -> TrainingDifficulty.PRO
+private fun PersonalSectionHeader(playerName: String?) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        if (playerName != null) {
+            PlayerAvatar(name = playerName, size = 18.dp)
+            Spacer(Modifier.width(6.dp))
+        }
+        Text(
+            text = playerName ?: "Your Stats",
+            style = MaterialTheme.typography.labelMedium,
+            color = TextSecondary
+        )
     }
-    val resultText = when (mode) {
-        TrainingMode.SCORING_ROUNDS -> "Ø %.1f  /  Ziel: %d".format(best.session.result / 10.0, diff.targetAvg)
-        else                         -> "${best.session.result} Darts"
-    }
-    val gold = Color(0xFFFFD700)
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(gold.copy(alpha = 0.10f), RoundedCornerShape(10.dp))
-            .border(1.dp, gold.copy(alpha = 0.55f), RoundedCornerShape(10.dp))
-            .padding(horizontal = 12.dp, vertical = 10.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
+}
+
+@Composable
+private fun ClubSectionHeader() {
+    Row(verticalAlignment = Alignment.CenterVertically) {
         Icon(
             imageVector = Icons.Default.EmojiEvents,
             contentDescription = null,
-            tint = gold,
-            modifier = Modifier.size(20.dp)
+            tint = Color(0xFFFFD700),
+            modifier = Modifier.size(14.dp)
         )
-        Spacer(Modifier.width(10.dp))
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = resultText,
-                style = MaterialTheme.typography.bodyMedium,
-                fontFamily = DmMono,
-                fontWeight = FontWeight.Bold,
-                color = gold
-            )
-            Text(
-                text = best.playerName,
-                style = MaterialTheme.typography.labelSmall,
-                color = gold.copy(alpha = 0.75f)
-            )
-        }
+        Spacer(Modifier.width(4.dp))
         Text(
-            text = dateFormat.format(java.util.Date(best.session.completedAt)),
-            style = MaterialTheme.typography.labelSmall,
-            color = gold.copy(alpha = 0.6f)
+            text = "Club Leaderboard",
+            style = MaterialTheme.typography.labelMedium,
+            color = TextSecondary
+        )
+    }
+}
+
+@Composable
+private fun ClubLeaderboardRow(
+    rank: Int,
+    entry: LeaderboardEntry,
+    mode: TrainingMode,
+    isCurrentPlayer: Boolean
+) {
+    val gold   = Color(0xFFFFD700)
+    val silver = Color(0xFFB0BEC5)
+    val bronze = Color(0xFFCD7F32)
+    val rankColor = when (rank) {
+        1    -> gold
+        2    -> silver
+        3    -> bronze
+        else -> TextTertiary
+    }
+    val resultText = when (mode) {
+        TrainingMode.SCORING_ROUNDS -> "Ø %.1f".format(entry.bestResult / 10.0)
+        else                        -> "${entry.bestResult} darts"
+    }
+    val bgColor = if (isCurrentPlayer) AccentDim else Surface
+    val borderColor = if (isCurrentPlayer) Accent else Color.Transparent
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(bgColor, RoundedCornerShape(8.dp))
+            .border(1.dp, borderColor, RoundedCornerShape(8.dp))
+            .padding(horizontal = 10.dp, vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = "#$rank",
+            style = MaterialTheme.typography.labelMedium,
+            fontFamily = DmMono,
+            fontWeight = FontWeight.Bold,
+            color = rankColor,
+            modifier = Modifier.width(28.dp)
+        )
+        PlayerAvatar(name = entry.playerName, size = 24.dp)
+        Spacer(Modifier.width(8.dp))
+        Text(
+            text = entry.playerName,
+            style = MaterialTheme.typography.bodySmall,
+            color = if (isCurrentPlayer) Accent else TextPrimary,
+            fontWeight = if (isCurrentPlayer) FontWeight.SemiBold else FontWeight.Normal,
+            modifier = Modifier.weight(1f),
+            maxLines = 1
+        )
+        Text(
+            text = resultText,
+            style = MaterialTheme.typography.bodySmall,
+            fontFamily = DmMono,
+            color = if (isCurrentPlayer) Accent else TextSecondary
         )
     }
 }

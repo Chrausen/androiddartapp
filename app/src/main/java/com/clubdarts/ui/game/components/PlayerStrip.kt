@@ -26,6 +26,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.clubdarts.data.model.Player
 import com.clubdarts.ui.game.DartInput
+import com.clubdarts.ui.game.VisitRecord
 import com.clubdarts.ui.theme.*
 
 @Composable
@@ -47,6 +48,7 @@ fun PlayerStrip(
     pendingBoardDartValue: Int = 0,
     playerVisitTotals: Map<Long, Int> = emptyMap(),
     playerVisitCounts: Map<Long, Int> = emptyMap(),
+    visitHistory: List<VisitRecord> = emptyList(),
 ) {
     val orderedPlayers = if (players.isEmpty()) {
         emptyList()
@@ -132,12 +134,14 @@ fun PlayerStrip(
                             modifier = Modifier.fillMaxWidth()
                         )
                     } else {
+                        val lastVisit = visitHistory.firstOrNull { it.playerId == p.id }
                         WaitingPlayerPanel(
                             player = p,
                             score = displayScore,
                             legWins = displayLegWins,
                             teamColor = teamColor,
                             playerAvg = playerAvg,
+                            lastVisit = lastVisit,
                             modifier = Modifier.fillMaxWidth()
                         )
                     }
@@ -302,6 +306,7 @@ private fun WaitingPlayerPanel(
     modifier: Modifier = Modifier,
     teamColor: Color? = null,
     playerAvg: Double? = null,
+    lastVisit: VisitRecord? = null,
 ) {
     Row(
         modifier = modifier
@@ -331,6 +336,29 @@ private fun WaitingPlayerPanel(
                     style = MaterialTheme.typography.labelSmall,
                     color = TextTertiary
                 )
+                lastVisit?.let { visit ->
+                    val darts = listOfNotNull(visit.dart1, visit.dart2, visit.dart3)
+                    if (darts.isNotEmpty()) {
+                        Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                            darts.forEach { dart ->
+                                Text(
+                                    text = dart.label(),
+                                    style = MaterialTheme.typography.labelSmall,
+                                    fontFamily = DmMono,
+                                    color = TextTertiary,
+                                    fontSize = 10.sp
+                                )
+                            }
+                            Text(
+                                text = "(${visit.total})",
+                                style = MaterialTheme.typography.labelSmall,
+                                fontFamily = DmMono,
+                                color = TextTertiary,
+                                fontSize = 10.sp
+                            )
+                        }
+                    }
+                }
             }
         }
         Column(horizontalAlignment = Alignment.End) {

@@ -21,6 +21,7 @@ import com.clubdarts.ui.history.MatchDetailScreen
 import com.clubdarts.ui.players.PlayersScreen
 import com.clubdarts.ui.rankings.PlayerDetailScreen
 import com.clubdarts.ui.rankings.RankingsScreen
+import com.clubdarts.ui.settings.AdminPanelScreen
 import com.clubdarts.ui.settings.GeneralSettingsScreen
 import com.clubdarts.ui.settings.RankingSettingsScreen
 import com.clubdarts.ui.settings.SettingsScreen
@@ -213,18 +214,15 @@ fun ClubDartsNavHost(
                     },
                     onNavigateToBackup = {
                         navController.navigate("settings/backup")
+                    },
+                    onNavigateToAdmin = {
+                        navController.navigate("settings/admin") { launchSingleTop = true }
                     }
                 )
             }
             composable("settings/general") {
-                val gameViewModel: GameViewModel =
-                    hiltViewModel(LocalContext.current as ComponentActivity)
                 GeneralSettingsScreen(
-                    onBack = { navController.popBackStack() },
-                    onDataDeleted = {
-                        gameViewModel.resetToSetup()
-                        navController.popBackStack()
-                    }
+                    onBack = { navController.popBackStack() }
                 )
             }
             composable("settings/tts") {
@@ -240,6 +238,17 @@ fun ClubDartsNavHost(
             composable("settings/backup") {
                 com.clubdarts.ui.settings.backup.BackupScreen(
                     onBack = { navController.popBackStack() }
+                )
+            }
+            composable("settings/admin") {
+                val gameViewModel: GameViewModel =
+                    hiltViewModel(LocalContext.current as ComponentActivity)
+                AdminPanelScreen(
+                    onBack = { navController.popBackStack() },
+                    onDataDeleted = {
+                        gameViewModel.resetToSetup()
+                        navController.popBackStack()
+                    }
                 )
             }
         }
