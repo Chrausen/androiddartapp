@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material.icons.filled.AdminPanelSettings
 import androidx.compose.material.icons.filled.CloudSync
 import androidx.compose.material.icons.filled.EmojiEvents
 import androidx.compose.material.icons.filled.RecordVoiceOver
@@ -26,7 +27,8 @@ fun SettingsScreen(
     onNavigateToTtsScores: () -> Unit,
     onNavigateToRankingSettings: () -> Unit,
     onNavigateToGeneralSettings: () -> Unit,
-    onNavigateToBackup: () -> Unit
+    onNavigateToBackup: () -> Unit,
+    onNavigateToAdmin: () -> Unit
 ) {
     Box(
         modifier = Modifier
@@ -78,6 +80,17 @@ fun SettingsScreen(
                 title = stringResource(R.string.settings_backup_title),
                 subtitle = stringResource(R.string.settings_backup_subtitle),
                 onClick = onNavigateToBackup
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            SettingsRow(
+                icon = Icons.Default.AdminPanelSettings,
+                iconTint = TextTertiary,
+                title = "Admin Panel",
+                subtitle = "Edit rankings, erase data",
+                titleColor = TextSecondary,
+                onClick = onNavigateToAdmin
             )
         }
     }

@@ -9,9 +9,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.BugReport
 import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.DeleteForever
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -22,7 +20,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.clubdarts.BuildConfig
 import com.clubdarts.R
 import com.clubdarts.ui.theme.*
 
@@ -30,7 +27,6 @@ import com.clubdarts.ui.theme.*
 @Composable
 fun GeneralSettingsScreen(
     onBack: () -> Unit,
-    onDataDeleted: () -> Unit = {},
     viewModel: GeneralSettingsViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -40,13 +36,6 @@ fun GeneralSettingsScreen(
         if (uiState.shouldRecreate) {
             viewModel.onRecreated()
             (context as? Activity)?.recreate()
-        }
-    }
-
-    if (uiState.deleteSuccess) {
-        LaunchedEffect(Unit) {
-            onDataDeleted()
-            viewModel.clearDeleteSuccess()
         }
     }
 
@@ -226,102 +215,6 @@ fun GeneralSettingsScreen(
                 }
             }
 
-            // Delete all data
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(Surface, RoundedCornerShape(10.dp))
-                    .clickable { viewModel.requestDeleteAll() }
-                    .padding(horizontal = 12.dp, vertical = 14.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Icon(
-                    imageVector = Icons.Default.DeleteForever,
-                    contentDescription = null,
-                    tint = Red,
-                    modifier = Modifier.size(22.dp)
-                )
-                Spacer(modifier = Modifier.width(12.dp))
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        stringResource(R.string.settings_delete_all),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = Red
-                    )
-                    Text(
-                        stringResource(R.string.settings_delete_all_subtitle),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = TextSecondary
-                    )
-                }
-            }
-
-            if (BuildConfig.DEBUG) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .background(Surface, RoundedCornerShape(10.dp))
-                        .clickable(
-                            enabled = !uiState.isGeneratingDebugData,
-                            onClick = { viewModel.generateDebugData() }
-                        )
-                        .padding(horizontal = 12.dp, vertical = 14.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    if (uiState.isGeneratingDebugData) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(22.dp),
-                            strokeWidth = 2.dp,
-                            color = Accent
-                        )
-                    } else {
-                        Icon(
-                            imageVector = Icons.Default.BugReport,
-                            contentDescription = null,
-                            tint = Accent,
-                            modifier = Modifier.size(22.dp)
-                        )
-                    }
-                    Spacer(modifier = Modifier.width(12.dp))
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            "Generate Debug Data",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = if (uiState.isGeneratingDebugData) TextTertiary else TextPrimary
-                        )
-                        Text(
-                            if (uiState.isGeneratingDebugData) "Creating 20 players and 500 games…"
-                            else "20 players · 500 games",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = TextSecondary
-                        )
-                    }
-                }
-            }
         }
-    }
-
-    if (uiState.showDeleteConfirm) {
-        AlertDialog(
-            onDismissRequest = { viewModel.dismissDeleteConfirm() },
-            title = { Text(stringResource(R.string.dialog_delete_all_title), color = TextPrimary) },
-            text = {
-                Text(
-                    stringResource(R.string.dialog_delete_all_message),
-                    color = TextSecondary
-                )
-            },
-            confirmButton = {
-                TextButton(onClick = { viewModel.confirmDeleteAll() }) {
-                    Text(stringResource(R.string.btn_delete), color = Red, fontWeight = FontWeight.Bold)
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { viewModel.dismissDeleteConfirm() }) {
-                    Text(stringResource(R.string.btn_cancel), color = TextSecondary)
-                }
-            },
-            containerColor = Surface2
-        )
     }
 }
