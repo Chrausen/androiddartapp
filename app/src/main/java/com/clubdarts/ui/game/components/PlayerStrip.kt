@@ -43,7 +43,10 @@ fun PlayerStrip(
     teamLegWins: Map<Int, Int> = emptyMap(),         // teamIndex → legs won
     currentTeamIndex: Int = -1,                      // team whose turn it is (-1 for non-team)
     teamPlayerIndexes: Map<Int, Int> = emptyMap(),   // teamIndex → current player pos within team
-    animationsEnabled: Boolean = true
+    animationsEnabled: Boolean = true,
+    pendingBoardDartValue: Int = 0,
+    playerVisitTotals: Map<Long, Int> = emptyMap(),
+    playerVisitCounts: Map<Long, Int> = emptyMap(),
 ) {
     val orderedPlayers = if (players.isEmpty()) {
         emptyList()
@@ -110,6 +113,12 @@ fun PlayerStrip(
                         if (teamIdx == 0) "Team A" else "Team B"
                     } else null
 
+                    val playerAvg: Double? = run {
+                        val count = playerVisitCounts[p.id] ?: 0
+                        val total = playerVisitTotals[p.id] ?: 0
+                        if (count > 0) total.toDouble() / count else null
+                    }
+
                     if (isActive) {
                         ActivePlayerPanel(
                             player = p,
@@ -118,6 +127,8 @@ fun PlayerStrip(
                             currentDarts = currentDarts,
                             teamColor = teamColor,
                             teamLabel = teamLabel,
+                            pendingBoardDartValue = pendingBoardDartValue,
+                            playerAvg = playerAvg,
                             modifier = Modifier.fillMaxWidth()
                         )
                     } else {
@@ -126,6 +137,7 @@ fun PlayerStrip(
                             score = displayScore,
                             legWins = displayLegWins,
                             teamColor = teamColor,
+                            playerAvg = playerAvg,
                             modifier = Modifier.fillMaxWidth()
                         )
                     }
@@ -143,7 +155,9 @@ private fun ActivePlayerPanel(
     currentDarts: List<DartInput>,
     modifier: Modifier = Modifier,
     teamColor: Color? = null,
-    teamLabel: String? = null
+    teamLabel: String? = null,
+    pendingBoardDartValue: Int = 0,
+    playerAvg: Double? = null,
 ) {
     // Use team color (dim) or default accent
     val highlightColor = teamColor ?: Accent
@@ -155,9 +169,9 @@ private fun ActivePlayerPanel(
             .border(1.dp, highlightColor, RoundedCornerShape(10.dp))
             .padding(10.dp)
     ) {
-        val dartsTotal = currentDarts.sumOf { it.value }
+        val dartsTotal    = currentDarts.sumOf { it.value } + pendingBoardDartValue
         val liveRemaining = score - dartsTotal
-        val isBusting = liveRemaining < 0
+        val isBusting     = liveRemaining < 0
 
         Column {
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -196,30 +210,53 @@ private fun ActivePlayerPanel(
             }
 
             Row(
+                modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Box {
-                    Text(
-                        text = "888",
-                        fontSize = 42.sp,
-                        fontWeight = FontWeight.Bold,
-                        fontFamily = DmMono,
-                        lineHeight = 46.sp,
-                        modifier = Modifier.alpha(0f)
-                    )
-                    Text(
-                        text = if (isBusting) score.toString() else liveRemaining.toString(),
-                        fontSize = 42.sp,
-                        fontWeight = FontWeight.Bold,
-                        fontFamily = DmMono,
-                        color = if (isBusting) Red else highlightColor,
-                        lineHeight = 46.sp
-                    )
-                }
+                // Left: dart slots
                 Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                     repeat(3) { i ->
                         DartSlot(dart = currentDarts.getOrNull(i))
+                    }
+                }
+                // Right: avg label + score
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    playerAvg?.let {
+                        Column(horizontalAlignment = Alignment.End) {
+                            Text(
+                                text = "avg",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = TextTertiary
+                            )
+                            Text(
+                                text = "%.1f".format(it),
+                                fontSize = 14.sp,
+                                fontFamily = DmMono,
+                                color = TextTertiary
+                            )
+                        }
+                    }
+                    Box {
+                        Text(
+                            text = "888",
+                            fontSize = 42.sp,
+                            fontWeight = FontWeight.Bold,
+                            fontFamily = DmMono,
+                            lineHeight = 46.sp,
+                            modifier = Modifier.alpha(0f)
+                        )
+                        Text(
+                            text = if (isBusting) score.toString() else liveRemaining.toString(),
+                            fontSize = 42.sp,
+                            fontWeight = FontWeight.Bold,
+                            fontFamily = DmMono,
+                            color = if (isBusting) Red else highlightColor,
+                            lineHeight = 46.sp
+                        )
                     }
                 }
             }
@@ -263,7 +300,8 @@ private fun WaitingPlayerPanel(
     score: Int,
     legWins: Int,
     modifier: Modifier = Modifier,
-    teamColor: Color? = null
+    teamColor: Color? = null,
+    playerAvg: Double? = null,
 ) {
     Row(
         modifier = modifier
@@ -295,12 +333,22 @@ private fun WaitingPlayerPanel(
                 )
             }
         }
-        Text(
-            text = score.toString(),
-            fontSize = 20.sp,
-            fontWeight = FontWeight.Bold,
-            fontFamily = DmMono,
-            color = TextPrimary
-        )
+        Column(horizontalAlignment = Alignment.End) {
+            Text(
+                text = score.toString(),
+                fontSize = 20.sp,
+                fontWeight = FontWeight.Bold,
+                fontFamily = DmMono,
+                color = TextPrimary
+            )
+            playerAvg?.let {
+                Text(
+                    text = "avg ${"%.1f".format(it)}",
+                    style = MaterialTheme.typography.labelSmall,
+                    fontFamily = DmMono,
+                    color = TextTertiary
+                )
+            }
+        }
     }
 }

@@ -44,7 +44,8 @@ private const val AUTO_CONFIRM_MS    = 1500
 private const val DAMP_MIN           = 0.1f
 private const val DAMP_MAX           = 1.0f
 private const val DAMP_DISTANCE_PX   = 60f
-private const val HIGHLIGHT_BASE_ALPHA = 0.55f
+private const val HIGHLIGHT_BASE_ALPHA   = 0.40f
+private const val HIGHLIGHT_BORDER_ALPHA = 0.92f
 private const val RING_RADIUS_MM     = 11f
 private const val RING_LINE_WIDTH_MM = 2.2f
 
@@ -97,6 +98,8 @@ private data class PlacedDart(
 @Composable
 fun DartBoardInput(
     currentDarts: List<DartInput>,
+    visitKey: Int = 0,
+    onPendingValueChanged: (Int) -> Unit = {},
     onDartConfirmed: (score: Int, multiplier: Int, boardX: Float, boardY: Float) -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -118,13 +121,15 @@ fun DartBoardInput(
     // ── Confirmed dots for the current visit (positional) ────────────────────
     val confirmedDarts = remember { mutableStateListOf<PlacedDart>() }
 
-    // Sync with ViewModel state: handle undo and new-visit clears
+    // Sync with ViewModel state: handle undo and new-visit clears.
+    // Key on both visitKey and currentDarts.size so the clear fires even when StateFlow
+    // conflates the 0→1→0 transition into a single frame (no net size change observed).
     var prevCount by remember { mutableIntStateOf(0) }
-    LaunchedEffect(currentDarts.size) {
+    LaunchedEffect(visitKey, currentDarts.size) {
         val newCount = currentDarts.size
         when {
-            newCount == 0 && prevCount > 0   -> confirmedDarts.clear()
-            newCount < prevCount             -> repeat(prevCount - newCount) { confirmedDarts.removeLastOrNull() }
+            newCount == 0 && (prevCount > 0 || visitKey > 0) -> confirmedDarts.clear()
+            newCount < prevCount -> repeat(prevCount - newCount) { confirmedDarts.removeLastOrNull() }
         }
         prevCount = newCount
     }
@@ -175,6 +180,7 @@ fun DartBoardInput(
         hasPending = false
         pendingScore = null
         countdownProgress = 0f
+        onPendingValueChanged(0)          // clear before the dart value lands in currentDarts
         onDartConfirmed(s.score, s.multiplier, pendingMmX, pendingMmY)
     }
 
@@ -206,6 +212,7 @@ fun DartBoardInput(
         pendingMmY   = mmY
         pendingScore = detectScore(mmX, mmY)
         hasPending   = true
+        onPendingValueChanged(pendingScore?.let { it.score * it.multiplier } ?: 0)
         startCountdown()
     }
 
@@ -293,6 +300,7 @@ fun DartBoardInput(
                                     pendingMmX   = mmX
                                     pendingMmY   = mmY
                                     pendingScore = detectScore(mmX, mmY)
+                                    onPendingValueChanged(pendingScore?.let { it.score * it.multiplier } ?: 0)
                                     change.consume()
                                 }
                             }
@@ -404,12 +412,10 @@ fun DartBoardInput(
             val score    = pendingScore
             val progress = countdownProgress
 
-            // Field highlight (drawn below everything else on the overlay)
+            // Field highlight: semi-transparent fill + gold border outline
             if (score != null) {
-                val alpha = HIGHLIGHT_BASE_ALPHA
-                if (alpha > 0.01f) {
-                    drawFieldHighlight(score, cx, cy, s, alpha)
-                }
+                drawFieldHighlight(score, cx, cy, s, HIGHLIGHT_BASE_ALPHA)
+                drawFieldHighlightBorder(score, cx, cy, s)
             }
 
             // Countdown track ring (full circle, dim)
@@ -480,6 +486,78 @@ private fun DrawScope.drawAnnularSegment(
 }
 
 /**
+ * Draws a gold border outline (arcs + radial lines) around the active zone so the selected
+ * field is unmistakable even at low fill opacity.
+ */
+private fun DrawScope.drawFieldHighlightBorder(
+    score: BoardDartScore,
+    cx: Float, cy: Float,
+    scale: Float,
+) {
+    if (score.score == 0) return
+    val color = DART_GOLD.copy(alpha = HIGHLIGHT_BORDER_ALPHA)
+    val sw    = (2.2f * scale).coerceAtLeast(1.5f)
+    val innerR = score.zoneInnerR * scale
+    val outerR = score.zoneOuterR * scale
+
+    when {
+        score.segIdx < 0 && score.multiplier == 2 -> {
+            // Inner bull: single bounding circle
+            drawCircle(color, radius = outerR, center = Offset(cx, cy), style = Stroke(width = sw))
+        }
+        score.segIdx < 0 -> {
+            // Outer bull annular ring: two circles
+            drawCircle(color, radius = innerR, center = Offset(cx, cy), style = Stroke(width = sw))
+            drawCircle(color, radius = outerR, center = Offset(cx, cy), style = Stroke(width = sw))
+        }
+        else -> {
+            val startAngle = -90f + score.segIdx * 18f - 9f
+            val sweep      = 18f
+            // Inner arc
+            if (innerR > 0f) {
+                drawArc(
+                    color      = color,
+                    startAngle = startAngle,
+                    sweepAngle = sweep,
+                    useCenter  = false,
+                    topLeft    = Offset(cx - innerR, cy - innerR),
+                    size       = Size(innerR * 2f, innerR * 2f),
+                    style      = Stroke(width = sw, cap = StrokeCap.Round)
+                )
+            }
+            // Outer arc
+            drawArc(
+                color      = color,
+                startAngle = startAngle,
+                sweepAngle = sweep,
+                useCenter  = false,
+                topLeft    = Offset(cx - outerR, cy - outerR),
+                size       = Size(outerR * 2f, outerR * 2f),
+                style      = Stroke(width = sw, cap = StrokeCap.Round)
+            )
+            // Radial side lines
+            val r0       = if (innerR > 0f) innerR else 0f
+            val startRad = (startAngle * PI / 180.0).toFloat()
+            val endRad   = ((startAngle + sweep) * PI / 180.0).toFloat()
+            drawLine(
+                color       = color,
+                start       = Offset(cx + r0     * cos(startRad), cy + r0     * sin(startRad)),
+                end         = Offset(cx + outerR * cos(startRad), cy + outerR * sin(startRad)),
+                strokeWidth = sw,
+                cap         = StrokeCap.Round
+            )
+            drawLine(
+                color       = color,
+                start       = Offset(cx + r0     * cos(endRad), cy + r0     * sin(endRad)),
+                end         = Offset(cx + outerR * cos(endRad), cy + outerR * sin(endRad)),
+                strokeWidth = sw,
+                cap         = StrokeCap.Round
+            )
+        }
+    }
+}
+
+/**
  * Draws the semi-transparent zone highlight for the landing segment/ring.
  *
  * Highlight colour: white for dark-background zones (black singles, coloured rings, bull),
@@ -493,10 +571,11 @@ private fun DrawScope.drawFieldHighlight(
 ) {
     if (score.score == 0) return   // miss – no highlight
 
-    // Even-index single beds are cream (light background) → dark overlay for contrast.
-    // Odd-index singles are black, all rings and bull zones are coloured → white overlay.
-    val isEvenSegSingle = score.segIdx >= 0 && score.segIdx % 2 == 0 && score.multiplier == 1
-    val highlightColor = if (isEvenSegSingle) Color(0xFF1A1A1A).copy(alpha = alpha)
+    // Even-index single beds are BOARD_BLACK (dark) → white overlay for contrast.
+    // Odd-index singles are SEGMENT_CREAM (light) → dark overlay for contrast.
+    // All rings and bull zones are coloured → white overlay.
+    val isOddSegSingle = score.segIdx >= 0 && score.segIdx % 2 != 0 && score.multiplier == 1
+    val highlightColor = if (isOddSegSingle) Color(0xFF1A1A1A).copy(alpha = alpha)
                          else Color.White.copy(alpha = alpha)
 
     when {

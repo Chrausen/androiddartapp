@@ -49,8 +49,14 @@ fun LiveGameScreen(
     }
 
     val snackbarHostState = remember { SnackbarHostState() }
-    var showAbortDialog by remember { mutableStateOf(false) }
-    var showBoardInput  by remember { mutableStateOf(false) }
+    var showAbortDialog       by remember { mutableStateOf(false) }
+    var showBoardInput        by remember { mutableStateOf(false) }
+    var pendingBoardDartValue by remember { mutableIntStateOf(0) }
+
+    // Clear the pending preview when the user switches back to numpad mode
+    LaunchedEffect(showBoardInput) {
+        if (!showBoardInput) pendingBoardDartValue = 0
+    }
 
     BackHandler { showAbortDialog = true }
 
@@ -100,7 +106,10 @@ fun LiveGameScreen(
                 teamLegWins = uiState.teamLegWins,
                 currentTeamIndex = uiState.currentTeamIndex,
                 teamPlayerIndexes = uiState.teamPlayerIndexes,
-                animationsEnabled = animationsEnabled
+                animationsEnabled = animationsEnabled,
+                pendingBoardDartValue = pendingBoardDartValue,
+                playerVisitTotals = uiState.playerVisitTotals,
+                playerVisitCounts = uiState.playerVisitCounts,
             )
 
             // Checkout hint bar — always visible so the numpad never moves.
@@ -146,6 +155,8 @@ fun LiveGameScreen(
                 // Full-width square so segment numbers on the outer ring are always visible.
                 DartBoardInput(
                     currentDarts = uiState.currentDarts,
+                    visitKey = uiState.boardVisitKey,
+                    onPendingValueChanged = { pendingBoardDartValue = it },
                     onDartConfirmed = { score, mult, bx, by ->
                         viewModel.recordBoardDart(score, mult, bx, by)
                     },

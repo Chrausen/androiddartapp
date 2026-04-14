@@ -93,6 +93,9 @@ data class GameUiState(
     val teamPlayerIndexes: Map<Int, Int> = emptyMap(), // teamIndex → current player pos within team
     // Current visit
     val currentDarts: List<DartInput> = emptyList(),
+    val boardVisitKey: Int = 0,          // increments on every resolveVisit(); drives board clear
+    val playerVisitTotals: Map<Long, Int> = emptyMap(), // playerId → cumulative scored (busts = +0)
+    val playerVisitCounts: Map<Long, Int> = emptyMap(), // playerId → visit count (busts included)
     val pendingMultiplier: Int = 1,
     val visitHistory: List<VisitRecord> = emptyList(),
     val currentLegNumber: Int = 1,
@@ -481,6 +484,14 @@ class GameViewModel @Inject constructor(
 
         val newHistory = listOf(visitRecord) + state.visitHistory.take(19)
 
+        val newVisitTotals = if (!isBust)
+            updatedState.playerVisitTotals + (currentPlayer.id to
+                ((updatedState.playerVisitTotals[currentPlayer.id] ?: 0) + effectiveTotal))
+        else updatedState.playerVisitTotals
+
+        val newVisitCounts = updatedState.playerVisitCounts +
+            (currentPlayer.id to ((updatedState.playerVisitCounts[currentPlayer.id] ?: 0) + 1))
+
         val (nextPlayerIndex, nextTeamIndex, nextTeamPlayerIndexes) = if (state.isTeamGame) {
             val teamPlayerIndices = computeTeamPlayerIndices(state.players, state.teamAssignments)
             val prevTeam = state.currentTeamIndex
@@ -498,6 +509,9 @@ class GameViewModel @Inject constructor(
             updatedState.copy(
                 currentDarts = emptyList(),
                 pendingMultiplier = 1,
+                boardVisitKey = updatedState.boardVisitKey + 1,
+                playerVisitTotals = newVisitTotals,
+                playerVisitCounts = newVisitCounts,
                 currentPlayerIndex = nextPlayerIndex,
                 currentTeamIndex = nextTeamIndex,
                 teamPlayerIndexes = nextTeamPlayerIndexes,
@@ -748,6 +762,9 @@ class GameViewModel @Inject constructor(
                         teamPlayerIndexes = mapOf(0 to 0, 1 to 0),
                         currentPlayerIndex = 0,
                         currentDarts = emptyList(),
+                        boardVisitKey = 0,
+                        playerVisitTotals = emptyMap(),
+                        playerVisitCounts = emptyMap(),
                         pendingMultiplier = 1,
                         visitHistory = emptyList(),
                         currentLegNumber = 1,
@@ -773,6 +790,9 @@ class GameViewModel @Inject constructor(
                         winningTeamIndex = null,
                         currentPlayerIndex = 0,
                         currentDarts = emptyList(),
+                        boardVisitKey = 0,
+                        playerVisitTotals = emptyMap(),
+                        playerVisitCounts = emptyMap(),
                         pendingMultiplier = 1,
                         visitHistory = emptyList(),
                         currentLegNumber = 1,
