@@ -3,6 +3,7 @@ package com.clubdarts.data.repository
 import com.clubdarts.data.db.dao.BestSessionRow
 import com.clubdarts.data.db.dao.BestSessionWithPlayer
 import com.clubdarts.data.db.dao.DartCoordinate
+import com.clubdarts.data.db.dao.LeaderboardEntry
 import com.clubdarts.data.db.dao.ThrowDao
 import com.clubdarts.data.db.dao.TrainingDartCoordinate
 import com.clubdarts.data.db.dao.TrainingSessionDao
@@ -55,6 +56,13 @@ class TrainingRepository @Inject constructor(
             sessionDao.getBestSessionAscending(mode.name, difficulty.name)
         return row?.toBestSessionWithPlayer()
     }
+
+    /** Returns all players' best result for [mode]+[difficulty], sorted best-first. */
+    suspend fun getClubLeaderboard(mode: TrainingMode, difficulty: TrainingDifficulty): List<LeaderboardEntry> =
+        if (mode == TrainingMode.SCORING_ROUNDS)
+            sessionDao.getClubLeaderboardDescending(mode.name, difficulty.name)
+        else
+            sessionDao.getClubLeaderboardAscending(mode.name, difficulty.name)
 
     /** Returns sessions for a player+mode sorted chronologically (oldest first). */
     suspend fun getSessionsChronological(playerId: Long, mode: TrainingMode): List<TrainingSession> =

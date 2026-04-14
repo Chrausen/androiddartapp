@@ -2,6 +2,7 @@ package com.clubdarts.ui.training
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.clubdarts.data.db.dao.LeaderboardEntry
 import com.clubdarts.data.model.Player
 import com.clubdarts.data.model.TrainingDifficulty
 import com.clubdarts.data.model.TrainingMode
@@ -156,6 +157,7 @@ data class TrainingUiState(
     val difficulty: TrainingDifficulty = TrainingDifficulty.BEGINNER,
     val recentResults: List<TrainingSession> = emptyList(),
     val bestResult: com.clubdarts.data.db.dao.BestSessionWithPlayer? = null,
+    val clubLeaderboard: List<LeaderboardEntry> = emptyList(),
     val liveSession: LiveSessionState? = null,
     val lastResult: TrainingSession? = null,
     val isSaving: Boolean = false,
@@ -207,11 +209,12 @@ class TrainingViewModel @Inject constructor(
         val difficulty = _uiState.value.difficulty
         viewModelScope.launch {
             val best = trainingRepository.getBestResult(mode, difficulty)
+            val leaderboard = trainingRepository.getClubLeaderboard(mode, difficulty)
             val player = _uiState.value.selectedPlayer
             val results = if (player != null)
                 trainingRepository.getRecentResults(player.id, mode, 10)
             else emptyList()
-            _uiState.update { it.copy(recentResults = results, bestResult = best) }
+            _uiState.update { it.copy(recentResults = results, bestResult = best, clubLeaderboard = leaderboard) }
         }
     }
 
