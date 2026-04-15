@@ -1,5 +1,6 @@
 package com.clubdarts.ui.history
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
@@ -11,6 +12,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -470,42 +472,72 @@ private fun RaceChart(
                     }
                 }
             }
-            Spacer(modifier = Modifier.height(12.dp))
-            androidx.compose.foundation.Canvas(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(200.dp)
-            ) {
-                val w = size.width
-                val h = size.height
-                val maxX = raceChartData.values.maxOfOrNull { it.size }?.toFloat()?.coerceAtLeast(2f) ?: 2f
-
-                // Grid lines
-                val gridSteps = 5
-                for (i in 0..gridSteps) {
-                    val y = h * (1f - i.toFloat() / gridSteps)
-                    drawLine(
-                        color = Color.White.copy(alpha = 0.06f),
-                        start = Offset(0f, y),
-                        end = Offset(w, y),
-                        strokeWidth = 1.dp.toPx()
-                    )
+            Spacer(modifier = Modifier.height(8.dp))
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                // Y-axis labels
+                Column(
+                    modifier = Modifier.width(36.dp).height(200.dp),
+                    verticalArrangement = Arrangement.SpaceBetween,
+                    horizontalAlignment = Alignment.End
+                ) {
+                    Text("$startScore", style = MaterialTheme.typography.labelSmall, fontFamily = DmMono, color = TextTertiary, fontSize = 9.sp)
+                    Text("0", style = MaterialTheme.typography.labelSmall, fontFamily = DmMono, color = TextTertiary, fontSize = 9.sp)
                 }
+                Spacer(modifier = Modifier.width(4.dp))
+                androidx.compose.foundation.Canvas(
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(200.dp)
+                ) {
+                    val w = size.width
+                    val h = size.height
+                    val maxX = raceChartData.values.maxOfOrNull { it.size }?.toFloat()?.coerceAtLeast(2f) ?: 2f
 
-                players.forEachIndexed { idx, player ->
-                    val points = raceChartData[player.id] ?: return@forEachIndexed
-                    val color = playerColors.getOrElse(idx) { Accent }
-                    if (points.size < 2) return@forEachIndexed
-
-                    val path = Path()
-                    points.forEachIndexed { i, score ->
-                        val x = if (maxX <= 1f) 0f else w * i / (maxX - 1f)
-                        val y = h * (1f - score.toFloat() / startScore)
-                        if (i == 0) path.moveTo(x, y) else path.lineTo(x, y)
+                    val gridSteps = 5
+                    for (i in 0..gridSteps) {
+                        val y = h * (1f - i.toFloat() / gridSteps)
+                        drawLine(
+                            color = Color.White.copy(alpha = 0.06f),
+                            start = Offset(0f, y),
+                            end = Offset(w, y),
+                            strokeWidth = 1.dp.toPx()
+                        )
                     }
-                    drawPath(path, color = color, style = Stroke(width = 2.dp.toPx(), cap = StrokeCap.Round))
+
+                    players.forEachIndexed { idx, player ->
+                        val points = raceChartData[player.id] ?: return@forEachIndexed
+                        val color = playerColors.getOrElse(idx) { Accent }
+                        if (points.size < 2) return@forEachIndexed
+
+                        val path = Path()
+                        points.forEachIndexed { i, score ->
+                            val x = if (maxX <= 1f) 0f else w * i / (maxX - 1f)
+                            val y = h * (1f - score.toFloat() / startScore)
+                            if (i == 0) path.moveTo(x, y) else path.lineTo(x, y)
+                        }
+                        drawPath(path, color = color, style = Stroke(width = 2.dp.toPx(), cap = StrokeCap.Round))
+                    }
                 }
             }
+            // X-axis label
+            Row {
+                Spacer(modifier = Modifier.width(40.dp))
+                Text(
+                    stringResource(R.string.chart_axis_visits),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = TextTertiary,
+                    fontSize = 9.sp,
+                    modifier = Modifier.fillMaxWidth(),
+                    textAlign = TextAlign.Center
+                )
+            }
+            // Y-axis description
+            Text(
+                "↑ ${stringResource(R.string.chart_axis_remaining)}",
+                style = MaterialTheme.typography.labelSmall,
+                color = TextTertiary,
+                fontSize = 9.sp
+            )
         }
     }
 }
@@ -547,42 +579,82 @@ private fun PlayerStatsSection(stats: MatchPlayerStats, playerColor: Color) {
     }
 }
 
+private data class StatRow(val label: String, val value: String, val description: String)
+
 @Composable
 private fun PlayerStatGrid(stats: MatchPlayerStats) {
+    val dartsSuffix = stringResource(R.string.match_stats_darts_suffix)
     val rows = listOf(
-        stringResource(R.string.match_stats_avg) to String.format("%.1f", stats.avg3Dart),
-        stringResource(R.string.match_stats_first9) to String.format("%.1f", stats.first9Avg),
-        stringResource(R.string.match_stats_total_darts) to "${stats.totalDarts}",
-        stringResource(R.string.match_stats_avg_darts_leg) to String.format("%.1f", stats.avgDartsPerLeg),
-        stringResource(R.string.match_stats_high_score) to "${stats.highScore}",
-        stringResource(R.string.match_stats_best_leg) to (stats.bestLeg?.let { "$it ${stringResource(R.string.match_stats_darts_suffix)}" } ?: "—"),
-        stringResource(R.string.match_stats_worst_leg) to (stats.worstLeg?.let { "$it ${stringResource(R.string.match_stats_darts_suffix)}" } ?: "—"),
-        stringResource(R.string.match_stats_180s) to "${stats.count180s}",
-        stringResource(R.string.match_stats_140plus) to "${stats.count140plus}",
-        stringResource(R.string.match_stats_100plus) to "${stats.count100plus}",
-        stringResource(R.string.match_stats_below_26) to "${stats.visitsBelow26}",
-        stringResource(R.string.match_stats_busts) to "${stats.bustCount}",
-        stringResource(R.string.match_stats_highest_checkout) to (stats.highestCheckout?.toString() ?: "—"),
-        stringResource(R.string.match_stats_checkout_attempts) to "${stats.checkoutAttempts}"
+        StatRow(stringResource(R.string.match_stats_avg),              String.format("%.1f", stats.avg3Dart),     stringResource(R.string.match_stats_avg_desc)),
+        StatRow(stringResource(R.string.match_stats_first9),           String.format("%.1f", stats.first9Avg),    stringResource(R.string.match_stats_first9_desc)),
+        StatRow(stringResource(R.string.match_stats_total_darts),      "${stats.totalDarts}",                     stringResource(R.string.match_stats_total_darts_desc)),
+        StatRow(stringResource(R.string.match_stats_avg_darts_leg),    String.format("%.1f", stats.avgDartsPerLeg), stringResource(R.string.match_stats_avg_darts_leg_desc)),
+        StatRow(stringResource(R.string.match_stats_high_score),       "${stats.highScore}",                      stringResource(R.string.match_stats_high_score_desc)),
+        StatRow(stringResource(R.string.match_stats_best_leg),         stats.bestLeg?.let { "$it $dartsSuffix" } ?: "—", stringResource(R.string.match_stats_best_leg_desc)),
+        StatRow(stringResource(R.string.match_stats_worst_leg),        stats.worstLeg?.let { "$it $dartsSuffix" } ?: "—", stringResource(R.string.match_stats_worst_leg_desc)),
+        StatRow(stringResource(R.string.match_stats_180s),             "${stats.count180s}",                      stringResource(R.string.match_stats_180s_desc)),
+        StatRow(stringResource(R.string.match_stats_140plus),          "${stats.count140plus}",                   stringResource(R.string.match_stats_140plus_desc)),
+        StatRow(stringResource(R.string.match_stats_100plus),          "${stats.count100plus}",                   stringResource(R.string.match_stats_100plus_desc)),
+        StatRow(stringResource(R.string.match_stats_below_26),         "${stats.visitsBelow26}",                  stringResource(R.string.match_stats_below_26_desc)),
+        StatRow(stringResource(R.string.match_stats_busts),            "${stats.bustCount}",                      stringResource(R.string.match_stats_busts_desc)),
+        StatRow(stringResource(R.string.match_stats_highest_checkout), stats.highestCheckout?.toString() ?: "—",  stringResource(R.string.match_stats_highest_checkout_desc)),
+        StatRow(stringResource(R.string.match_stats_checkout_attempts),"${stats.checkoutAttempts}",               stringResource(R.string.match_stats_checkout_attempts_desc))
     )
 
-    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+    var expandedKey by remember { mutableStateOf<String?>(null) }
+
+    Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
         rows.chunked(2).forEach { pair ->
             Row(modifier = Modifier.fillMaxWidth()) {
-                pair.forEachIndexed { idx, (label, value) ->
-                    Row(
-                        modifier = Modifier.weight(1f),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(label, style = MaterialTheme.typography.labelSmall, color = TextTertiary, modifier = Modifier.weight(1f))
-                        Text(value, style = MaterialTheme.typography.labelSmall, fontFamily = DmMono, color = TextPrimary)
-                    }
-                    if (pair.size == 2 && idx == 0) {
-                        Spacer(modifier = Modifier.width(16.dp))
-                    }
+                pair.forEachIndexed { idx, row ->
+                    StatCell(
+                        row = row,
+                        isExpanded = expandedKey == row.label,
+                        onTap = { expandedKey = if (expandedKey == row.label) null else row.label },
+                        modifier = Modifier.weight(1f)
+                    )
+                    if (pair.size == 2 && idx == 0) Spacer(modifier = Modifier.width(16.dp))
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun StatCell(row: StatRow, isExpanded: Boolean, onTap: () -> Unit, modifier: Modifier = Modifier) {
+    Column(
+        modifier = modifier
+            .clickable(onClick = onTap)
+            .background(
+                if (isExpanded) Surface2 else Color.Transparent,
+                RoundedCornerShape(6.dp)
+            )
+            .padding(horizontal = 4.dp, vertical = 4.dp)
+    ) {
+        Row(
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
+                Text(row.label, style = MaterialTheme.typography.labelSmall, color = TextTertiary)
+                Spacer(Modifier.width(3.dp))
+                Icon(
+                    imageVector = Icons.Filled.Info,
+                    contentDescription = null,
+                    modifier = Modifier.size(9.dp),
+                    tint = if (isExpanded) Accent else TextTertiary.copy(alpha = 0.4f)
+                )
+            }
+            Text(row.value, style = MaterialTheme.typography.labelSmall, fontFamily = DmMono, color = TextPrimary)
+        }
+        AnimatedVisibility(visible = isExpanded) {
+            Text(
+                text = row.description,
+                style = MaterialTheme.typography.labelSmall,
+                color = TextSecondary,
+                modifier = Modifier.padding(top = 3.dp)
+            )
         }
     }
 }
@@ -592,22 +664,42 @@ private fun PlayerStatGrid(stats: MatchPlayerStats) {
 @Composable
 private fun VisitBarChart(visitScores: List<Int>) {
     val maxScore = visitScores.maxOrNull()?.coerceAtLeast(1) ?: 1
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(60.dp)
-            .horizontalScroll(rememberScrollState()),
-        horizontalArrangement = Arrangement.spacedBy(2.dp),
-        verticalAlignment = Alignment.Bottom
-    ) {
-        visitScores.forEach { score ->
-            val fraction = score.toFloat() / maxScore.toFloat()
-            val color = visitScoreColor(score)
-            Box(
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        // Y-axis label
+        Text(
+            "↑ ${stringResource(R.string.chart_axis_score)}",
+            style = MaterialTheme.typography.labelSmall,
+            fontSize = 9.sp,
+            color = TextTertiary
+        )
+        Spacer(modifier = Modifier.width(4.dp))
+        Column {
+            Row(
                 modifier = Modifier
-                    .width(8.dp)
-                    .fillMaxHeight(fraction.coerceAtLeast(0.04f))
-                    .background(color, RoundedCornerShape(topStart = 2.dp, topEnd = 2.dp))
+                    .fillMaxWidth()
+                    .height(60.dp)
+                    .horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(2.dp),
+                verticalAlignment = Alignment.Bottom
+            ) {
+                visitScores.forEach { score ->
+                    val fraction = score.toFloat() / maxScore.toFloat()
+                    val color = visitScoreColor(score)
+                    Box(
+                        modifier = Modifier
+                            .width(8.dp)
+                            .fillMaxHeight(fraction.coerceAtLeast(0.04f))
+                            .background(color, RoundedCornerShape(topStart = 2.dp, topEnd = 2.dp))
+                    )
+                }
+            }
+            Text(
+                stringResource(R.string.chart_axis_visits) + " →",
+                style = MaterialTheme.typography.labelSmall,
+                fontSize = 9.sp,
+                color = TextTertiary,
+                modifier = Modifier.fillMaxWidth(),
+                textAlign = TextAlign.End
             )
         }
     }
@@ -675,31 +767,43 @@ private fun ScoreDistributionRow(stats: MatchPlayerStats) {
 @Composable
 private fun DartsPerLegChart(dartsByLeg: List<Int>, playerColor: Color) {
     val maxDarts = dartsByLeg.maxOrNull()?.coerceAtLeast(1) ?: 1
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(60.dp)
-            .horizontalScroll(rememberScrollState()),
-        horizontalArrangement = Arrangement.spacedBy(4.dp),
-        verticalAlignment = Alignment.Bottom
-    ) {
-        dartsByLeg.forEachIndexed { i, darts ->
-            if (darts > 0) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Box(
-                        modifier = Modifier
-                            .width(24.dp)
-                            .weight(1f),
-                        contentAlignment = Alignment.BottomCenter
-                    ) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        // Y-axis label + max value
+        Column(
+            modifier = Modifier.width(28.dp).height(70.dp),
+            verticalArrangement = Arrangement.SpaceBetween,
+            horizontalAlignment = Alignment.End
+        ) {
+            Text("$maxDarts", style = MaterialTheme.typography.labelSmall, fontFamily = DmMono, fontSize = 9.sp, color = TextTertiary)
+            Text(stringResource(R.string.chart_axis_darts), style = MaterialTheme.typography.labelSmall, fontSize = 9.sp, color = TextTertiary)
+        }
+        Spacer(modifier = Modifier.width(4.dp))
+        Row(
+            modifier = Modifier
+                .weight(1f)
+                .height(70.dp)
+                .horizontalScroll(rememberScrollState()),
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
+            verticalAlignment = Alignment.Bottom
+        ) {
+            dartsByLeg.forEachIndexed { i, darts ->
+                if (darts > 0) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Box(
                             modifier = Modifier
                                 .width(24.dp)
-                                .fillMaxHeight(darts.toFloat() / maxDarts.toFloat())
-                                .background(playerColor.copy(alpha = 0.7f), RoundedCornerShape(topStart = 3.dp, topEnd = 3.dp))
-                        )
+                                .weight(1f),
+                            contentAlignment = Alignment.BottomCenter
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .width(24.dp)
+                                    .fillMaxHeight(darts.toFloat() / maxDarts.toFloat())
+                                    .background(playerColor.copy(alpha = 0.7f), RoundedCornerShape(topStart = 3.dp, topEnd = 3.dp))
+                            )
+                        }
+                        Text("L${i + 1}", style = MaterialTheme.typography.labelSmall, fontSize = 9.sp, color = TextTertiary)
                     }
-                    Text("L${i + 1}", style = MaterialTheme.typography.labelSmall, fontSize = 9.sp, color = TextTertiary)
                 }
             }
         }
@@ -711,30 +815,54 @@ private fun DartsPerLegChart(dartsByLeg: List<Int>, playerColor: Color) {
 @Composable
 private fun RunningAverageChart(runningAvg: List<Double>, playerColor: Color) {
     val maxAvg = runningAvg.maxOrNull()?.coerceAtLeast(1.0) ?: 1.0
-    androidx.compose.foundation.Canvas(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(80.dp)
-    ) {
-        val w = size.width
-        val h = size.height
-        val n = runningAvg.size.toFloat().coerceAtLeast(2f)
-
-        // Grid
-        drawLine(
-            color = Color.White.copy(alpha = 0.06f),
-            start = Offset(0f, h / 2f),
-            end = Offset(w, h / 2f),
-            strokeWidth = 1.dp.toPx()
-        )
-
-        val path = Path()
-        runningAvg.forEachIndexed { i, avg ->
-            val x = w * i / (n - 1f)
-            val y = h * (1f - (avg / maxAvg).toFloat())
-            if (i == 0) path.moveTo(x, y) else path.lineTo(x, y)
+    val minAvg = runningAvg.minOrNull() ?: 0.0
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        // Y-axis labels
+        Column(
+            modifier = Modifier.width(36.dp).height(80.dp),
+            verticalArrangement = Arrangement.SpaceBetween,
+            horizontalAlignment = Alignment.End
+        ) {
+            Text(String.format("%.0f", maxAvg), style = MaterialTheme.typography.labelSmall, fontFamily = DmMono, fontSize = 9.sp, color = TextTertiary)
+            Text(String.format("%.0f", minAvg), style = MaterialTheme.typography.labelSmall, fontFamily = DmMono, fontSize = 9.sp, color = TextTertiary)
         }
-        drawPath(path, color = playerColor, style = Stroke(width = 2.dp.toPx(), cap = StrokeCap.Round))
+        Spacer(modifier = Modifier.width(4.dp))
+        Column(modifier = Modifier.weight(1f)) {
+            androidx.compose.foundation.Canvas(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(80.dp)
+            ) {
+                val w = size.width
+                val h = size.height
+                val n = runningAvg.size.toFloat().coerceAtLeast(2f)
+                val range = (maxAvg - minAvg).coerceAtLeast(1.0)
+
+                drawLine(
+                    color = Color.White.copy(alpha = 0.06f),
+                    start = Offset(0f, h / 2f),
+                    end = Offset(w, h / 2f),
+                    strokeWidth = 1.dp.toPx()
+                )
+
+                val path = Path()
+                runningAvg.forEachIndexed { i, avg ->
+                    val x = w * i / (n - 1f)
+                    val y = h * (1f - ((avg - minAvg) / range).toFloat())
+                    if (i == 0) path.moveTo(x, y) else path.lineTo(x, y)
+                }
+                drawPath(path, color = playerColor, style = Stroke(width = 2.dp.toPx(), cap = StrokeCap.Round))
+            }
+            // X-axis label
+            Text(
+                stringResource(R.string.chart_axis_visits) + " →",
+                style = MaterialTheme.typography.labelSmall,
+                fontSize = 9.sp,
+                color = TextTertiary,
+                modifier = Modifier.fillMaxWidth(),
+                textAlign = TextAlign.End
+            )
+        }
     }
 }
 

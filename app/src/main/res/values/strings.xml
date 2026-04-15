@@ -175,6 +175,29 @@
     <string name="match_stats_highlights">Highlights</string>
     <string name="match_stats_darts_suffix">darts</string>
 
+    <!-- Stat descriptions (shown on tap) -->
+    <string name="match_stats_avg_desc">Average score per 3-dart visit, excluding busts</string>
+    <string name="match_stats_first9_desc">Average of your first 9 darts (3 visits) per leg — shows opening form</string>
+    <string name="match_stats_total_darts_desc">Total number of individual darts thrown across all legs</string>
+    <string name="match_stats_avg_darts_leg_desc">Average number of darts needed to play a leg</string>
+    <string name="match_stats_high_score_desc">Best single 3-dart visit score of the match</string>
+    <string name="match_stats_best_leg_desc">Fewest darts used to finish a leg in this match</string>
+    <string name="match_stats_worst_leg_desc">Most darts used in a single leg of this match</string>
+    <string name="match_stats_180s_desc">Count of maximum 180-point visits</string>
+    <string name="match_stats_140plus_desc">Visits scoring between 140 and 179 points</string>
+    <string name="match_stats_100plus_desc">Visits scoring between 100 and 139 points</string>
+    <string name="match_stats_below_26_desc">Visits scoring below 26 — weak scoring rounds</string>
+    <string name="match_stats_busts_desc">Visits where the score went below zero and didn\'t count</string>
+    <string name="match_stats_highest_checkout_desc">Highest score you finished a leg on in this match</string>
+    <string name="match_stats_checkout_attempts_desc">Visits where you were in range to potentially finish the leg</string>
+
+    <!-- Chart axis labels -->
+    <string name="chart_axis_remaining">Score remaining</string>
+    <string name="chart_axis_visits">Visit #</string>
+    <string name="chart_axis_avg">Avg</string>
+    <string name="chart_axis_darts">Darts</string>
+    <string name="chart_axis_score">Score</string>
+
     <!-- Stats screen -->
     <string name="stats_title">Club stats</string>
     <string name="stats_games">Games</string>
