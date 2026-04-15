@@ -124,7 +124,7 @@ class HeatmapViewModel @Inject constructor(
 
     private fun loadGameCount(player: Player) {
         viewModelScope.launch {
-            val total = trainingRepository.getTotalFinishedGameCount()
+            val total = trainingRepository.getTotalFinishedGameCountForPlayer(player.id)
             _uiState.update { it.copy(
                 totalGames = total,
                 gameFrom   = 1,

@@ -77,22 +77,23 @@ class TrainingRepository @Inject constructor(
     /**
      * Returns dart positions (mm from board centre) for a player's games within
      * the specified game index range fromIndex..toIndex (1-based, inclusive).
-     * Uses games sorted by createdAt ascending.
+     * Only games the player actually participated in are considered.
+     * Games are sorted by createdAt ascending.
      */
     suspend fun getDartCoordinatesForHeatmap(
         playerId: Long,
         fromIndex: Int,
         toIndex: Int
     ): List<DartCoordinate> {
-        val allGameIds = gameThrowDao.getFinishedGameIdsSorted()
-        if (allGameIds.isEmpty()) return emptyList()
-        val clamped = allGameIds.indices
+        val playerGameIds = gameThrowDao.getFinishedGameIdsSortedForPlayer(playerId)
+        if (playerGameIds.isEmpty()) return emptyList()
+        val selected = playerGameIds.indices
             .filter { it + 1 in fromIndex..toIndex }
-            .map { allGameIds[it] }
-        if (clamped.isEmpty()) return emptyList()
-        return gameThrowDao.getDartCoordinatesForPlayer(playerId, clamped)
+            .map { playerGameIds[it] }
+        if (selected.isEmpty()) return emptyList()
+        return gameThrowDao.getDartCoordinatesForPlayer(playerId, selected)
     }
 
-    suspend fun getTotalFinishedGameCount(): Int =
-        gameThrowDao.getFinishedGameIdsSorted().size
+    suspend fun getTotalFinishedGameCountForPlayer(playerId: Long): Int =
+        gameThrowDao.getFinishedGameIdsSortedForPlayer(playerId).size
 }

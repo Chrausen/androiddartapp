@@ -247,6 +247,14 @@ interface ThrowDao {
     """)
     suspend fun getFinishedGameIdsSorted(): List<Long>
 
+    @Query("""
+        SELECT DISTINCT g.id FROM games g
+        INNER JOIN game_players gp ON g.id = gp.gameId
+        WHERE gp.playerId = :playerId AND g.finishedAt IS NOT NULL
+        ORDER BY g.createdAt ASC
+    """)
+    suspend fun getFinishedGameIdsSortedForPlayer(playerId: Long): List<Long>
+
     @Query("SELECT playerId, COUNT(*) as value FROM throws WHERE visitTotal = 180 GROUP BY playerId")
     suspend fun getAllPlayer180s(): List<PlayerIntStat>
 
