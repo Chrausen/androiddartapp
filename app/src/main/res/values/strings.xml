@@ -144,6 +144,37 @@
     <string name="match_detail_player">Player</string>
     <string name="match_detail_legs_won">%1$d legs</string>
 
+    <!-- Match detail — statistics sections -->
+    <string name="match_stats_overview">Match overview</string>
+    <string name="match_stats_legs_played">Legs played</string>
+    <string name="match_stats_time_played">Time played</string>
+    <string name="match_stats_avg_leg">Avg leg</string>
+    <string name="match_stats_time_of_day">Time of day</string>
+    <string name="match_stats_avg_visit_time">Avg per visit</string>
+    <string name="match_stats_leaderboard">Leaderboard</string>
+    <string name="match_stats_race_chart">Score race</string>
+    <string name="match_stats_player_stats">Player stats</string>
+    <string name="match_stats_avg">3-dart avg</string>
+    <string name="match_stats_first9">First 9 avg</string>
+    <string name="match_stats_total_darts">Total darts</string>
+    <string name="match_stats_avg_darts_leg">Avg darts/leg</string>
+    <string name="match_stats_high_score">High score</string>
+    <string name="match_stats_best_leg">Best leg</string>
+    <string name="match_stats_worst_leg">Worst leg</string>
+    <string name="match_stats_180s">180s</string>
+    <string name="match_stats_140plus">140+</string>
+    <string name="match_stats_100plus">100+</string>
+    <string name="match_stats_below_26">Below 26</string>
+    <string name="match_stats_busts">Busts</string>
+    <string name="match_stats_highest_checkout">Best finish</string>
+    <string name="match_stats_checkout_attempts">Checkout attempts</string>
+    <string name="match_stats_visit_chart">Visit scores</string>
+    <string name="match_stats_distribution">Score distribution</string>
+    <string name="match_stats_darts_per_leg">Darts per leg</string>
+    <string name="match_stats_running_avg">Running average</string>
+    <string name="match_stats_highlights">Highlights</string>
+    <string name="match_stats_darts_suffix">darts</string>
+
     <!-- Stats screen -->
     <string name="stats_title">Club stats</string>
     <string name="stats_games">Games</string>
