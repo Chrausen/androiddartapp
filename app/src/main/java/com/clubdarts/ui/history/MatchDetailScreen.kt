@@ -6,7 +6,6 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -870,19 +869,22 @@ private fun RunningAverageChart(runningAvg: List<Double>, playerColor: Color) {
 
 @Composable
 private fun FunHighlightsRow(funStats: List<MatchFunStat>) {
-    LazyRow(
-        horizontalArrangement = Arrangement.spacedBy(10.dp),
-        contentPadding = PaddingValues(horizontal = 0.dp)
+    Row(
+        modifier = Modifier
+            .horizontalScroll(rememberScrollState())
+            .height(IntrinsicSize.Max),
+        horizontalArrangement = Arrangement.spacedBy(10.dp)
     ) {
-        items(funStats) { stat ->
+        funStats.forEach { stat ->
             Card(
                 colors = CardDefaults.cardColors(containerColor = Surface2),
-                shape = RoundedCornerShape(12.dp)
+                shape = RoundedCornerShape(12.dp),
+                modifier = Modifier.width(140.dp).fillMaxHeight()
             ) {
                 Column(
                     modifier = Modifier
-                        .width(140.dp)
-                        .padding(12.dp),
+                        .padding(12.dp)
+                        .fillMaxHeight(),
                     verticalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
                     Text(stat.icon, fontSize = 20.sp)
