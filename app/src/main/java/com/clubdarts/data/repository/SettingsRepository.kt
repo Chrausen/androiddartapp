@@ -213,4 +213,18 @@ class SettingsRepository @Inject constructor(
 
     suspend fun setRankingLegsToWin(v: Int) =
         set(SettingsKeys.RANKING_LEGS_TO_WIN, v.toString())
+
+    // ---- Fun mode settings ----
+
+    suspend fun getFunModeEnabled(): Boolean =
+        get(SettingsKeys.FUN_MODE_ENABLED, SettingsDefaults.FUN_MODE_ENABLED).toBoolean()
+
+    suspend fun setFunModeEnabled(v: Boolean) =
+        set(SettingsKeys.FUN_MODE_ENABLED, v.toString())
+
+    suspend fun getFunModeInterval(): Int =
+        get(SettingsKeys.FUN_MODE_INTERVAL, SettingsDefaults.FUN_MODE_INTERVAL).toIntOrNull() ?: 0
+
+    suspend fun setFunModeInterval(v: Int) =
+        set(SettingsKeys.FUN_MODE_INTERVAL, v.toString())
 }

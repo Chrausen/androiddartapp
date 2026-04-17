@@ -1,0 +1,130 @@
+package com.clubdarts.data.model
+
+object FunRules {
+    val all: List<FunRule> = listOf(
+        // ── Physical challenges ──────────────────────────────────────────────
+        FunRule(
+            id = "weak_hand",
+            category = FunRuleCategory.PHYSICAL,
+            emoji = "🤚",
+            titleDe = "Schwache Hand",
+            descDe = "Alle Würfe dieser Runde mit der schwachen Hand!",
+        ),
+        FunRule(
+            id = "step_back",
+            category = FunRuleCategory.PHYSICAL,
+            emoji = "👣",
+            titleDe = "Schritt zurück",
+            descDe = "Stelle dich einen großen Schritt weiter weg von der Scheibe.",
+        ),
+        FunRule(
+            id = "one_leg",
+            category = FunRuleCategory.PHYSICAL,
+            emoji = "🦵",
+            titleDe = "Einbeinig",
+            descDe = "Steh während des gesamten Wurfs auf einem Bein!",
+        ),
+        FunRule(
+            id = "eyes_closed",
+            category = FunRuleCategory.PHYSICAL,
+            emoji = "🙈",
+            titleDe = "Blind werfen",
+            descDe = "Schließ die Augen beim Wurf – kein Spicken!",
+        ),
+        FunRule(
+            id = "jump_first",
+            category = FunRuleCategory.PHYSICAL,
+            emoji = "🤸",
+            titleDe = "Hüpfer-Pflicht",
+            descDe = "Hüpfe einmal, bevor du jeden Pfeil wirfst.",
+        ),
+        FunRule(
+            id = "kneeling",
+            category = FunRuleCategory.PHYSICAL,
+            emoji = "🧎",
+            titleDe = "Kniend",
+            descDe = "Wirf alle Pfeile aus kniender Position.",
+        ),
+        FunRule(
+            id = "two_fingers",
+            category = FunRuleCategory.PHYSICAL,
+            emoji = "🤏",
+            titleDe = "Pinzettengriff",
+            descDe = "Halte jeden Pfeil nur mit Daumen und Zeigefinger.",
+        ),
+
+        // ── Scoring modifiers ────────────────────────────────────────────────
+        FunRule(
+            id = "swap_multipliers",
+            category = FunRuleCategory.SCORING,
+            scoreModifier = ScoreModifier.SWAP_MULTIPLIERS,
+            emoji = "🔀",
+            titleDe = "Multiplikatoren-Tausch",
+            descDe = "Doubles zählen wie Triples und Triples wie Doubles. Singles unverändert.",
+        ),
+        FunRule(
+            id = "double_score",
+            category = FunRuleCategory.SCORING,
+            scoreModifier = ScoreModifier.DOUBLE_SCORE,
+            emoji = "✖️",
+            titleDe = "Volle Pulle",
+            descDe = "Alle Scores sind doppelt wert – aber auch doppeltes Bust-Risiko!",
+        ),
+        FunRule(
+            id = "even_halved",
+            category = FunRuleCategory.SCORING,
+            scoreModifier = ScoreModifier.EVEN_HALVED,
+            emoji = "➗",
+            titleDe = "Gerade halbiert",
+            descDe = "Treffer auf gerade Felder (2, 4, 6 … 20) zählen nur halb.",
+        ),
+        FunRule(
+            id = "odd_doubled",
+            category = FunRuleCategory.SCORING,
+            scoreModifier = ScoreModifier.ODD_DOUBLED,
+            emoji = "✌️",
+            titleDe = "Ungerade verdoppelt",
+            descDe = "Treffer auf ungerade Felder (1, 3, 5 … 19) zählen doppelt.",
+        ),
+        FunRule(
+            id = "prime_boost",
+            category = FunRuleCategory.SCORING,
+            scoreModifier = ScoreModifier.PRIME_BOOST,
+            emoji = "🔢",
+            titleDe = "Primzahlen-Boost",
+            descDe = "Primzahlen (2, 3, 5, 7, 11, 13, 17, 19) zählen dreifach!",
+        ),
+        FunRule(
+            id = "fives_magic",
+            category = FunRuleCategory.SCORING,
+            scoreModifier = ScoreModifier.FIVES_MAGIC,
+            emoji = "⭐",
+            titleDe = "Fünfer-Magie",
+            descDe = "Vielfache von 5 (5, 10, 15, 20, 25, Bull) zählen doppelt.",
+        ),
+        FunRule(
+            id = "twenty_tax",
+            category = FunRuleCategory.SCORING,
+            scoreModifier = ScoreModifier.TWENTY_TAX,
+            emoji = "💸",
+            titleDe = "20er-Steuer",
+            descDe = "Treffer auf die 20 zählen nur halb. Schieß mal woanders hin!",
+        ),
+        FunRule(
+            id = "even_stolen",
+            category = FunRuleCategory.SCORING,
+            scoreModifier = ScoreModifier.EVEN_STOLEN,
+            emoji = "🎁",
+            titleDe = "Gerade stehlen",
+            descDe = "Gerade Felder: dein Score halbiert – die andere Hälfte wird dem Gegner wieder draufgerechnet!",
+        ),
+        FunRule(
+            id = "mirror_throw",
+            category = FunRuleCategory.SCORING,
+            scoreModifier = ScoreModifier.MIRROR_THROW,
+            emoji = "🪞",
+            titleDe = "Spiegelwurf",
+            descDe = "Dein Visit-Score wird auch beim Gegner abgezogen. Gute Würfe helfen allen!",
+        ),
+    )
+}

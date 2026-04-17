@@ -18,7 +18,9 @@ data class GameConfig(
     val isTeamGame: Boolean = false,
     val isRanked: Boolean = false,
     val teamAssignments: Map<Long, Int> = emptyMap(),    // playerId → 0 (Team A) or 1 (Team B)
-    val randomOrder: Boolean = false
+    val randomOrder: Boolean = false,
+    val funModeEnabled: Boolean = false,
+    val funRuleIntervalRounds: Int = 0,                  // 0 = change per leg, N>0 = every N rounds
 )
 
 data class GameDetail(

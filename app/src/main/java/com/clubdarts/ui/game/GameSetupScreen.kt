@@ -97,6 +97,12 @@ fun GameSetupScreen(
     var teamBPlayers by remember { mutableStateOf<List<Player>>(emptyList()) }
     var showPlayerPicker by remember { mutableStateOf(false) }
     var settingsExpanded by remember { mutableStateOf(false) }
+    var funModeEnabled by remember(uiState.setupDefaults.funModeEnabled) {
+        mutableStateOf(uiState.setupDefaults.funModeEnabled)
+    }
+    var funModeInterval by remember(uiState.setupDefaults.funModeInterval) {
+        mutableIntStateOf(uiState.setupDefaults.funModeInterval)
+    }
 
     val chevronRotation by animateFloatAsState(
         targetValue = if (settingsExpanded) 180f else 0f,
@@ -327,6 +333,18 @@ fun GameSetupScreen(
                     AddPlayerButton(onClick = { showPlayerPicker = true })
                 }
             }
+
+            // Fun mode section — only for casual games
+            if (!isRanked) {
+                item {
+                    FunModeSection(
+                        enabled = funModeEnabled,
+                        interval = funModeInterval,
+                        onEnabledChange = { funModeEnabled = it },
+                        onIntervalChange = { funModeInterval = it },
+                    )
+                }
+            }
         }
 
         // Start button — sticky at bottom
@@ -368,7 +386,9 @@ fun GameSetupScreen(
                             isSolo = false,
                             playerIds = interleaved.map { it.id },
                             isTeamGame = true,
-                            teamAssignments = assignments
+                            teamAssignments = assignments,
+                            funModeEnabled = funModeEnabled,
+                            funRuleIntervalRounds = funModeInterval,
                         )
                         gameViewModel.startGame(config)
                     } else {
@@ -379,7 +399,9 @@ fun GameSetupScreen(
                             legsToWin = legsToWin,
                             isSolo = orderedPlayers.size == 1,
                             playerIds = orderedPlayers.map { it.id },
-                            randomOrder = randomOrder
+                            randomOrder = randomOrder,
+                            funModeEnabled = funModeEnabled,
+                            funRuleIntervalRounds = funModeInterval,
                         )
                         gameViewModel.startGame(config)
                     }
@@ -1043,6 +1065,123 @@ private fun ordinalSuffix(n: Int): String = when {
     n % 10 == 2 -> "nd"
     n % 10 == 3 -> "rd"
     else -> "th"
+}
+
+@Composable
+private fun FunModeSection(
+    enabled: Boolean,
+    interval: Int,
+    onEnabledChange: (Boolean) -> Unit,
+    onIntervalChange: (Int) -> Unit,
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        SectionLabel("Spaß-Modus")
+
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(Surface2, RoundedCornerShape(10.dp))
+                .padding(horizontal = 14.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween,
+        ) {
+            Column {
+                Text("Spaß-Modus aktivieren", style = MaterialTheme.typography.bodyMedium, color = TextPrimary)
+                Text("Wechselnde Spaßregeln während des Spiels", style = MaterialTheme.typography.labelSmall, color = TextSecondary)
+            }
+            Switch(
+                checked = enabled,
+                onCheckedChange = onEnabledChange,
+                colors = SwitchDefaults.colors(checkedThumbColor = Background, checkedTrackColor = Accent),
+            )
+        }
+
+        AnimatedVisibility(
+            visible = enabled,
+            enter = expandVertically() + fadeIn(),
+            exit = shrinkVertically() + fadeOut(),
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(Surface2, RoundedCornerShape(10.dp))
+                    .padding(horizontal = 14.dp, vertical = 12.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                Text("Regelwechsel", style = MaterialTheme.typography.labelMedium, color = TextSecondary)
+
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(Surface3, RoundedCornerShape(8.dp))
+                        .clickable { onIntervalChange(0) }
+                        .padding(horizontal = 12.dp, vertical = 10.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                ) {
+                    Text("Pro Leg", style = MaterialTheme.typography.bodyMedium, color = TextPrimary)
+                    RadioButton(
+                        selected = interval == 0,
+                        onClick = { onIntervalChange(0) },
+                        colors = RadioButtonDefaults.colors(selectedColor = Accent),
+                    )
+                }
+
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(Surface3, RoundedCornerShape(8.dp))
+                        .clickable { if (interval == 0) onIntervalChange(2) }
+                        .padding(horizontal = 12.dp, vertical = 10.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                ) {
+                    Column {
+                        Text("Alle N Runden", style = MaterialTheme.typography.bodyMedium, color = TextPrimary)
+                        if (interval > 0) {
+                            Text("Alle $interval Runden", style = MaterialTheme.typography.labelSmall, color = TextSecondary)
+                        }
+                    }
+                    RadioButton(
+                        selected = interval > 0,
+                        onClick = { if (interval == 0) onIntervalChange(2) },
+                        colors = RadioButtonDefaults.colors(selectedColor = Accent),
+                    )
+                }
+
+                if (interval > 0) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                    ) {
+                        Text("Runden pro Regel:", style = MaterialTheme.typography.bodySmall, color = TextSecondary)
+                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            IconButton(
+                                onClick = { if (interval > 1) onIntervalChange(interval - 1) },
+                                modifier = Modifier.size(32.dp),
+                            ) {
+                                Text("−", style = MaterialTheme.typography.titleMedium, color = if (interval > 1) TextPrimary else TextTertiary)
+                            }
+                            Text(
+                                text = interval.toString(),
+                                style = MaterialTheme.typography.titleMedium,
+                                color = Accent,
+                                modifier = Modifier.width(24.dp),
+                                textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                            )
+                            IconButton(
+                                onClick = { if (interval < 9) onIntervalChange(interval + 1) },
+                                modifier = Modifier.size(32.dp),
+                            ) {
+                                Text("+", style = MaterialTheme.typography.titleMedium, color = if (interval < 9) TextPrimary else TextTertiary)
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
 }
 
 /** Interleave two team player lists for throw order: T1P1, T2P1, T1P2, T2P2, ... */

@@ -30,6 +30,8 @@ import com.clubdarts.data.model.CheckoutRule
 import com.clubdarts.data.repository.GameConfig
 import com.clubdarts.ui.game.components.DartBoardInput
 import com.clubdarts.ui.game.components.DartNumpad
+import com.clubdarts.ui.game.components.FunRuleChip
+import com.clubdarts.ui.game.components.FunRuleOverlay
 import com.clubdarts.ui.game.components.PlayerStrip
 import com.clubdarts.ui.game.components.VisitHistory
 import com.clubdarts.ui.theme.*
@@ -90,6 +92,18 @@ fun LiveGameScreen(
                     onToggleBoardInput = { showBoardInput = !showBoardInput },
                     onAbort = { showAbortDialog = true }
                 )
+            }
+
+            // Fun mode active rule chip
+            uiState.activeFunRule?.let { rule ->
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 12.dp, vertical = 4.dp),
+                    horizontalArrangement = Arrangement.Center,
+                ) {
+                    FunRuleChip(rule = rule)
+                }
             }
 
             // Player strip — fills all space above the bottom section, scrollable when needed
@@ -183,6 +197,11 @@ fun LiveGameScreen(
                 }
             }
         }
+    }
+
+    // Fun rule announcement overlay (blocks input until dismissed)
+    uiState.pendingFunRuleAnnouncement?.let { rule ->
+        FunRuleOverlay(rule = rule, onDismiss = { viewModel.dismissFunRuleAnnouncement() })
     }
 
     // Mid-game abort confirmation
