@@ -31,6 +31,10 @@ object SettingsKeys {
     const val FUN_MODE_ENABLED         = "fun_mode_enabled"
     const val FUN_MODE_INTERVAL_ROUNDS = "fun_mode_interval_rounds"
     const val FUN_MODE_DISABLED_RULES  = "fun_mode_disabled_rules"  // comma-separated rule IDs
+
+    // Random commentary
+    const val RANDOM_COMMENTARY_ENABLED = "random_commentary_enabled"
+    const val COMMENTARY_PHRASES        = "commentary_phrases"       // JSON object
 }
 
 object SettingsDefaults {
@@ -57,6 +61,9 @@ object SettingsDefaults {
     const val FUN_MODE_ENABLED         = "false"
     const val FUN_MODE_INTERVAL_ROUNDS = "1"
     const val FUN_MODE_DISABLED_RULES  = ""
+
+    // Random commentary
+    const val RANDOM_COMMENTARY_ENABLED = "false"
 }
 
 /** Words spoken before/after the score number for a custom TTS phrase. */
@@ -64,3 +71,44 @@ data class TtsPhrase(val before: String, val after: String)
 
 /** All custom phrases configured for a given score value. */
 data class TtsScoreSetting(val score: Int, val phrases: List<TtsPhrase>)
+
+/** Funny commentary phrases split by score tier. */
+data class CommentaryPhrases(
+    val bad: List<String>,
+    val normal: List<String>,
+    val good: List<String>
+) {
+    companion object {
+        val DEFAULT = CommentaryPhrases(
+            bad = listOf(
+                "Ok, at least something.",
+                "Badum tsss.",
+                "My grandma throws better.",
+                "Were you aiming for the wall?",
+                "Bold strategy.",
+                "That happened.",
+                "Not your finest moment.",
+                "At least you hit the board."
+            ),
+            normal = listOf(
+                "Not bad, not great.",
+                "I've seen worse.",
+                "Respectable... barely.",
+                "Solid mediocrity.",
+                "Right in the average zone.",
+                "The darts gods are neutral.",
+                "Could be worse, could be better."
+            ),
+            good = listOf(
+                "WHAT WAS THAT?!",
+                "Absolutely unbelievable!",
+                "Is this legal?",
+                "Call the darts police!",
+                "Someone stop this player!",
+                "That's just showing off.",
+                "Pure perfection!",
+                "Legendary!"
+            )
+        )
+    }
+}
