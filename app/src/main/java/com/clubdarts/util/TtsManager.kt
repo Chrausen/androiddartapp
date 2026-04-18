@@ -2,6 +2,7 @@ package com.clubdarts.util
 
 import android.content.Context
 import android.speech.tts.TextToSpeech
+import com.clubdarts.data.model.CommentaryPhrases
 import com.clubdarts.data.model.TtsPhrase
 import java.util.Locale
 
@@ -21,10 +22,11 @@ class TtsManager(private val context: Context) {
         visitTotal: Int,
         isBust: Boolean,
         isCheckout: Boolean,
-        customPhrases: List<TtsPhrase> = emptyList()
+        customPhrases: List<TtsPhrase> = emptyList(),
+        commentaryPhrases: CommentaryPhrases? = null
     ) {
         if (!isReady) return
-        val text = when {
+        val scoreText = when {
             isCheckout -> "Game shot"
             isBust     -> "Bust"
             customPhrases.isNotEmpty() -> {
@@ -36,6 +38,15 @@ class TtsManager(private val context: Context) {
             }
             else -> defaultScoreWord(visitTotal)
         }
+        val commentary = if (!isBust && !isCheckout && customPhrases.isEmpty() && commentaryPhrases != null) {
+            val tier = when {
+                visitTotal < 20  -> commentaryPhrases.bad
+                visitTotal <= 60 -> commentaryPhrases.normal
+                else             -> commentaryPhrases.good
+            }
+            tier.randomOrNull()
+        } else null
+        val text = if (commentary != null) "$scoreText. $commentary" else scoreText
         tts?.speak(text, TextToSpeech.QUEUE_FLUSH, null, "visit_$visitTotal")
     }
 

@@ -22,6 +22,7 @@ import com.clubdarts.ui.players.PlayersScreen
 import com.clubdarts.ui.rankings.PlayerDetailScreen
 import com.clubdarts.ui.rankings.RankingsScreen
 import com.clubdarts.ui.settings.AdminPanelScreen
+import com.clubdarts.ui.settings.CommentarySettingsScreen
 import com.clubdarts.ui.settings.FunModeSettingsScreen
 import com.clubdarts.ui.settings.GeneralSettingsScreen
 import com.clubdarts.ui.settings.RankingSettingsScreen
@@ -216,6 +217,9 @@ fun ClubDartsNavHost(
                     onNavigateToFunMode = {
                         navController.navigate("settings/funmode")
                     },
+                    onNavigateToCommentarySettings = {
+                        navController.navigate("settings/commentary")
+                    },
                     onNavigateToBackup = {
                         navController.navigate("settings/backup")
                     },
@@ -236,6 +240,11 @@ fun ClubDartsNavHost(
             }
             composable("settings/tts") {
                 TtsSettingsScreen(
+                    onBack = { navController.popBackStack() }
+                )
+            }
+            composable("settings/commentary") {
+                CommentarySettingsScreen(
                     onBack = { navController.popBackStack() }
                 )
             }

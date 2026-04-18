@@ -18,6 +18,8 @@
     <string name="settings_ranking_subtitle">Elo-Bewertungen, Rangliste und gewertete Partien</string>
     <string name="settings_tts_phrases">TTS Score Phrases</string>
     <string name="settings_tts_subtitle">Eigene Ansagen nach jedem Visit</string>
+    <string name="settings_commentary_phrases">Kommentar-Phrasen</string>
+    <string name="settings_commentary_subtitle">Witzige Phrasen für den zufälligen Kommentar</string>
     <string name="settings_backup_title">Backup &amp; Wiederherstellen</string>
     <string name="settings_backup_subtitle">Alle App-Daten exportieren oder importieren</string>
     <string name="backup_export_title">Backup exportieren</string>
@@ -50,6 +52,18 @@
     <string name="general_sound_effects_label">Soundeffekte</string>
     <string name="general_sound_effects_subtitle">Töne bei Dartwürfen und Schaltflächen</string>
     <string name="general_sound_effects_volume_label">Lautstärke</string>
+    <string name="general_random_commentary_label">Zufälliger Kommentar</string>
+    <string name="general_random_commentary_subtitle">Witzige Bemerkungen nach jedem Besuch</string>
+
+    <!-- Commentary phrases screen -->
+    <string name="commentary_title">Kommentar-Phrasen</string>
+    <string name="commentary_subtitle">Phrasen für den zufälligen Kommentar bearbeiten</string>
+    <string name="commentary_tier_bad">Schlechte Würfe (&lt; 20)</string>
+    <string name="commentary_tier_normal">Normale Würfe (20–60)</string>
+    <string name="commentary_tier_good">Gute Würfe (&gt; 60)</string>
+    <string name="commentary_add_phrase">Phrase hinzufügen</string>
+    <string name="commentary_phrase_hint">Phrase eingeben…</string>
+    <string name="commentary_empty">Keine Phrasen – mindestens eine hinzufügen</string>
 
     <!-- Common buttons / actions -->
     <string name="btn_delete">Löschen</string>

@@ -3,6 +3,7 @@ package com.clubdarts.data.repository
 import com.clubdarts.data.db.dao.AppSettingsDao
 import com.clubdarts.data.model.AppSettings
 import com.clubdarts.data.model.CheckoutRule
+import com.clubdarts.data.model.CommentaryPhrases
 import com.clubdarts.data.model.SettingsDefaults
 import com.clubdarts.data.model.SettingsKeys
 import com.clubdarts.data.model.TtsPhrase
@@ -213,6 +214,53 @@ class SettingsRepository @Inject constructor(
 
     suspend fun setRankingLegsToWin(v: Int) =
         set(SettingsKeys.RANKING_LEGS_TO_WIN, v.toString())
+
+    // ---- Random commentary settings ----
+
+    suspend fun getRandomCommentaryEnabled(): Boolean =
+        get(SettingsKeys.RANDOM_COMMENTARY_ENABLED, SettingsDefaults.RANDOM_COMMENTARY_ENABLED).toBoolean()
+
+    suspend fun setRandomCommentaryEnabled(v: Boolean) =
+        set(SettingsKeys.RANDOM_COMMENTARY_ENABLED, v.toString())
+
+    fun observeRandomCommentaryEnabled(): Flow<Boolean> =
+        observe(SettingsKeys.RANDOM_COMMENTARY_ENABLED, SettingsDefaults.RANDOM_COMMENTARY_ENABLED)
+            .map { it.toBoolean() }
+
+    suspend fun getCommentaryPhrases(): CommentaryPhrases =
+        parseCommentaryPhrases(get(SettingsKeys.COMMENTARY_PHRASES, ""))
+
+    suspend fun saveCommentaryPhrases(phrases: CommentaryPhrases) =
+        set(SettingsKeys.COMMENTARY_PHRASES, serializeCommentaryPhrases(phrases))
+
+    fun observeCommentaryPhrases(): Flow<CommentaryPhrases> =
+        observe(SettingsKeys.COMMENTARY_PHRASES, "").map { parseCommentaryPhrases(it) }
+
+    private fun parseCommentaryPhrases(raw: String): CommentaryPhrases {
+        if (raw.isBlank()) return CommentaryPhrases.DEFAULT
+        return try {
+            val obj = JSONObject(raw)
+            fun JSONObject.strings(key: String): List<String> {
+                val arr = optJSONArray(key) ?: return emptyList()
+                return (0 until arr.length()).map { arr.getString(it) }
+            }
+            val bad    = obj.strings("bad").ifEmpty { CommentaryPhrases.DEFAULT.bad }
+            val normal = obj.strings("normal").ifEmpty { CommentaryPhrases.DEFAULT.normal }
+            val good   = obj.strings("good").ifEmpty { CommentaryPhrases.DEFAULT.good }
+            CommentaryPhrases(bad = bad, normal = normal, good = good)
+        } catch (e: Exception) {
+            CommentaryPhrases.DEFAULT
+        }
+    }
+
+    private fun serializeCommentaryPhrases(phrases: CommentaryPhrases): String {
+        val obj = JSONObject()
+        fun List<String>.toJsonArray() = JSONArray().also { arr -> forEach { arr.put(it) } }
+        obj.put("bad",    phrases.bad.toJsonArray())
+        obj.put("normal", phrases.normal.toJsonArray())
+        obj.put("good",   phrases.good.toJsonArray())
+        return obj.toString()
+    }
 
     // ---- Fun mode settings ----
 

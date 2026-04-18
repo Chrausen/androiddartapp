@@ -19,7 +19,8 @@ data class GeneralSettingsUiState(
     val shouldRecreate: Boolean = false,
     val animationsEnabled: Boolean = true,
     val soundEffectsMuted: Boolean = false,
-    val soundEffectsVolume: Float = 1f
+    val soundEffectsVolume: Float = 1f,
+    val randomCommentaryEnabled: Boolean = false
 )
 
 @HiltViewModel
@@ -43,8 +44,15 @@ class GeneralSettingsViewModel @Inject constructor(
         viewModelScope.launch {
             val muted = settingsRepository.getSoundEffectsMuted()
             val volume = settingsRepository.getSoundEffectsVolume()
+            val commentary = settingsRepository.getRandomCommentaryEnabled()
             soundEffectsService.setVolume(volume)
-            _uiState.update { it.copy(soundEffectsMuted = muted, soundEffectsVolume = volume) }
+            _uiState.update {
+                it.copy(
+                    soundEffectsMuted = muted,
+                    soundEffectsVolume = volume,
+                    randomCommentaryEnabled = commentary
+                )
+            }
         }
     }
 
@@ -73,6 +81,11 @@ class GeneralSettingsViewModel @Inject constructor(
         soundEffectsService.setVolume(volume)
         _uiState.update { it.copy(soundEffectsVolume = volume) }
         viewModelScope.launch { settingsRepository.setSoundEffectsVolume(volume) }
+    }
+
+    fun setRandomCommentaryEnabled(enabled: Boolean) {
+        _uiState.update { it.copy(randomCommentaryEnabled = enabled) }
+        viewModelScope.launch { settingsRepository.setRandomCommentaryEnabled(enabled) }
     }
 
     companion object {

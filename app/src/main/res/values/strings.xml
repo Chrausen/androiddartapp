@@ -19,6 +19,8 @@
     <string name="settings_ranking_subtitle">Elo ratings, leaderboard and ranked matches</string>
     <string name="settings_tts_phrases">TTS Score Phrases</string>
     <string name="settings_tts_subtitle">Custom announcements after each visit</string>
+    <string name="settings_commentary_phrases">Commentary Phrases</string>
+    <string name="settings_commentary_subtitle">Funny remarks for random commentary</string>
     <string name="settings_backup_title">Backup &amp; Restore</string>
     <string name="settings_backup_subtitle">Export or import all app data</string>
     <string name="backup_export_title">Export Backup</string>
@@ -51,6 +53,18 @@
     <string name="general_sound_effects_label">Sound Effects</string>
     <string name="general_sound_effects_subtitle">Play sounds on dart throws and button presses</string>
     <string name="general_sound_effects_volume_label">Volume</string>
+    <string name="general_random_commentary_label">Random Commentary</string>
+    <string name="general_random_commentary_subtitle">Funny remarks spoken after each visit</string>
+
+    <!-- Commentary phrases screen -->
+    <string name="commentary_title">Commentary Phrases</string>
+    <string name="commentary_subtitle">Edit the phrase lists used for random commentary</string>
+    <string name="commentary_tier_bad">Bad throws (&lt; 20)</string>
+    <string name="commentary_tier_normal">Normal throws (20–60)</string>
+    <string name="commentary_tier_good">Good throws (&gt; 60)</string>
+    <string name="commentary_add_phrase">Add phrase</string>
+    <string name="commentary_phrase_hint">Enter a phrase…</string>
+    <string name="commentary_empty">No phrases — add at least one</string>
 
     <!-- Common buttons / actions -->
     <string name="btn_delete">Delete</string>

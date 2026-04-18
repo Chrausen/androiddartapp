@@ -176,6 +176,8 @@ class GameViewModel @Inject constructor(
 
     private val ttsManager = TtsManager(application)
     private var ttsScoreSettings: List<TtsScoreSetting> = emptyList()
+    private var randomCommentaryEnabled = false
+    private var commentaryPhrases: CommentaryPhrases? = null
 
     // In-memory visit counter per player (reset each leg). Avoids a DB query on every throw.
     private val visitCounters = HashMap<Long, Int>()
@@ -197,6 +199,16 @@ class GameViewModel @Inject constructor(
         viewModelScope.launch {
             settingsRepository.observeTtsScoreSettings().collect { settings ->
                 ttsScoreSettings = settings
+            }
+        }
+        viewModelScope.launch {
+            settingsRepository.observeRandomCommentaryEnabled().collect {
+                randomCommentaryEnabled = it
+            }
+        }
+        viewModelScope.launch {
+            settingsRepository.observeCommentaryPhrases().collect {
+                commentaryPhrases = it
             }
         }
         viewModelScope.launch {
@@ -514,7 +526,8 @@ class GameViewModel @Inject constructor(
                 visitTotal = announceTotal,
                 isBust = isBust,
                 isCheckout = isCheckout,
-                customPhrases = customPhrases
+                customPhrases = customPhrases,
+                commentaryPhrases = if (randomCommentaryEnabled) commentaryPhrases else null
             )
         }
 
