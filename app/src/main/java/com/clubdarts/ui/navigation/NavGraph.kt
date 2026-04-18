@@ -22,6 +22,7 @@ import com.clubdarts.ui.players.PlayersScreen
 import com.clubdarts.ui.rankings.PlayerDetailScreen
 import com.clubdarts.ui.rankings.RankingsScreen
 import com.clubdarts.ui.settings.AdminPanelScreen
+import com.clubdarts.ui.settings.FunModeSettingsScreen
 import com.clubdarts.ui.settings.GeneralSettingsScreen
 import com.clubdarts.ui.settings.RankingSettingsScreen
 import com.clubdarts.ui.settings.SettingsScreen
@@ -212,12 +213,20 @@ fun ClubDartsNavHost(
                     onNavigateToGeneralSettings = {
                         navController.navigate("settings/general")
                     },
+                    onNavigateToFunMode = {
+                        navController.navigate("settings/funmode")
+                    },
                     onNavigateToBackup = {
                         navController.navigate("settings/backup")
                     },
                     onNavigateToAdmin = {
                         navController.navigate("settings/admin") { launchSingleTop = true }
                     }
+                )
+            }
+            composable("settings/funmode") {
+                FunModeSettingsScreen(
+                    onBack = { navController.popBackStack() }
                 )
             }
             composable("settings/general") {

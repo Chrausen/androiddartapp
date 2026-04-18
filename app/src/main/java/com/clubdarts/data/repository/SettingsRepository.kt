@@ -213,4 +213,28 @@ class SettingsRepository @Inject constructor(
 
     suspend fun setRankingLegsToWin(v: Int) =
         set(SettingsKeys.RANKING_LEGS_TO_WIN, v.toString())
+
+    // ---- Fun mode settings ----
+
+    suspend fun getFunModeEnabled(): Boolean =
+        get(SettingsKeys.FUN_MODE_ENABLED, SettingsDefaults.FUN_MODE_ENABLED).toBoolean()
+
+    suspend fun setFunModeEnabled(v: Boolean) =
+        set(SettingsKeys.FUN_MODE_ENABLED, v.toString())
+
+    suspend fun getFunModeIntervalRounds(): Int =
+        get(SettingsKeys.FUN_MODE_INTERVAL_ROUNDS, SettingsDefaults.FUN_MODE_INTERVAL_ROUNDS)
+            .toIntOrNull()?.coerceIn(1, 9) ?: 1
+
+    suspend fun setFunModeIntervalRounds(v: Int) =
+        set(SettingsKeys.FUN_MODE_INTERVAL_ROUNDS, v.coerceIn(1, 9).toString())
+
+    suspend fun getFunModeDisabledRules(): List<String> {
+        val raw = get(SettingsKeys.FUN_MODE_DISABLED_RULES, SettingsDefaults.FUN_MODE_DISABLED_RULES)
+        return if (raw.isBlank()) emptyList()
+        else raw.split(",").map { it.trim() }.filter { it.isNotEmpty() }
+    }
+
+    suspend fun setFunModeDisabledRules(ids: List<String>) =
+        set(SettingsKeys.FUN_MODE_DISABLED_RULES, ids.joinToString(","))
 }

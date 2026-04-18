@@ -26,6 +26,11 @@ object SettingsKeys {
     const val RANKING_START_SCORE   = "ranking_start_score"
     const val RANKING_CHECKOUT_RULE = "ranking_checkout_rule"
     const val RANKING_LEGS_TO_WIN   = "ranking_legs_to_win"
+
+    // Fun mode
+    const val FUN_MODE_ENABLED         = "fun_mode_enabled"
+    const val FUN_MODE_INTERVAL_ROUNDS = "fun_mode_interval_rounds"
+    const val FUN_MODE_DISABLED_RULES  = "fun_mode_disabled_rules"  // comma-separated rule IDs
 }
 
 object SettingsDefaults {
@@ -47,6 +52,11 @@ object SettingsDefaults {
     const val RANKING_START_SCORE   = "501"
     const val RANKING_CHECKOUT_RULE = "DOUBLE"
     const val RANKING_LEGS_TO_WIN   = "1"
+
+    // Fun mode
+    const val FUN_MODE_ENABLED         = "false"
+    const val FUN_MODE_INTERVAL_ROUNDS = "1"
+    const val FUN_MODE_DISABLED_RULES  = ""
 }
 
 /** Words spoken before/after the score number for a custom TTS phrase. */

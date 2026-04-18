@@ -4,6 +4,9 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.clubdarts.data.model.*
+import com.clubdarts.data.model.FunRule
+import com.clubdarts.data.model.FunRules
+import com.clubdarts.data.model.ScoreModifier
 import com.clubdarts.data.repository.EloRepository
 import com.clubdarts.data.repository.GameConfig
 import com.clubdarts.data.repository.GameRepository
@@ -58,7 +61,8 @@ data class SetupDefaults(
     val legsToWin: Int = 1,
     val randomOrder: Boolean = false,
     val recentPlayerIds: List<Long> = emptyList(),
-    val gameMode: GameMode = GameMode.SINGLE
+    val gameMode: GameMode = GameMode.SINGLE,
+    val funModeEnabled: Boolean = false,
 )
 
 /**
@@ -125,7 +129,14 @@ data class GameUiState(
     // playerId → signed Elo change (positive = gain, negative = loss); null until game ends
     val eloResults: Map<Long, Double>? = null,
     // ID of the EloMatch record created when a ranked game ended (used for undo via EloRepository.revertMatch)
-    val eloMatchId: Long? = null
+    val eloMatchId: Long? = null,
+    // Fun mode
+    val activeFunRule: FunRule? = null,
+    val pendingFunRuleAnnouncement: FunRule? = null,  // non-null → show overlay
+    val shuffledFunRules: List<FunRule> = emptyList(),
+    val funRuleIndex: Int = 0,
+    val funRuleIntervalRounds: Int = 1,
+    val funVisitsSinceRuleChange: Int = 0,
 )
 
 /**
@@ -255,6 +266,14 @@ class GameViewModel @Inject constructor(
         _uiState.update { it.copy(setupGameMode = mode) }
     }
 
+    fun dismissFunRuleAnnouncement() {
+        _uiState.update { it.copy(pendingFunRuleAnnouncement = null) }
+    }
+
+    fun showFunRuleInfo() {
+        _uiState.update { it.copy(pendingFunRuleAnnouncement = it.activeFunRule) }
+    }
+
     fun loadSetupDefaults() {
         viewModelScope.launch {
             try {
@@ -285,7 +304,8 @@ class GameViewModel @Inject constructor(
                         legsToWin = legsToWin,
                         randomOrder = randomOrder,
                         recentPlayerIds = recentIds,
-                        gameMode = gameMode
+                        gameMode = gameMode,
+                        funModeEnabled = false,
                     )
                 )}
             } catch (e: Exception) {
@@ -293,6 +313,17 @@ class GameViewModel @Inject constructor(
             }
         }
     }
+
+    // ── Fun mode: scoring modifier helpers ───────────────────────────────────
+
+    private fun DartInput.effectiveValue(modifier: ScoreModifier): Int =
+        modifier.apply(score, multiplier)
+
+    private fun DartInput.effectiveMultiplier(modifier: ScoreModifier): Int =
+        modifier.applyMultiplier(multiplier)
+
+    private fun activeModifier(): ScoreModifier =
+        _uiState.value.activeFunRule?.scoreModifier ?: ScoreModifier.NONE
 
     // ── Live game: dart entry ─────────────────────────────────────────────────
 
@@ -338,7 +369,8 @@ class GameViewModel @Inject constructor(
         val state = _uiState.value
         val currentPlayer = state.players.getOrNull(state.currentPlayerIndex) ?: return
         val remaining = state.remainingFor(currentPlayer.id)
-        val soFar = state.currentDarts.sumOf { it.value }
+        val modifier = activeModifier()
+        val soFar = state.currentDarts.sumOf { it.effectiveValue(modifier) }
         val rule = state.config?.checkoutRule ?: CheckoutRule.DOUBLE
         when {
             ScoringEngine.isImmediateBust(remaining, soFar, rule) -> resolveVisit()
@@ -352,6 +384,12 @@ class GameViewModel @Inject constructor(
         val state = _uiState.value
         val currentPlayer = state.players.getOrNull(state.currentPlayerIndex) ?: return
         val remaining = state.remainingFor(currentPlayer.id)
+        val modifier = activeModifier()
+        // Suppress checkout hints when a scoring modifier changes point values
+        if (modifier != ScoreModifier.NONE) {
+            _uiState.update { it.copy(checkoutHint = null) }
+            return
+        }
         val soFar = state.currentDarts.sumOf { it.value }
         val remainingAfterCurrentDarts = remaining - soFar
         val dartsLeft = 3 - state.currentDarts.size
@@ -390,16 +428,17 @@ class GameViewModel @Inject constructor(
         val currentPlayer = state.players.getOrNull(state.currentPlayerIndex) ?: return
         val remaining = state.remainingFor(currentPlayer.id)
         val darts = state.currentDarts
-        val visitTotal = darts.sumOf { it.value }
+        val modifier = state.activeFunRule?.scoreModifier ?: ScoreModifier.NONE
+        val visitTotal = darts.sumOf { it.effectiveValue(modifier) }
         val isCheckoutAttempt = CheckoutCalculator.isCheckoutPossible(remaining, config.checkoutRule)
 
-        // Determine bust via ScoringEngine
+        // Determine bust via ScoringEngine using effective values
         val lastDart = darts.last()
         val visitResult = ScoringEngine.resolveVisit(
             remaining = remaining,
             visitTotal = visitTotal,
             lastDartScore = lastDart.score,
-            lastDartMult = lastDart.multiplier,
+            lastDartMult = lastDart.effectiveMultiplier(modifier),
             rule = config.checkoutRule
         )
         val isBust = visitResult.isBust
@@ -451,11 +490,16 @@ class GameViewModel @Inject constructor(
         }
 
         // Update the appropriate score map
-        val updatedState = if (state.isTeamGame) {
+        var updatedState = if (state.isTeamGame) {
             val teamIdx = state.teamAssignments[currentPlayer.id] ?: 0
             state.copy(teamScores = state.teamScores + (teamIdx to newScore))
         } else {
             state.copy(scores = state.scores + (currentPlayer.id to newScore))
+        }
+
+        // Apply transfer mechanics (EVEN_STOLEN / MIRROR_THROW) to opponent scores
+        if (!isBust) {
+            updatedState = applyTransferModifier(updatedState, currentPlayer.id, darts, modifier, effectiveTotal)
         }
 
         val isCheckout = !isBust && newScore == 0
@@ -505,6 +549,18 @@ class GameViewModel @Inject constructor(
             Triple((state.currentPlayerIndex + 1) % state.players.size, state.currentTeamIndex, state.teamPlayerIndexes)
         }
 
+        // Fun mode: advance rule after N rounds (N × players.size visits)
+        val newFunVisits = if (state.config?.funModeEnabled == true) state.funVisitsSinceRuleChange + 1 else 0
+        val shouldAdvanceFunRule = state.config?.funModeEnabled == true &&
+            state.shuffledFunRules.isNotEmpty() &&
+            newFunVisits >= state.players.size * state.funRuleIntervalRounds.coerceAtLeast(1)
+        val nextFunRuleIdx = if (shouldAdvanceFunRule)
+            (state.funRuleIndex + 1) % state.shuffledFunRules.size.coerceAtLeast(1)
+        else state.funRuleIndex
+        val nextActiveFunRule = if (shouldAdvanceFunRule) state.shuffledFunRules.getOrNull(nextFunRuleIdx) else state.activeFunRule
+        val nextFunAnnouncement = if (shouldAdvanceFunRule) nextActiveFunRule else null
+        val nextFunVisits = if (shouldAdvanceFunRule) 0 else newFunVisits
+
         _uiState.update {
             updatedState.copy(
                 currentDarts = emptyList(),
@@ -515,7 +571,11 @@ class GameViewModel @Inject constructor(
                 currentPlayerIndex = nextPlayerIndex,
                 currentTeamIndex = nextTeamIndex,
                 teamPlayerIndexes = nextTeamPlayerIndexes,
-                visitHistory = newHistory
+                visitHistory = newHistory,
+                activeFunRule = nextActiveFunRule,
+                funRuleIndex = nextFunRuleIdx,
+                pendingFunRuleAnnouncement = nextFunAnnouncement,
+                funVisitsSinceRuleChange = nextFunVisits,
             )
         }
         updateCheckoutHint()
@@ -742,6 +802,17 @@ class GameViewModel @Inject constructor(
 
                 visitCounters.clear()
 
+                // Prepare fun mode rule list
+                val funIntervalRounds = settingsRepository.getFunModeIntervalRounds()
+                val disabledRuleIds = settingsRepository.getFunModeDisabledRules().toSet()
+                val shuffled = if (config.funModeEnabled) {
+                    FunRules.all
+                        .filter { !it.teamsOnly || config.isTeamGame }
+                        .filter { it.id !in disabledRuleIds }
+                        .shuffled()
+                } else emptyList()
+                val firstRule = shuffled.firstOrNull()
+
                 if (config.isTeamGame) {
                     val teamScores = mapOf(0 to config.startScore, 1 to config.startScore)
                     val teamLegWins = mapOf(0 to 0, 1 to 0)
@@ -770,7 +841,13 @@ class GameViewModel @Inject constructor(
                         currentLegNumber = 1,
                         winnerId = null,
                         checkoutHint = null,
-                        eloResults = null
+                        eloResults = null,
+                        shuffledFunRules = shuffled,
+                        activeFunRule = firstRule,
+                        funRuleIndex = 0,
+                        funRuleIntervalRounds = funIntervalRounds,
+                        funVisitsSinceRuleChange = 0,
+                        pendingFunRuleAnnouncement = firstRule,
                     )}
                 } else {
                     val scores = players.associate { it.id to config.startScore }
@@ -798,7 +875,13 @@ class GameViewModel @Inject constructor(
                         currentLegNumber = 1,
                         winnerId = null,
                         checkoutHint = null,
-                        eloResults = null
+                        eloResults = null,
+                        shuffledFunRules = shuffled,
+                        activeFunRule = firstRule,
+                        funRuleIndex = 0,
+                        funRuleIntervalRounds = funIntervalRounds,
+                        funVisitsSinceRuleChange = 0,
+                        pendingFunRuleAnnouncement = firstRule,
                     )}
                 }
                 updateCheckoutHint()
@@ -846,7 +929,9 @@ class GameViewModel @Inject constructor(
                             currentPlayerIndex = 0,
                             currentDarts = emptyList(),
                             pendingMultiplier = 1,
-                            visitHistory = emptyList()
+                            visitHistory = emptyList(),
+                            funVisitsSinceRuleChange = 0,
+                            pendingFunRuleAnnouncement = if (config.funModeEnabled) it.activeFunRule else null,
                         )}
                         updateCheckoutHint()
                     }
@@ -897,7 +982,9 @@ class GameViewModel @Inject constructor(
                             currentPlayerIndex = nextStartIndex,
                             currentDarts = emptyList(),
                             pendingMultiplier = 1,
-                            visitHistory = emptyList()
+                            visitHistory = emptyList(),
+                            funVisitsSinceRuleChange = 0,
+                            pendingFunRuleAnnouncement = if (config.funModeEnabled) it.activeFunRule else null,
                         )}
                         updateCheckoutHint()
                     }
@@ -1004,7 +1091,13 @@ class GameViewModel @Inject constructor(
             gameSaved = false,
             isRanked = true,
             eloResults = null,
-            eloMatchId = null
+            eloMatchId = null,
+            activeFunRule = null,
+            pendingFunRuleAnnouncement = null,
+            shuffledFunRules = emptyList(),
+            funRuleIndex = 0,
+            funRuleIntervalRounds = 1,
+            funVisitsSinceRuleChange = 0,
         )}
         loadSetupDefaults()
     }
@@ -1018,6 +1111,51 @@ class GameViewModel @Inject constructor(
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────
+
+    // Applies transfer scoring mechanics (EVEN_STOLEN / MIRROR_THROW) to opponent scores.
+    private fun applyTransferModifier(
+        state: GameUiState,
+        currentPlayerId: Long,
+        darts: List<DartInput>,
+        modifier: ScoreModifier,
+        effectiveTotal: Int,
+    ): GameUiState {
+        return when (modifier) {
+            ScoreModifier.EVEN_STOLEN -> {
+                val stolenAmount = darts.sumOf { d ->
+                    if (d.score > 0 && d.score % 2 == 0) d.value / 2 else 0
+                }
+                if (stolenAmount == 0) return state
+                if (state.isTeamGame) {
+                    val currentTeam = state.teamAssignments[currentPlayerId] ?: 0
+                    val opponentTeam = 1 - currentTeam
+                    val opponentScore = (state.teamScores[opponentTeam] ?: 0) + stolenAmount
+                    state.copy(teamScores = state.teamScores + (opponentTeam to opponentScore))
+                } else {
+                    val updatedScores = state.scores.mapValues { (pid, score) ->
+                        if (pid != currentPlayerId) score + stolenAmount else score
+                    }
+                    state.copy(scores = updatedScores)
+                }
+            }
+            ScoreModifier.MIRROR_THROW -> {
+                if (effectiveTotal == 0) return state
+                if (state.isTeamGame) {
+                    val currentTeam = state.teamAssignments[currentPlayerId] ?: 0
+                    val opponentTeam = 1 - currentTeam
+                    val opponentScore = ((state.teamScores[opponentTeam] ?: 0) - effectiveTotal)
+                        .coerceAtLeast(1)
+                    state.copy(teamScores = state.teamScores + (opponentTeam to opponentScore))
+                } else {
+                    val updatedScores = state.scores.mapValues { (pid, score) ->
+                        if (pid != currentPlayerId) (score - effectiveTotal).coerceAtLeast(1) else score
+                    }
+                    state.copy(scores = updatedScores)
+                }
+            }
+            else -> state
+        }
+    }
 
     // Returns the remaining score for a player, routing through the team score map in team mode.
     private fun GameUiState.remainingFor(playerId: Long): Int {

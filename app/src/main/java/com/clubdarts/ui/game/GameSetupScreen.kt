@@ -97,6 +97,9 @@ fun GameSetupScreen(
     var teamBPlayers by remember { mutableStateOf<List<Player>>(emptyList()) }
     var showPlayerPicker by remember { mutableStateOf(false) }
     var settingsExpanded by remember { mutableStateOf(false) }
+    var funModeEnabled by remember(uiState.setupDefaults.funModeEnabled) {
+        mutableStateOf(uiState.setupDefaults.funModeEnabled)
+    }
 
     val chevronRotation by animateFloatAsState(
         targetValue = if (settingsExpanded) 180f else 0f,
@@ -327,6 +330,16 @@ fun GameSetupScreen(
                     AddPlayerButton(onClick = { showPlayerPicker = true })
                 }
             }
+
+            // Fun mode section — only for casual games
+            if (!isRanked) {
+                item {
+                    FunModeSection(
+                        enabled = funModeEnabled,
+                        onEnabledChange = { funModeEnabled = it },
+                    )
+                }
+            }
         }
 
         // Start button — sticky at bottom
@@ -368,7 +381,8 @@ fun GameSetupScreen(
                             isSolo = false,
                             playerIds = interleaved.map { it.id },
                             isTeamGame = true,
-                            teamAssignments = assignments
+                            teamAssignments = assignments,
+                            funModeEnabled = funModeEnabled,
                         )
                         gameViewModel.startGame(config)
                     } else {
@@ -379,7 +393,8 @@ fun GameSetupScreen(
                             legsToWin = legsToWin,
                             isSolo = orderedPlayers.size == 1,
                             playerIds = orderedPlayers.map { it.id },
-                            randomOrder = randomOrder
+                            randomOrder = randomOrder,
+                            funModeEnabled = funModeEnabled,
                         )
                         gameViewModel.startGame(config)
                     }
@@ -1043,6 +1058,35 @@ private fun ordinalSuffix(n: Int): String = when {
     n % 10 == 2 -> "nd"
     n % 10 == 3 -> "rd"
     else -> "th"
+}
+
+@Composable
+private fun FunModeSection(
+    enabled: Boolean,
+    onEnabledChange: (Boolean) -> Unit,
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        SectionLabel(stringResource(R.string.fun_mode_section_label))
+
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(Surface2, RoundedCornerShape(10.dp))
+                .padding(horizontal = 14.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween,
+        ) {
+            Column {
+                Text(stringResource(R.string.fun_mode_enable_title), style = MaterialTheme.typography.bodyMedium, color = TextPrimary)
+                Text(stringResource(R.string.fun_mode_enable_subtitle), style = MaterialTheme.typography.labelSmall, color = TextSecondary)
+            }
+            Switch(
+                checked = enabled,
+                onCheckedChange = onEnabledChange,
+                colors = SwitchDefaults.colors(checkedThumbColor = Background, checkedTrackColor = Accent),
+            )
+        }
+    }
 }
 
 /** Interleave two team player lists for throw order: T1P1, T2P1, T1P2, T2P2, ... */

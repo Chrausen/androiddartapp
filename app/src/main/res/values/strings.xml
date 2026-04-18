@@ -287,6 +287,61 @@
     <string name="dispersion_throw_count">Based on %1$d training throws</string>
     <string name="dispersion_no_coords">No dartboard-input throws found in selected sessions.</string>
 
+    <!-- Settings: Fun Mode entry -->
+    <string name="settings_fun_mode">Fun Mode</string>
+    <string name="settings_fun_mode_subtitle">Rule rotation, durations and active rules</string>
+
+    <!-- Fun Mode settings screen -->
+    <string name="fun_mode_settings_title">Fun Mode</string>
+    <string name="fun_mode_settings_rule_duration_label">Rule Duration</string>
+    <string name="fun_mode_settings_rule_duration_rounds_label">Rounds per rule</string>
+    <string name="fun_mode_settings_rule_duration_subtitle">How many rounds each rule stays active</string>
+    <string name="fun_mode_settings_rules_label">Rules</string>
+    <string name="fun_mode_settings_category_physical">Physical</string>
+    <string name="fun_mode_settings_category_scoring">Scoring</string>
+
+    <!-- Fun mode -->
+    <string name="fun_mode_section_label">Fun Mode</string>
+    <string name="fun_mode_enable_title">Enable Fun Mode</string>
+    <string name="fun_mode_enable_subtitle">Rotating fun rules during the game</string>
+    <string name="fun_rule_overlay_new_rule">🎲 New Rule!</string>
+    <string name="fun_rule_overlay_new_scoring_rule">📐 New Scoring Rule!</string>
+    <string name="fun_rule_overlay_got_it">Got it!</string>
+
+    <!-- Fun mode rules -->
+    <string name="fun_rule_weak_hand_title">Weak Hand</string>
+    <string name="fun_rule_weak_hand_desc">All throws this round with your weak hand!</string>
+    <string name="fun_rule_step_back_title">Step Back</string>
+    <string name="fun_rule_step_back_desc">Take one big step further away from the board.</string>
+    <string name="fun_rule_one_leg_title">One Leg</string>
+    <string name="fun_rule_one_leg_desc">Stand on one leg for the entire throw!</string>
+    <string name="fun_rule_eyes_closed_title">Blind Throw</string>
+    <string name="fun_rule_eyes_closed_desc">Close your eyes when throwing – no peeking!</string>
+    <string name="fun_rule_jump_first_title">Jump First</string>
+    <string name="fun_rule_jump_first_desc">Jump once before throwing each dart.</string>
+    <string name="fun_rule_kneeling_title">Kneeling</string>
+    <string name="fun_rule_kneeling_desc">Throw all darts from a kneeling position.</string>
+    <string name="fun_rule_two_fingers_title">Pinch Grip</string>
+    <string name="fun_rule_two_fingers_desc">Hold each dart only with thumb and index finger.</string>
+    <string name="fun_rule_swap_multipliers_title">Swap Multipliers</string>
+    <string name="fun_rule_swap_multipliers_desc">Doubles count as triples and triples as doubles. Singles unchanged.</string>
+    <string name="fun_rule_double_score_title">Full Throttle</string>
+    <string name="fun_rule_double_score_desc">All scores are worth double – but double the bust risk too!</string>
+    <string name="fun_rule_even_halved_title">Even Halved</string>
+    <string name="fun_rule_even_halved_desc">Hits on even segments (2, 4, 6 … 20) count only half.</string>
+    <string name="fun_rule_odd_doubled_title">Odd Doubled</string>
+    <string name="fun_rule_odd_doubled_desc">Hits on odd segments (1, 3, 5 … 19) count double.</string>
+    <string name="fun_rule_prime_boost_title">Prime Boost</string>
+    <string name="fun_rule_prime_boost_desc">Prime numbers (2, 3, 5, 7, 11, 13, 17, 19) count triple!</string>
+    <string name="fun_rule_fives_magic_title">Fives Magic</string>
+    <string name="fun_rule_fives_magic_desc">Multiples of 5 (5, 10, 15, 20, 25, Bull) count double.</string>
+    <string name="fun_rule_twenty_tax_title">Twenty Tax</string>
+    <string name="fun_rule_twenty_tax_desc">Hits on 20 count only half. Aim somewhere else!</string>
+    <string name="fun_rule_even_stolen_title">Even Stolen</string>
+    <string name="fun_rule_even_stolen_desc">Even segments: your score halved – the other half is added back to your opponent!</string>
+    <string name="fun_rule_mirror_throw_title">Mirror Throw</string>
+    <string name="fun_rule_mirror_throw_desc">Your visit score is also subtracted from your opponent. Good throws help everyone!</string>
+
     <!-- Rankings screen -->
     <string name="rankings_title">Rankings</string>
     <string name="rankings_subtitle">Players with %1$d+ ranked matches</string>

@@ -7,6 +7,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.AdminPanelSettings
+import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.CloudSync
 import androidx.compose.material.icons.filled.EmojiEvents
 import androidx.compose.material.icons.filled.RecordVoiceOver
@@ -27,6 +28,7 @@ fun SettingsScreen(
     onNavigateToTtsScores: () -> Unit,
     onNavigateToRankingSettings: () -> Unit,
     onNavigateToGeneralSettings: () -> Unit,
+    onNavigateToFunMode: () -> Unit,
     onNavigateToBackup: () -> Unit,
     onNavigateToAdmin: () -> Unit
 ) {
@@ -70,6 +72,16 @@ fun SettingsScreen(
                 title = stringResource(R.string.settings_tts_phrases),
                 subtitle = stringResource(R.string.settings_tts_subtitle),
                 onClick = onNavigateToTtsScores
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            SettingsRow(
+                icon = Icons.Default.AutoAwesome,
+                iconTint = Accent,
+                title = stringResource(R.string.settings_fun_mode),
+                subtitle = stringResource(R.string.settings_fun_mode_subtitle),
+                onClick = onNavigateToFunMode
             )
 
             Spacer(modifier = Modifier.height(8.dp))

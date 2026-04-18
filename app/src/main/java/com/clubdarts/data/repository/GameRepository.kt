@@ -18,7 +18,8 @@ data class GameConfig(
     val isTeamGame: Boolean = false,
     val isRanked: Boolean = false,
     val teamAssignments: Map<Long, Int> = emptyMap(),    // playerId → 0 (Team A) or 1 (Team B)
-    val randomOrder: Boolean = false
+    val randomOrder: Boolean = false,
+    val funModeEnabled: Boolean = false,
 )
 
 data class GameDetail(
@@ -86,7 +87,8 @@ class GameRepository @Inject constructor(
             legsToWin = config.legsToWin,
             isSolo = config.isSolo,
             isTeamGame = config.isTeamGame,
-            isRanked = config.isRanked
+            isRanked = config.isRanked,
+            isFunMode = config.funModeEnabled
         )
         val gameId = gameDao.insertGame(game)
         val gamePlayers = config.playerIds.mapIndexed { index, playerId ->

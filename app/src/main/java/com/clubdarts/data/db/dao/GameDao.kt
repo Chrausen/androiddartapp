@@ -73,19 +73,19 @@ interface GameDao {
     @Query("""
         SELECT COUNT(DISTINCT gp.gameId) FROM game_players gp
         INNER JOIN games g ON gp.gameId = g.id
-        WHERE gp.playerId = :playerId AND g.finishedAt IS NOT NULL
+        WHERE gp.playerId = :playerId AND g.finishedAt IS NOT NULL AND g.isFunMode = 0
     """)
     suspend fun getGamesPlayed(playerId: Long): Int
 
     @Query("""
         SELECT COUNT(*) FROM games g
-        WHERE g.winnerId = :playerId AND g.finishedAt IS NOT NULL
+        WHERE g.winnerId = :playerId AND g.finishedAt IS NOT NULL AND g.isFunMode = 0
     """)
     suspend fun getWins(playerId: Long): Int
 
     @Query("""
         SELECT winnerId as playerId, COUNT(*) as value FROM games
-        WHERE winnerId IS NOT NULL AND finishedAt IS NOT NULL
+        WHERE winnerId IS NOT NULL AND finishedAt IS NOT NULL AND isFunMode = 0
         GROUP BY winnerId
     """)
     suspend fun getAllPlayerWins(): List<PlayerIntStat>
@@ -93,7 +93,7 @@ interface GameDao {
     @Query("""
         SELECT gp.playerId, COUNT(DISTINCT gp.gameId) as value FROM game_players gp
         INNER JOIN games g ON gp.gameId = g.id
-        WHERE g.finishedAt IS NOT NULL
+        WHERE g.finishedAt IS NOT NULL AND g.isFunMode = 0
         GROUP BY gp.playerId
     """)
     suspend fun getAllPlayerGamesPlayed(): List<PlayerIntStat>
@@ -101,7 +101,7 @@ interface GameDao {
     @Query("""
         SELECT COUNT(*) FROM game_players gp
         INNER JOIN games g ON gp.gameId = g.id
-        WHERE gp.playerId = :playerId AND gp.placement = 2 AND g.finishedAt IS NOT NULL
+        WHERE gp.playerId = :playerId AND gp.placement = 2 AND g.finishedAt IS NOT NULL AND g.isFunMode = 0
           AND (SELECT COUNT(*) FROM game_players gp2 WHERE gp2.gameId = gp.gameId) >= 3
     """)
     suspend fun getSecondPlaceCount(playerId: Long): Int
@@ -109,7 +109,7 @@ interface GameDao {
     @Query("""
         SELECT COUNT(*) FROM game_players gp
         INNER JOIN games g ON gp.gameId = g.id
-        WHERE gp.playerId = :playerId AND gp.placement = 3 AND g.finishedAt IS NOT NULL
+        WHERE gp.playerId = :playerId AND gp.placement = 3 AND g.finishedAt IS NOT NULL AND g.isFunMode = 0
           AND (SELECT COUNT(*) FROM game_players gp2 WHERE gp2.gameId = gp.gameId) >= 4
     """)
     suspend fun getThirdPlaceCount(playerId: Long): Int
@@ -133,7 +133,7 @@ interface GameDao {
         INNER JOIN game_players gp2 ON gp1.gameId = gp2.gameId AND gp2.playerId != :playerId
         INNER JOIN games g ON gp1.gameId = g.id
         INNER JOIN players p ON gp2.playerId = p.id
-        WHERE gp1.playerId = :playerId AND g.finishedAt IS NOT NULL
+        WHERE gp1.playerId = :playerId AND g.finishedAt IS NOT NULL AND g.isFunMode = 0
         GROUP BY gp2.playerId
         ORDER BY COUNT(*) DESC
         LIMIT 1
@@ -145,7 +145,7 @@ interface GameDao {
         INNER JOIN game_players gp2 ON gp1.gameId = gp2.gameId AND gp2.playerId != :playerId
         INNER JOIN games g ON gp1.gameId = g.id
         INNER JOIN players p ON gp2.playerId = p.id
-        WHERE gp1.playerId = :playerId AND g.finishedAt IS NOT NULL
+        WHERE gp1.playerId = :playerId AND g.finishedAt IS NOT NULL AND g.isFunMode = 0
           AND gp1.placement IS NOT NULL AND gp2.placement IS NOT NULL
           AND gp2.placement < gp1.placement
         GROUP BY gp2.playerId
@@ -159,7 +159,7 @@ interface GameDao {
         INNER JOIN game_players gp2 ON gp1.gameId = gp2.gameId AND gp2.playerId != :playerId
         INNER JOIN games g ON gp1.gameId = g.id
         INNER JOIN players p ON gp2.playerId = p.id
-        WHERE gp1.playerId = :playerId AND g.finishedAt IS NOT NULL
+        WHERE gp1.playerId = :playerId AND g.finishedAt IS NOT NULL AND g.isFunMode = 0
           AND gp1.placement IS NOT NULL AND gp2.placement IS NOT NULL
           AND gp1.placement < gp2.placement
         GROUP BY gp2.playerId
