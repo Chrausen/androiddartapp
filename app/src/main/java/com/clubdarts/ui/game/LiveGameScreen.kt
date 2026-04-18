@@ -107,7 +107,7 @@ fun LiveGameScreen(
                         .padding(horizontal = 12.dp, vertical = 4.dp),
                     horizontalArrangement = Arrangement.Center,
                 ) {
-                    FunRuleChip(rule = rule)
+                    FunRuleChip(rule = rule, onClick = { viewModel.showFunRuleInfo() })
                 }
             }
 

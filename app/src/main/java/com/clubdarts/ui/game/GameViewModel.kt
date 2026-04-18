@@ -268,6 +268,10 @@ class GameViewModel @Inject constructor(
         _uiState.update { it.copy(pendingFunRuleAnnouncement = null) }
     }
 
+    fun showFunRuleInfo() {
+        _uiState.update { it.copy(pendingFunRuleAnnouncement = it.activeFunRule) }
+    }
+
     fun loadSetupDefaults() {
         viewModelScope.launch {
             try {
