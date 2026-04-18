@@ -63,7 +63,6 @@ data class SetupDefaults(
     val recentPlayerIds: List<Long> = emptyList(),
     val gameMode: GameMode = GameMode.SINGLE,
     val funModeEnabled: Boolean = false,
-    val funModeInterval: Int = 0,
 )
 
 /**
@@ -134,7 +133,6 @@ data class GameUiState(
     // Fun mode
     val activeFunRule: FunRule? = null,
     val pendingFunRuleAnnouncement: FunRule? = null,  // non-null → show overlay
-    val funRoundCounter: Int = 0,                     // rounds played since last rule change
     val shuffledFunRules: List<FunRule> = emptyList(),
     val funRuleIndex: Int = 0,
 )
@@ -287,7 +285,6 @@ class GameViewModel @Inject constructor(
                 val rankedCheckoutRule = settingsRepository.getRankingCheckoutRule()
                 val rankedLegsToWin = settingsRepository.getRankingLegsToWin()
                 val funModeEnabled = settingsRepository.getFunModeEnabled()
-                val funModeInterval = settingsRepository.getFunModeInterval()
                 soundEffectsService.setMuted(soundEffectsMuted)
                 _uiState.update { it.copy(
                     showHistory = showHistory,
@@ -304,7 +301,6 @@ class GameViewModel @Inject constructor(
                         recentPlayerIds = recentIds,
                         gameMode = gameMode,
                         funModeEnabled = funModeEnabled,
-                        funModeInterval = funModeInterval,
                     )
                 )}
             } catch (e: Exception) {
@@ -315,28 +311,11 @@ class GameViewModel @Inject constructor(
 
     // ── Fun mode: scoring modifier helpers ───────────────────────────────────
 
-    private val primeSegments = setOf(2, 3, 5, 7, 11, 13, 17, 19)
+    private fun DartInput.effectiveValue(modifier: ScoreModifier): Int =
+        modifier.apply(score, multiplier)
 
-    private fun DartInput.effectiveValue(modifier: ScoreModifier): Int {
-        if (score == 0) return 0
-        return when (modifier) {
-            ScoreModifier.NONE             -> value
-            ScoreModifier.SWAP_MULTIPLIERS -> when (multiplier) { 2 -> score * 3; 3 -> score * 2; else -> value }
-            ScoreModifier.DOUBLE_SCORE     -> value * 2
-            ScoreModifier.EVEN_HALVED      -> if (score % 2 == 0) value / 2 else value
-            ScoreModifier.ODD_DOUBLED      -> if (score % 2 != 0) value * 2 else value
-            ScoreModifier.PRIME_BOOST      -> if (score in primeSegments) value * 3 else value
-            ScoreModifier.FIVES_MAGIC      -> if (score % 5 == 0) value * 2 else value
-            ScoreModifier.TWENTY_TAX       -> if (score == 20) value / 2 else value
-            ScoreModifier.EVEN_STOLEN      -> if (score % 2 == 0) value / 2 else value
-            ScoreModifier.MIRROR_THROW     -> value
-        }
-    }
-
-    private fun DartInput.effectiveMultiplier(modifier: ScoreModifier): Int = when (modifier) {
-        ScoreModifier.SWAP_MULTIPLIERS -> when (multiplier) { 2 -> 3; 3 -> 2; else -> multiplier }
-        else -> multiplier
-    }
+    private fun DartInput.effectiveMultiplier(modifier: ScoreModifier): Int =
+        modifier.applyMultiplier(multiplier)
 
     private fun activeModifier(): ScoreModifier =
         _uiState.value.activeFunRule?.scoreModifier ?: ScoreModifier.NONE
@@ -565,40 +544,6 @@ class GameViewModel @Inject constructor(
             Triple((state.currentPlayerIndex + 1) % state.players.size, state.currentTeamIndex, state.teamPlayerIndexes)
         }
 
-        // Fun mode: advance round counter; trigger rule change when interval is met
-        val funRuleInterval = state.config?.funRuleIntervalRounds ?: 0
-        val isRoundBasedFunMode = state.config?.funModeEnabled == true && funRuleInterval > 0
-        val isLastPlayerInRound = if (state.isTeamGame) {
-            // A round ends when both teams have played; detected by returning to team 0
-            nextTeamIndex == 0
-        } else {
-            nextPlayerIndex == 0 || (state.players.size == 1)
-        }
-        val newFunRoundCounter = if (isRoundBasedFunMode && isLastPlayerInRound) {
-            updatedState.funRoundCounter + 1
-        } else {
-            updatedState.funRoundCounter
-        }
-        val funRuleTriggered = isRoundBasedFunMode && isLastPlayerInRound &&
-            newFunRoundCounter >= funRuleInterval
-        val nextFunRule: FunRule?
-        val nextFunIndex: Int
-        val nextFunCounterAfterChange: Int
-        val funRuleAnnouncement: FunRule?
-        if (funRuleTriggered) {
-            val nextIdx = (updatedState.funRuleIndex + 1) %
-                updatedState.shuffledFunRules.size.coerceAtLeast(1)
-            nextFunRule = updatedState.shuffledFunRules.getOrNull(nextIdx)
-            nextFunIndex = nextIdx
-            nextFunCounterAfterChange = 0
-            funRuleAnnouncement = nextFunRule
-        } else {
-            nextFunRule = updatedState.activeFunRule
-            nextFunIndex = updatedState.funRuleIndex
-            nextFunCounterAfterChange = newFunRoundCounter
-            funRuleAnnouncement = null
-        }
-
         _uiState.update {
             updatedState.copy(
                 currentDarts = emptyList(),
@@ -610,11 +555,6 @@ class GameViewModel @Inject constructor(
                 currentTeamIndex = nextTeamIndex,
                 teamPlayerIndexes = nextTeamPlayerIndexes,
                 visitHistory = newHistory,
-                activeFunRule = nextFunRule,
-                funRuleIndex = nextFunIndex,
-                funRoundCounter = nextFunCounterAfterChange,
-                pendingFunRuleAnnouncement = funRuleAnnouncement
-                    ?: updatedState.pendingFunRuleAnnouncement,
             )
         }
         updateCheckoutHint()
@@ -833,7 +773,6 @@ class GameViewModel @Inject constructor(
                 )
                 settingsRepository.setLastGameMode(if (config.isTeamGame) GameMode.TEAMS.name else GameMode.SINGLE.name)
                 settingsRepository.setFunModeEnabled(config.funModeEnabled)
-                settingsRepository.setFunModeInterval(config.funRuleIntervalRounds)
                 config.playerIds.forEach { settingsRepository.addRecentPlayer(it) }
 
                 val gameId = gameRepository.startGame(config)
@@ -883,7 +822,6 @@ class GameViewModel @Inject constructor(
                         shuffledFunRules = shuffled,
                         activeFunRule = firstRule,
                         funRuleIndex = 0,
-                        funRoundCounter = 0,
                         pendingFunRuleAnnouncement = firstRule,
                     )}
                 } else {
@@ -916,7 +854,6 @@ class GameViewModel @Inject constructor(
                         shuffledFunRules = shuffled,
                         activeFunRule = firstRule,
                         funRuleIndex = 0,
-                        funRoundCounter = 0,
                         pendingFunRuleAnnouncement = firstRule,
                     )}
                 }
@@ -968,7 +905,6 @@ class GameViewModel @Inject constructor(
                             currentDarts = emptyList(),
                             pendingMultiplier = 1,
                             visitHistory = emptyList(),
-                            funRoundCounter = 0,
                             activeFunRule = nextFunRule,
                             funRuleIndex = nextFunIdx,
                             pendingFunRuleAnnouncement = nextFunAnnouncement,
@@ -1025,7 +961,6 @@ class GameViewModel @Inject constructor(
                             currentDarts = emptyList(),
                             pendingMultiplier = 1,
                             visitHistory = emptyList(),
-                            funRoundCounter = 0,
                             activeFunRule = nextFunRule,
                             funRuleIndex = nextFunIdx,
                             pendingFunRuleAnnouncement = nextFunAnnouncement,
@@ -1140,7 +1075,6 @@ class GameViewModel @Inject constructor(
             pendingFunRuleAnnouncement = null,
             shuffledFunRules = emptyList(),
             funRuleIndex = 0,
-            funRoundCounter = 0,
         )}
         loadSetupDefaults()
     }
@@ -1155,15 +1089,13 @@ class GameViewModel @Inject constructor(
 
     // ── Helpers ───────────────────────────────────────────────────────────────
 
-    // Advances the fun rule at the start of a new leg (only when interval == 0).
+    // Advances to the next fun rule at the start of a new leg.
     // Returns Triple(nextRule, nextIndex, announcement).
     private fun advanceFunRuleForNewLeg(
         state: GameUiState,
         config: GameConfig,
     ): Triple<FunRule?, Int, FunRule?> {
-        if (!config.funModeEnabled || config.funRuleIntervalRounds != 0) {
-            return Triple(state.activeFunRule, state.funRuleIndex, null)
-        }
+        if (!config.funModeEnabled) return Triple(null, 0, null)
         val nextIdx = (state.funRuleIndex + 1) % state.shuffledFunRules.size.coerceAtLeast(1)
         val nextRule = state.shuffledFunRules.getOrNull(nextIdx)
         return Triple(nextRule, nextIdx, nextRule)

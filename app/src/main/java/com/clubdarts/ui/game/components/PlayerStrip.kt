@@ -25,6 +25,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.clubdarts.data.model.Player
+import com.clubdarts.data.model.ScoreModifier
 import com.clubdarts.ui.game.DartInput
 import com.clubdarts.ui.game.VisitRecord
 import com.clubdarts.ui.theme.*
@@ -46,6 +47,7 @@ fun PlayerStrip(
     teamPlayerIndexes: Map<Int, Int> = emptyMap(),   // teamIndex → current player pos within team
     animationsEnabled: Boolean = true,
     pendingBoardDartValue: Int = 0,
+    activeScoreModifier: ScoreModifier = ScoreModifier.NONE,
     playerVisitTotals: Map<Long, Int> = emptyMap(),
     playerVisitCounts: Map<Long, Int> = emptyMap(),
     visitHistory: List<VisitRecord> = emptyList(),
@@ -130,6 +132,7 @@ fun PlayerStrip(
                             teamColor = teamColor,
                             teamLabel = teamLabel,
                             pendingBoardDartValue = pendingBoardDartValue,
+                            activeScoreModifier = activeScoreModifier,
                             playerAvg = playerAvg,
                             modifier = Modifier.fillMaxWidth()
                         )
@@ -162,6 +165,7 @@ private fun ActivePlayerPanel(
     teamLabel: String? = null,
     pendingBoardDartValue: Int = 0,
     playerAvg: Double? = null,
+    activeScoreModifier: ScoreModifier = ScoreModifier.NONE,
 ) {
     // Use team color (dim) or default accent
     val highlightColor = teamColor ?: Accent
@@ -173,7 +177,7 @@ private fun ActivePlayerPanel(
             .border(1.dp, highlightColor, RoundedCornerShape(10.dp))
             .padding(10.dp)
     ) {
-        val dartsTotal    = currentDarts.sumOf { it.value } + pendingBoardDartValue
+        val dartsTotal    = currentDarts.sumOf { activeScoreModifier.apply(it.score, it.multiplier) } + pendingBoardDartValue
         val liveRemaining = score - dartsTotal
         val isBusting     = liveRemaining < 0
 

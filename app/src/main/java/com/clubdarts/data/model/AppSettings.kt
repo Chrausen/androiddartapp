@@ -28,8 +28,7 @@ object SettingsKeys {
     const val RANKING_LEGS_TO_WIN   = "ranking_legs_to_win"
 
     // Fun mode
-    const val FUN_MODE_ENABLED  = "fun_mode_enabled"
-    const val FUN_MODE_INTERVAL = "fun_mode_interval"  // "0" = per leg, "N" = every N rounds
+    const val FUN_MODE_ENABLED = "fun_mode_enabled"
 }
 
 object SettingsDefaults {
@@ -53,8 +52,7 @@ object SettingsDefaults {
     const val RANKING_LEGS_TO_WIN   = "1"
 
     // Fun mode
-    const val FUN_MODE_ENABLED  = "false"
-    const val FUN_MODE_INTERVAL = "0"
+    const val FUN_MODE_ENABLED = "false"
 }
 
 /** Words spoken before/after the score number for a custom TTS phrase. */

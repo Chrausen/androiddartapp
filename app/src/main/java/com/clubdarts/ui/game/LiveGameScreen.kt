@@ -27,6 +27,7 @@ import androidx.compose.ui.platform.LocalContext
 import com.clubdarts.R
 import com.clubdarts.ui.settings.GeneralSettingsViewModel
 import com.clubdarts.data.model.CheckoutRule
+import com.clubdarts.data.model.ScoreModifier
 import com.clubdarts.data.repository.GameConfig
 import com.clubdarts.ui.game.components.DartBoardInput
 import com.clubdarts.ui.game.components.DartNumpad
@@ -53,11 +54,15 @@ fun LiveGameScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     var showAbortDialog       by remember { mutableStateOf(false) }
     var showBoardInput        by remember { mutableStateOf(true) }
-    var pendingBoardDartValue by remember { mutableIntStateOf(0) }
+    var pendingBoardDartScore by remember { mutableIntStateOf(0) }
+    var pendingBoardDartMult  by remember { mutableIntStateOf(0) }
+
+    val activeModifier = uiState.activeFunRule?.scoreModifier ?: ScoreModifier.NONE
+    val effectivePendingValue = activeModifier.apply(pendingBoardDartScore, pendingBoardDartMult)
 
     // Clear the pending preview when the user switches back to numpad mode
     LaunchedEffect(showBoardInput) {
-        if (!showBoardInput) pendingBoardDartValue = 0
+        if (!showBoardInput) { pendingBoardDartScore = 0; pendingBoardDartMult = 0 }
     }
 
     BackHandler { showAbortDialog = true }
@@ -121,7 +126,8 @@ fun LiveGameScreen(
                 currentTeamIndex = uiState.currentTeamIndex,
                 teamPlayerIndexes = uiState.teamPlayerIndexes,
                 animationsEnabled = animationsEnabled,
-                pendingBoardDartValue = pendingBoardDartValue,
+                pendingBoardDartValue = effectivePendingValue,
+                activeScoreModifier = activeModifier,
                 playerVisitTotals = uiState.playerVisitTotals,
                 playerVisitCounts = uiState.playerVisitCounts,
                 visitHistory = uiState.visitHistory,
@@ -171,7 +177,7 @@ fun LiveGameScreen(
                 DartBoardInput(
                     currentDarts = uiState.currentDarts,
                     visitKey = uiState.boardVisitKey,
-                    onPendingValueChanged = { pendingBoardDartValue = it },
+                    onPendingValueChanged = { s, m -> pendingBoardDartScore = s; pendingBoardDartMult = m },
                     onDartConfirmed = { score, mult, bx, by ->
                         viewModel.recordBoardDart(score, mult, bx, by)
                     },
