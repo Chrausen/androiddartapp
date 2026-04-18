@@ -9,6 +9,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.clubdarts.data.model.FunRule
@@ -26,7 +27,7 @@ fun FunRuleChip(rule: FunRule, modifier: Modifier = Modifier) {
     ) {
         Text(text = rule.emoji, style = MaterialTheme.typography.labelMedium)
         Text(
-            text = rule.titleDe,
+            text = stringResource(rule.titleRes),
             style = MaterialTheme.typography.labelMedium,
             fontWeight = FontWeight.SemiBold,
             color = Accent,

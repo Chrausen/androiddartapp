@@ -192,6 +192,48 @@
     <string name="game_add_player">Spieler hinzufügen</string>
     <string name="game_move_to_other_team">In anderes Team wechseln</string>
 
+    <!-- Fun mode -->
+    <string name="fun_mode_section_label">Spaß-Modus</string>
+    <string name="fun_mode_enable_title">Spaß-Modus aktivieren</string>
+    <string name="fun_mode_enable_subtitle">Wechselnde Spaßregeln während des Spiels</string>
+    <string name="fun_rule_overlay_new_rule">🎲 Neue Regel!</string>
+    <string name="fun_rule_overlay_new_scoring_rule">📐 Neue Scoring-Regel!</string>
+    <string name="fun_rule_overlay_got_it">Verstanden!</string>
+
+    <!-- Fun mode rules -->
+    <string name="fun_rule_weak_hand_title">Schwache Hand</string>
+    <string name="fun_rule_weak_hand_desc">Alle Würfe dieser Runde mit der schwachen Hand!</string>
+    <string name="fun_rule_step_back_title">Schritt zurück</string>
+    <string name="fun_rule_step_back_desc">Stelle dich einen großen Schritt weiter weg von der Scheibe.</string>
+    <string name="fun_rule_one_leg_title">Einbeinig</string>
+    <string name="fun_rule_one_leg_desc">Steh während des gesamten Wurfs auf einem Bein!</string>
+    <string name="fun_rule_eyes_closed_title">Blind werfen</string>
+    <string name="fun_rule_eyes_closed_desc">Schließ die Augen beim Wurf – kein Spicken!</string>
+    <string name="fun_rule_jump_first_title">Hüpfer-Pflicht</string>
+    <string name="fun_rule_jump_first_desc">Hüpfe einmal, bevor du jeden Pfeil wirfst.</string>
+    <string name="fun_rule_kneeling_title">Kniend</string>
+    <string name="fun_rule_kneeling_desc">Wirf alle Pfeile aus kniender Position.</string>
+    <string name="fun_rule_two_fingers_title">Pinzettengriff</string>
+    <string name="fun_rule_two_fingers_desc">Halte jeden Pfeil nur mit Daumen und Zeigefinger.</string>
+    <string name="fun_rule_swap_multipliers_title">Multiplikatoren-Tausch</string>
+    <string name="fun_rule_swap_multipliers_desc">Doubles zählen wie Triples und Triples wie Doubles. Singles unverändert.</string>
+    <string name="fun_rule_double_score_title">Volle Pulle</string>
+    <string name="fun_rule_double_score_desc">Alle Scores sind doppelt wert – aber auch doppeltes Bust-Risiko!</string>
+    <string name="fun_rule_even_halved_title">Gerade halbiert</string>
+    <string name="fun_rule_even_halved_desc">Treffer auf gerade Felder (2, 4, 6 … 20) zählen nur halb.</string>
+    <string name="fun_rule_odd_doubled_title">Ungerade verdoppelt</string>
+    <string name="fun_rule_odd_doubled_desc">Treffer auf ungerade Felder (1, 3, 5 … 19) zählen doppelt.</string>
+    <string name="fun_rule_prime_boost_title">Primzahlen-Boost</string>
+    <string name="fun_rule_prime_boost_desc">Primzahlen (2, 3, 5, 7, 11, 13, 17, 19) zählen dreifach!</string>
+    <string name="fun_rule_fives_magic_title">Fünfer-Magie</string>
+    <string name="fun_rule_fives_magic_desc">Vielfache von 5 (5, 10, 15, 20, 25, Bull) zählen doppelt.</string>
+    <string name="fun_rule_twenty_tax_title">20er-Steuer</string>
+    <string name="fun_rule_twenty_tax_desc">Treffer auf die 20 zählen nur halb. Schieß mal woanders hin!</string>
+    <string name="fun_rule_even_stolen_title">Gerade stehlen</string>
+    <string name="fun_rule_even_stolen_desc">Gerade Felder: dein Score halbiert – die andere Hälfte wird dem Gegner wieder draufgerechnet!</string>
+    <string name="fun_rule_mirror_throw_title">Spiegelwurf</string>
+    <string name="fun_rule_mirror_throw_desc">Dein Visit-Score wird auch beim Gegner abgezogen. Gute Würfe helfen allen!</string>
+
     <!-- Rankings screen -->
     <string name="rankings_title">Rangliste</string>
     <string name="rankings_subtitle">Spieler mit %1$d+ gewerteten Spielen</string>

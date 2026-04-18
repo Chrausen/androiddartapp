@@ -1066,7 +1066,7 @@ private fun FunModeSection(
     onEnabledChange: (Boolean) -> Unit,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        SectionLabel("Spaß-Modus")
+        SectionLabel(stringResource(R.string.fun_mode_section_label))
 
         Row(
             modifier = Modifier
@@ -1077,8 +1077,8 @@ private fun FunModeSection(
             horizontalArrangement = Arrangement.SpaceBetween,
         ) {
             Column {
-                Text("Spaß-Modus aktivieren", style = MaterialTheme.typography.bodyMedium, color = TextPrimary)
-                Text("Wechselnde Spaßregeln während des Spiels", style = MaterialTheme.typography.labelSmall, color = TextSecondary)
+                Text(stringResource(R.string.fun_mode_enable_title), style = MaterialTheme.typography.bodyMedium, color = TextPrimary)
+                Text(stringResource(R.string.fun_mode_enable_subtitle), style = MaterialTheme.typography.labelSmall, color = TextSecondary)
             }
             Switch(
                 checked = enabled,

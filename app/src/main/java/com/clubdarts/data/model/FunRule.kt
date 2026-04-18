@@ -1,5 +1,7 @@
 package com.clubdarts.data.model
 
+import androidx.annotation.StringRes
+
 enum class FunRuleCategory { PHYSICAL, SCORING }
 
 private val PRIME_SEGMENTS = setOf(2, 3, 5, 7, 11, 13, 17, 19)
@@ -44,7 +46,7 @@ data class FunRule(
     val category: FunRuleCategory,
     val scoreModifier: ScoreModifier = ScoreModifier.NONE,
     val emoji: String,
-    val titleDe: String,
-    val descDe: String,
+    @StringRes val titleRes: Int,
+    @StringRes val descRes: Int,
     val teamsOnly: Boolean = false,
 )

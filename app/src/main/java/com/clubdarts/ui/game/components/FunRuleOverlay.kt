@@ -7,12 +7,14 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import com.clubdarts.R
 import com.clubdarts.data.model.FunRule
 import com.clubdarts.data.model.FunRuleCategory
 import com.clubdarts.ui.theme.*
@@ -32,7 +34,10 @@ fun FunRuleOverlay(rule: FunRule, onDismiss: () -> Unit) {
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             Text(
-                text = if (rule.category == FunRuleCategory.PHYSICAL) "🎲 Neue Regel!" else "📐 Neue Scoring-Regel!",
+                text = if (rule.category == FunRuleCategory.PHYSICAL)
+                    stringResource(R.string.fun_rule_overlay_new_rule)
+                else
+                    stringResource(R.string.fun_rule_overlay_new_scoring_rule),
                 style = MaterialTheme.typography.labelMedium,
                 color = Accent,
             )
@@ -43,7 +48,7 @@ fun FunRuleOverlay(rule: FunRule, onDismiss: () -> Unit) {
             )
 
             Text(
-                text = rule.titleDe,
+                text = stringResource(rule.titleRes),
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.Bold,
                 color = TextPrimary,
@@ -51,7 +56,7 @@ fun FunRuleOverlay(rule: FunRule, onDismiss: () -> Unit) {
             )
 
             Text(
-                text = rule.descDe,
+                text = stringResource(rule.descRes),
                 style = MaterialTheme.typography.bodyMedium,
                 color = TextSecondary,
                 textAlign = TextAlign.Center,
@@ -71,7 +76,7 @@ fun FunRuleOverlay(rule: FunRule, onDismiss: () -> Unit) {
                 shape = RoundedCornerShape(10.dp),
             ) {
                 Text(
-                    text = "Verstanden!",
+                    text = stringResource(R.string.fun_rule_overlay_got_it),
                     style = MaterialTheme.typography.labelLarge,
                     fontWeight = FontWeight.Bold,
                 )
