@@ -91,18 +91,27 @@ interface ThrowDao {
     @Query("SELECT * FROM throws WHERE legId = :legId ORDER BY id DESC LIMIT 1")
     suspend fun getLastThrowInLeg(legId: Long): Throw?
 
-    @Query("SELECT AVG(visitTotal) FROM throws WHERE playerId = :playerId AND isBust = 0")
+    @Query("""
+        SELECT AVG(t.visitTotal) FROM throws t
+        INNER JOIN legs l ON t.legId = l.id
+        INNER JOIN games g ON l.gameId = g.id AND g.isFunMode = 0
+        WHERE t.playerId = :playerId AND t.isBust = 0
+    """)
     suspend fun getAverageForPlayer(playerId: Long): Double?
 
     @Query("""
-        SELECT playerId, AVG(CASE WHEN isBust = 0 THEN visitTotal ELSE NULL END) as average
-        FROM throws GROUP BY playerId
+        SELECT t.playerId, AVG(CASE WHEN t.isBust = 0 THEN t.visitTotal ELSE NULL END) as average
+        FROM throws t
+        INNER JOIN legs l ON t.legId = l.id
+        INNER JOIN games g ON l.gameId = g.id AND g.isFunMode = 0
+        GROUP BY t.playerId
     """)
     suspend fun getAllPlayerAverages(): List<PlayerAverage>
 
     @Query("""
         SELECT MAX(t.visitTotal) FROM throws t
         INNER JOIN legs l ON t.legId = l.id
+        INNER JOIN games g ON l.gameId = g.id AND g.isFunMode = 0
         WHERE t.playerId = :playerId
         AND t.isCheckoutAttempt = 1
         AND t.isBust = 0
@@ -110,18 +119,34 @@ interface ThrowDao {
     """)
     suspend fun getHighestFinishForPlayer(playerId: Long): Int?
 
-    @Query("SELECT COUNT(*) FROM throws WHERE playerId = :playerId AND visitTotal = 180")
+    @Query("""
+        SELECT COUNT(*) FROM throws t
+        INNER JOIN legs l ON t.legId = l.id
+        INNER JOIN games g ON l.gameId = g.id AND g.isFunMode = 0
+        WHERE t.playerId = :playerId AND t.visitTotal = 180
+    """)
     suspend fun get180sForPlayer(playerId: Long): Int
 
-    @Query("SELECT COUNT(*) FROM throws WHERE playerId = :playerId AND visitTotal >= 100 AND isBust = 0")
+    @Query("""
+        SELECT COUNT(*) FROM throws t
+        INNER JOIN legs l ON t.legId = l.id
+        INNER JOIN games g ON l.gameId = g.id AND g.isFunMode = 0
+        WHERE t.playerId = :playerId AND t.visitTotal >= 100 AND t.isBust = 0
+    """)
     suspend fun getHundredPlusForPlayer(playerId: Long): Int
 
-    @Query("SELECT COUNT(*) FROM throws WHERE playerId = :playerId AND isCheckoutAttempt = 1")
+    @Query("""
+        SELECT COUNT(*) FROM throws t
+        INNER JOIN legs l ON t.legId = l.id
+        INNER JOIN games g ON l.gameId = g.id AND g.isFunMode = 0
+        WHERE t.playerId = :playerId AND t.isCheckoutAttempt = 1
+    """)
     suspend fun getCheckoutAttemptsForPlayer(playerId: Long): Int
 
     @Query("""
         SELECT COUNT(*) FROM throws t
         INNER JOIN legs l ON t.legId = l.id
+        INNER JOIN games g ON l.gameId = g.id AND g.isFunMode = 0
         WHERE t.playerId = :playerId
         AND t.isCheckoutAttempt = 1
         AND l.winnerId = t.playerId
@@ -129,28 +154,55 @@ interface ThrowDao {
     suspend fun getSuccessfulCheckoutsForPlayer(playerId: Long): Int
 
     @Query("""
-        SELECT visitTotal, COUNT(*) as frequency
-        FROM throws
-        WHERE playerId = :playerId AND isBust = 0
-        GROUP BY visitTotal
+        SELECT t.visitTotal, COUNT(*) as frequency
+        FROM throws t
+        INNER JOIN legs l ON t.legId = l.id
+        INNER JOIN games g ON l.gameId = g.id AND g.isFunMode = 0
+        WHERE t.playerId = :playerId AND t.isBust = 0
+        GROUP BY t.visitTotal
         ORDER BY frequency DESC
         LIMIT 10
     """)
     suspend fun getVisitScoreFrequencyForPlayer(playerId: Long): List<ScoreFrequency>
 
-    @Query("SELECT COUNT(*) FROM throws WHERE playerId = :playerId AND visitTotal >= 100 AND visitTotal <= 180 AND isBust = 0")
+    @Query("""
+        SELECT COUNT(*) FROM throws t
+        INNER JOIN legs l ON t.legId = l.id
+        INNER JOIN games g ON l.gameId = g.id AND g.isFunMode = 0
+        WHERE t.playerId = :playerId AND t.visitTotal >= 100 AND t.visitTotal <= 180 AND t.isBust = 0
+    """)
     suspend fun getBucketHigh(playerId: Long): Int
 
-    @Query("SELECT COUNT(*) FROM throws WHERE playerId = :playerId AND visitTotal >= 60 AND visitTotal <= 99 AND isBust = 0")
+    @Query("""
+        SELECT COUNT(*) FROM throws t
+        INNER JOIN legs l ON t.legId = l.id
+        INNER JOIN games g ON l.gameId = g.id AND g.isFunMode = 0
+        WHERE t.playerId = :playerId AND t.visitTotal >= 60 AND t.visitTotal <= 99 AND t.isBust = 0
+    """)
     suspend fun getBucketMid(playerId: Long): Int
 
-    @Query("SELECT COUNT(*) FROM throws WHERE playerId = :playerId AND visitTotal >= 40 AND visitTotal <= 59 AND isBust = 0")
+    @Query("""
+        SELECT COUNT(*) FROM throws t
+        INNER JOIN legs l ON t.legId = l.id
+        INNER JOIN games g ON l.gameId = g.id AND g.isFunMode = 0
+        WHERE t.playerId = :playerId AND t.visitTotal >= 40 AND t.visitTotal <= 59 AND t.isBust = 0
+    """)
     suspend fun getBucketLow(playerId: Long): Int
 
-    @Query("SELECT COUNT(*) FROM throws WHERE playerId = :playerId AND visitTotal >= 1 AND visitTotal <= 39 AND isBust = 0")
+    @Query("""
+        SELECT COUNT(*) FROM throws t
+        INNER JOIN legs l ON t.legId = l.id
+        INNER JOIN games g ON l.gameId = g.id AND g.isFunMode = 0
+        WHERE t.playerId = :playerId AND t.visitTotal >= 1 AND t.visitTotal <= 39 AND t.isBust = 0
+    """)
     suspend fun getBucketVeryLow(playerId: Long): Int
 
-    @Query("SELECT COUNT(*) FROM throws WHERE playerId = :playerId AND isBust = 1")
+    @Query("""
+        SELECT COUNT(*) FROM throws t
+        INNER JOIN legs l ON t.legId = l.id
+        INNER JOIN games g ON l.gameId = g.id AND g.isFunMode = 0
+        WHERE t.playerId = :playerId AND t.isBust = 1
+    """)
     suspend fun getBucketBusts(playerId: Long): Int
 
     @Query("""
@@ -168,6 +220,7 @@ interface ThrowDao {
             COUNT(CASE WHEN t.isBust = 1 THEN 1 ELSE NULL END) AS bucketBusts
         FROM throws t
         INNER JOIN legs l ON t.legId = l.id
+        INNER JOIN games g ON l.gameId = g.id AND g.isFunMode = 0
         WHERE t.playerId = :playerId
     """)
     suspend fun getPlayerStatsAggregate(playerId: Long): PlayerStatsAggregate
@@ -202,6 +255,7 @@ interface ThrowDao {
             COALESCE(SUM(t.visitTotal), 0) AS totalScoreThrown
         FROM throws t
         INNER JOIN legs l ON t.legId = l.id
+        INNER JOIN games g ON l.gameId = g.id AND g.isFunMode = 0
         WHERE t.playerId = :playerId
     """)
     suspend fun getExtendedPlayerStats(playerId: Long): ExtendedStatsAggregate
@@ -215,6 +269,7 @@ interface ThrowDao {
             SELECT l.id, SUM(t.visitTotal) AS legFirstNine
             FROM throws t
             INNER JOIN legs l ON t.legId = l.id
+            INNER JOIN games g ON l.gameId = g.id AND g.isFunMode = 0
             WHERE t.playerId = :playerId AND t.visitNumber <= 3
             GROUP BY l.id
         )
@@ -247,12 +302,18 @@ interface ThrowDao {
     """)
     suspend fun getFinishedGameIdsSorted(): List<Long>
 
-    @Query("SELECT playerId, COUNT(*) as value FROM throws WHERE visitTotal = 180 GROUP BY playerId")
+    @Query("""
+        SELECT t.playerId, COUNT(*) as value FROM throws t
+        INNER JOIN legs l ON t.legId = l.id
+        INNER JOIN games g ON l.gameId = g.id AND g.isFunMode = 0
+        WHERE t.visitTotal = 180 GROUP BY t.playerId
+    """)
     suspend fun getAllPlayer180s(): List<PlayerIntStat>
 
     @Query("""
         SELECT t.playerId, MAX(t.visitTotal) as value FROM throws t
         INNER JOIN legs l ON t.legId = l.id
+        INNER JOIN games g ON l.gameId = g.id AND g.isFunMode = 0
         WHERE t.isCheckoutAttempt = 1 AND t.isBust = 0 AND l.winnerId = t.playerId
         GROUP BY t.playerId
     """)
@@ -280,6 +341,7 @@ interface ThrowDao {
                 THEN 1 ELSE NULL END) AS successfulCheckouts
         FROM throws t
         INNER JOIN legs l ON t.legId = l.id
+        INNER JOIN games g ON l.gameId = g.id AND g.isFunMode = 0
         GROUP BY t.playerId
     """)
     suspend fun getAllPlayerLeaderboardRows(): List<PlayerLeaderboardRow>
@@ -288,6 +350,8 @@ interface ThrowDao {
         SELECT t.playerId, AVG(CAST(legFirstNine AS REAL)) AS value FROM (
             SELECT t2.playerId, t2.legId, SUM(t2.visitTotal) AS legFirstNine
             FROM throws t2
+            INNER JOIN legs l ON t2.legId = l.id
+            INNER JOIN games g ON l.gameId = g.id AND g.isFunMode = 0
             WHERE t2.visitNumber <= 3
             GROUP BY t2.playerId, t2.legId
         ) t
@@ -295,12 +359,18 @@ interface ThrowDao {
     """)
     suspend fun getAllPlayerFirst9Avg(): List<PlayerDoubleStat>
 
-    @Query("SELECT COUNT(*) FROM throws WHERE visitTotal = 180")
+    @Query("""
+        SELECT COUNT(*) FROM throws t
+        INNER JOIN legs l ON t.legId = l.id
+        INNER JOIN games g ON l.gameId = g.id AND g.isFunMode = 0
+        WHERE t.visitTotal = 180
+    """)
     suspend fun getTotalClub180s(): Int
 
     @Query("""
         SELECT MAX(t.visitTotal) FROM throws t
         INNER JOIN legs l ON t.legId = l.id
+        INNER JOIN games g ON l.gameId = g.id AND g.isFunMode = 0
         WHERE t.isCheckoutAttempt = 1
         AND t.isBust = 0
         AND l.winnerId = t.playerId

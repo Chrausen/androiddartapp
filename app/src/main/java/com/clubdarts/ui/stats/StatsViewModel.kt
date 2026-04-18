@@ -174,7 +174,7 @@ class StatsViewModel @Inject constructor(
                 )}
 
                 gameRepository.getAllGames().collect { games ->
-                    val finishedGames = games.filter { it.finishedAt != null }
+                    val finishedGames = games.filter { it.finishedAt != null && !it.isFunMode }
                     _uiState.update { it.copy(
                         clubTotalGames = finishedGames.count { !it.isTeamGame }
                     ) }

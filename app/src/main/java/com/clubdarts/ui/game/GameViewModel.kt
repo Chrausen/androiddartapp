@@ -290,7 +290,6 @@ class GameViewModel @Inject constructor(
                 val rankedStartScore = settingsRepository.getRankingStartScore()
                 val rankedCheckoutRule = settingsRepository.getRankingCheckoutRule()
                 val rankedLegsToWin = settingsRepository.getRankingLegsToWin()
-                val funModeEnabled = settingsRepository.getFunModeEnabled()
                 soundEffectsService.setMuted(soundEffectsMuted)
                 _uiState.update { it.copy(
                     showHistory = showHistory,
@@ -306,7 +305,7 @@ class GameViewModel @Inject constructor(
                         randomOrder = randomOrder,
                         recentPlayerIds = recentIds,
                         gameMode = gameMode,
-                        funModeEnabled = funModeEnabled,
+                        funModeEnabled = false,
                     )
                 )}
             } catch (e: Exception) {
@@ -794,7 +793,6 @@ class GameViewModel @Inject constructor(
                     random = config.randomOrder
                 )
                 settingsRepository.setLastGameMode(if (config.isTeamGame) GameMode.TEAMS.name else GameMode.SINGLE.name)
-                settingsRepository.setFunModeEnabled(config.funModeEnabled)
                 config.playerIds.forEach { settingsRepository.addRecentPlayer(it) }
 
                 val gameId = gameRepository.startGame(config)

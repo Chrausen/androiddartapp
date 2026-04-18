@@ -87,7 +87,8 @@ class GameRepository @Inject constructor(
             legsToWin = config.legsToWin,
             isSolo = config.isSolo,
             isTeamGame = config.isTeamGame,
-            isRanked = config.isRanked
+            isRanked = config.isRanked,
+            isFunMode = config.funModeEnabled
         )
         val gameId = gameDao.insertGame(game)
         val gamePlayers = config.playerIds.mapIndexed { index, playerId ->

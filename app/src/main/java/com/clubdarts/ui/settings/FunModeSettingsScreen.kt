@@ -139,6 +139,7 @@ fun FunModeSettingsScreen(
                         RuleToggleRow(
                             emoji = rule.emoji,
                             title = stringResource(rule.titleRes),
+                            subtitle = stringResource(rule.descRes),
                             enabled = rule.id !in uiState.disabledRuleIds,
                             onToggle = { viewModel.toggleRule(rule.id) }
                         )
@@ -168,6 +169,7 @@ fun FunModeSettingsScreen(
                         RuleToggleRow(
                             emoji = rule.emoji,
                             title = stringResource(rule.titleRes),
+                            subtitle = stringResource(rule.descRes),
                             enabled = rule.id !in uiState.disabledRuleIds,
                             onToggle = { viewModel.toggleRule(rule.id) }
                         )
@@ -190,6 +192,7 @@ fun FunModeSettingsScreen(
 private fun RuleToggleRow(
     emoji: String,
     title: String,
+    subtitle: String,
     enabled: Boolean,
     onToggle: () -> Unit
 ) {
@@ -201,12 +204,18 @@ private fun RuleToggleRow(
     ) {
         Text(text = emoji, style = MaterialTheme.typography.bodyLarge)
         Spacer(modifier = Modifier.width(10.dp))
-        Text(
-            text = title,
-            style = MaterialTheme.typography.bodyMedium,
-            color = if (enabled) TextPrimary else TextTertiary,
-            modifier = Modifier.weight(1f)
-        )
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.bodyMedium,
+                color = if (enabled) TextPrimary else TextTertiary,
+            )
+            Text(
+                text = subtitle,
+                style = MaterialTheme.typography.bodySmall,
+                color = TextTertiary,
+            )
+        }
         Switch(
             checked = enabled,
             onCheckedChange = { onToggle() },
