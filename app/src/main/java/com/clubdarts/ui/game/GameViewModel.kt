@@ -135,6 +135,8 @@ data class GameUiState(
     val pendingFunRuleAnnouncement: FunRule? = null,  // non-null → show overlay
     val shuffledFunRules: List<FunRule> = emptyList(),
     val funRuleIndex: Int = 0,
+    val funRuleIntervalRounds: Int = 1,
+    val funVisitsSinceRuleChange: Int = 0,
 )
 
 /**
@@ -548,6 +550,18 @@ class GameViewModel @Inject constructor(
             Triple((state.currentPlayerIndex + 1) % state.players.size, state.currentTeamIndex, state.teamPlayerIndexes)
         }
 
+        // Fun mode: advance rule after N rounds (N × players.size visits)
+        val newFunVisits = if (state.config?.funModeEnabled == true) state.funVisitsSinceRuleChange + 1 else 0
+        val shouldAdvanceFunRule = state.config?.funModeEnabled == true &&
+            state.shuffledFunRules.isNotEmpty() &&
+            newFunVisits >= state.players.size * state.funRuleIntervalRounds.coerceAtLeast(1)
+        val nextFunRuleIdx = if (shouldAdvanceFunRule)
+            (state.funRuleIndex + 1) % state.shuffledFunRules.size.coerceAtLeast(1)
+        else state.funRuleIndex
+        val nextActiveFunRule = if (shouldAdvanceFunRule) state.shuffledFunRules.getOrNull(nextFunRuleIdx) else state.activeFunRule
+        val nextFunAnnouncement = if (shouldAdvanceFunRule) nextActiveFunRule else null
+        val nextFunVisits = if (shouldAdvanceFunRule) 0 else newFunVisits
+
         _uiState.update {
             updatedState.copy(
                 currentDarts = emptyList(),
@@ -559,6 +573,10 @@ class GameViewModel @Inject constructor(
                 currentTeamIndex = nextTeamIndex,
                 teamPlayerIndexes = nextTeamPlayerIndexes,
                 visitHistory = newHistory,
+                activeFunRule = nextActiveFunRule,
+                funRuleIndex = nextFunRuleIdx,
+                pendingFunRuleAnnouncement = nextFunAnnouncement,
+                funVisitsSinceRuleChange = nextFunVisits,
             )
         }
         updateCheckoutHint()
@@ -787,9 +805,12 @@ class GameViewModel @Inject constructor(
                 visitCounters.clear()
 
                 // Prepare fun mode rule list
+                val funIntervalRounds = settingsRepository.getFunModeIntervalRounds()
+                val disabledRuleIds = settingsRepository.getFunModeDisabledRules().toSet()
                 val shuffled = if (config.funModeEnabled) {
                     FunRules.all
                         .filter { !it.teamsOnly || config.isTeamGame }
+                        .filter { it.id !in disabledRuleIds }
                         .shuffled()
                 } else emptyList()
                 val firstRule = shuffled.firstOrNull()
@@ -826,6 +847,8 @@ class GameViewModel @Inject constructor(
                         shuffledFunRules = shuffled,
                         activeFunRule = firstRule,
                         funRuleIndex = 0,
+                        funRuleIntervalRounds = funIntervalRounds,
+                        funVisitsSinceRuleChange = 0,
                         pendingFunRuleAnnouncement = firstRule,
                     )}
                 } else {
@@ -858,6 +881,8 @@ class GameViewModel @Inject constructor(
                         shuffledFunRules = shuffled,
                         activeFunRule = firstRule,
                         funRuleIndex = 0,
+                        funRuleIntervalRounds = funIntervalRounds,
+                        funVisitsSinceRuleChange = 0,
                         pendingFunRuleAnnouncement = firstRule,
                     )}
                 }
@@ -896,8 +921,6 @@ class GameViewModel @Inject constructor(
                         val newLegId = gameRepository.insertLeg(newLeg)
                         val newTeamScores = mapOf(0 to config.startScore, 1 to config.startScore)
                         visitCounters.clear()
-                        val (nextFunRule, nextFunIdx, nextFunAnnouncement) =
-                            advanceFunRuleForNewLeg(state, config)
                         _uiState.update { it.copy(
                             legId = newLegId,
                             teamLegWins = newTeamLegWins,
@@ -909,9 +932,8 @@ class GameViewModel @Inject constructor(
                             currentDarts = emptyList(),
                             pendingMultiplier = 1,
                             visitHistory = emptyList(),
-                            activeFunRule = nextFunRule,
-                            funRuleIndex = nextFunIdx,
-                            pendingFunRuleAnnouncement = nextFunAnnouncement,
+                            funVisitsSinceRuleChange = 0,
+                            pendingFunRuleAnnouncement = if (config.funModeEnabled) it.activeFunRule else null,
                         )}
                         updateCheckoutHint()
                     }
@@ -954,8 +976,6 @@ class GameViewModel @Inject constructor(
                         val nextStartIndex = newLegNumber % state.players.size
 
                         visitCounters.clear()
-                        val (nextFunRule, nextFunIdx, nextFunAnnouncement) =
-                            advanceFunRuleForNewLeg(state, config)
                         _uiState.update { it.copy(
                             legId = newLegId,
                             legWins = newLegWins,
@@ -965,9 +985,8 @@ class GameViewModel @Inject constructor(
                             currentDarts = emptyList(),
                             pendingMultiplier = 1,
                             visitHistory = emptyList(),
-                            activeFunRule = nextFunRule,
-                            funRuleIndex = nextFunIdx,
-                            pendingFunRuleAnnouncement = nextFunAnnouncement,
+                            funVisitsSinceRuleChange = 0,
+                            pendingFunRuleAnnouncement = if (config.funModeEnabled) it.activeFunRule else null,
                         )}
                         updateCheckoutHint()
                     }
@@ -1079,6 +1098,8 @@ class GameViewModel @Inject constructor(
             pendingFunRuleAnnouncement = null,
             shuffledFunRules = emptyList(),
             funRuleIndex = 0,
+            funRuleIntervalRounds = 1,
+            funVisitsSinceRuleChange = 0,
         )}
         loadSetupDefaults()
     }
@@ -1092,18 +1113,6 @@ class GameViewModel @Inject constructor(
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────
-
-    // Advances to the next fun rule at the start of a new leg.
-    // Returns Triple(nextRule, nextIndex, announcement).
-    private fun advanceFunRuleForNewLeg(
-        state: GameUiState,
-        config: GameConfig,
-    ): Triple<FunRule?, Int, FunRule?> {
-        if (!config.funModeEnabled) return Triple(null, 0, null)
-        val nextIdx = (state.funRuleIndex + 1) % state.shuffledFunRules.size.coerceAtLeast(1)
-        val nextRule = state.shuffledFunRules.getOrNull(nextIdx)
-        return Triple(nextRule, nextIdx, nextRule)
-    }
 
     // Applies transfer scoring mechanics (EVEN_STOLEN / MIRROR_THROW) to opponent scores.
     private fun applyTransferModifier(

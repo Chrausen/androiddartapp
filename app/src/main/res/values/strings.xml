@@ -287,6 +287,19 @@
     <string name="dispersion_throw_count">Based on %1$d training throws</string>
     <string name="dispersion_no_coords">No dartboard-input throws found in selected sessions.</string>
 
+    <!-- Settings: Fun Mode entry -->
+    <string name="settings_fun_mode">Fun Mode</string>
+    <string name="settings_fun_mode_subtitle">Rule rotation, durations and active rules</string>
+
+    <!-- Fun Mode settings screen -->
+    <string name="fun_mode_settings_title">Fun Mode</string>
+    <string name="fun_mode_settings_rule_duration_label">Rule Duration</string>
+    <string name="fun_mode_settings_rule_duration_rounds_label">Rounds per rule</string>
+    <string name="fun_mode_settings_rule_duration_subtitle">How many rounds each rule stays active</string>
+    <string name="fun_mode_settings_rules_label">Rules</string>
+    <string name="fun_mode_settings_category_physical">Physical</string>
+    <string name="fun_mode_settings_category_scoring">Scoring</string>
+
     <!-- Fun mode -->
     <string name="fun_mode_section_label">Fun Mode</string>
     <string name="fun_mode_enable_title">Enable Fun Mode</string>

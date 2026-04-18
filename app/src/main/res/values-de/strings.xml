@@ -192,6 +192,19 @@
     <string name="game_add_player">Spieler hinzufügen</string>
     <string name="game_move_to_other_team">In anderes Team wechseln</string>
 
+    <!-- Settings: Fun Mode entry -->
+    <string name="settings_fun_mode">Spaß-Modus</string>
+    <string name="settings_fun_mode_subtitle">Regelwechsel, Dauer und aktive Regeln</string>
+
+    <!-- Fun Mode settings screen -->
+    <string name="fun_mode_settings_title">Spaß-Modus</string>
+    <string name="fun_mode_settings_rule_duration_label">Regeldauer</string>
+    <string name="fun_mode_settings_rule_duration_rounds_label">Runden pro Regel</string>
+    <string name="fun_mode_settings_rule_duration_subtitle">Wie viele Runden jede Regel aktiv bleibt</string>
+    <string name="fun_mode_settings_rules_label">Regeln</string>
+    <string name="fun_mode_settings_category_physical">Körperlich</string>
+    <string name="fun_mode_settings_category_scoring">Scoring</string>
+
     <!-- Fun mode -->
     <string name="fun_mode_section_label">Spaß-Modus</string>
     <string name="fun_mode_enable_title">Spaß-Modus aktivieren</string>
