@@ -38,7 +38,7 @@ class TtsManager(private val context: Context) {
             }
             else -> defaultScoreWord(visitTotal)
         }
-        val commentary = if (!isBust && !isCheckout && commentaryPhrases != null) {
+        val commentary = if (!isBust && !isCheckout && customPhrases.isEmpty() && commentaryPhrases != null) {
             val tier = when {
                 visitTotal < 20  -> commentaryPhrases.bad
                 visitTotal <= 60 -> commentaryPhrases.normal
